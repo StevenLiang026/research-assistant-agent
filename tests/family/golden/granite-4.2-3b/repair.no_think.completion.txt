@@ -1,0 +1,9 @@
+
+<tool_call>
+<function=search_arxiv>
+<parameter=query>
+KV cache compression
+</parameter>
+</function>
+</tool_call>
+<|im_end|>

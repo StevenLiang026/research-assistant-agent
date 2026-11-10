@@ -1,0 +1,272 @@
+{
+  "rule": "At a cost of at most C per 100 items, the most items right: FT's successes plus the items FT fails and B2 passes, routed cheapest first, as many as C pays for; no other item is routed (scripts/route_cost_oracle.py).",
+  "routing": {
+    "path": "results/routing-m4.json",
+    "sha256": "1e8f23c94464d02a285aabb7cf32672d74beafda76237bf16eeca9f37ccab536"
+  },
+  "inputs": {
+    "ft_records": {
+      "path": "runs/m4/dev-ft-signals.jsonl",
+      "sha256": "49079cff8e2655038bbd79980f5252042018ffdbcf887773d25a6866806b4582"
+    },
+    "ft_scores": {
+      "path": "runs/eval/scores/dev-ft-signals.json",
+      "sha256": "a4a3a8d5b20e149f4f1076b70426a3e6e96bbf2ba0b92cd939333a98e2bd5d2c"
+    },
+    "b2_records": {
+      "path": "runs/eval/dev-b2-m3.jsonl",
+      "sha256": "5141f7e149455631cfad5b86e307e4e4cce6c1d2b2095ac9c3024b30e8e2290a"
+    },
+    "b2_scores": {
+      "path": "runs/eval/scores/dev-b2-m3.json",
+      "sha256": "1b8c1eaec6f12f0d327bc23bf01d8bfa8b41886694fb2c37b114f4ca55d24812"
+    }
+  },
+  "cloud_model": "deepseek-flash",
+  "n": 150,
+  "ft_successes": 99,
+  "gains": 39,
+  "b2_cost_per_100_rmb": 0.46299599999999996,
+  "curve": [
+    {
+      "routed": 0,
+      "cost_per_100_rmb": 0.0,
+      "successes": 99,
+      "success": 0.66
+    },
+    {
+      "routed": 1,
+      "cost_per_100_rmb": 0.001828,
+      "successes": 100,
+      "success": 0.6666666666666666
+    },
+    {
+      "routed": 2,
+      "cost_per_100_rmb": 0.0036933333333333328,
+      "successes": 101,
+      "success": 0.6733333333333333
+    },
+    {
+      "routed": 3,
+      "cost_per_100_rmb": 0.005629333333333333,
+      "successes": 102,
+      "success": 0.68
+    },
+    {
+      "routed": 4,
+      "cost_per_100_rmb": 0.007575999999999999,
+      "successes": 103,
+      "success": 0.6866666666666666
+    },
+    {
+      "routed": 5,
+      "cost_per_100_rmb": 0.009527999999999998,
+      "successes": 104,
+      "success": 0.6933333333333334
+    },
+    {
+      "routed": 6,
+      "cost_per_100_rmb": 0.011484,
+      "successes": 105,
+      "success": 0.7
+    },
+    {
+      "routed": 7,
+      "cost_per_100_rmb": 0.013485333333333334,
+      "successes": 106,
+      "success": 0.7066666666666667
+    },
+    {
+      "routed": 8,
+      "cost_per_100_rmb": 0.015500000000000002,
+      "successes": 107,
+      "success": 0.7133333333333334
+    },
+    {
+      "routed": 9,
+      "cost_per_100_rmb": 0.01752,
+      "successes": 108,
+      "success": 0.72
+    },
+    {
+      "routed": 10,
+      "cost_per_100_rmb": 0.019557333333333336,
+      "successes": 109,
+      "success": 0.7266666666666667
+    },
+    {
+      "routed": 11,
+      "cost_per_100_rmb": 0.021606666666666666,
+      "successes": 110,
+      "success": 0.7333333333333333
+    },
+    {
+      "routed": 12,
+      "cost_per_100_rmb": 0.023681333333333332,
+      "successes": 111,
+      "success": 0.74
+    },
+    {
+      "routed": 13,
+      "cost_per_100_rmb": 0.025850666666666664,
+      "successes": 112,
+      "success": 0.7466666666666667
+    },
+    {
+      "routed": 14,
+      "cost_per_100_rmb": 0.028054666666666665,
+      "successes": 113,
+      "success": 0.7533333333333333
+    },
+    {
+      "routed": 15,
+      "cost_per_100_rmb": 0.03026933333333333,
+      "successes": 114,
+      "success": 0.76
+    },
+    {
+      "routed": 16,
+      "cost_per_100_rmb": 0.03251333333333333,
+      "successes": 115,
+      "success": 0.7666666666666667
+    },
+    {
+      "routed": 17,
+      "cost_per_100_rmb": 0.03475866666666667,
+      "successes": 116,
+      "success": 0.7733333333333333
+    },
+    {
+      "routed": 18,
+      "cost_per_100_rmb": 0.037041333333333336,
+      "successes": 117,
+      "success": 0.78
+    },
+    {
+      "routed": 19,
+      "cost_per_100_rmb": 0.039344000000000004,
+      "successes": 118,
+      "success": 0.7866666666666666
+    },
+    {
+      "routed": 20,
+      "cost_per_100_rmb": 0.04170666666666667,
+      "successes": 119,
+      "success": 0.7933333333333333
+    },
+    {
+      "routed": 21,
+      "cost_per_100_rmb": 0.04413333333333334,
+      "successes": 120,
+      "success": 0.8
+    },
+    {
+      "routed": 22,
+      "cost_per_100_rmb": 0.04669600000000001,
+      "successes": 121,
+      "success": 0.8066666666666666
+    },
+    {
+      "routed": 23,
+      "cost_per_100_rmb": 0.04927200000000001,
+      "successes": 122,
+      "success": 0.8133333333333334
+    },
+    {
+      "routed": 24,
+      "cost_per_100_rmb": 0.052169333333333345,
+      "successes": 123,
+      "success": 0.82
+    },
+    {
+      "routed": 25,
+      "cost_per_100_rmb": 0.05523200000000002,
+      "successes": 124,
+      "success": 0.8266666666666667
+    },
+    {
+      "routed": 26,
+      "cost_per_100_rmb": 0.058610666666666686,
+      "successes": 125,
+      "success": 0.8333333333333334
+    },
+    {
+      "routed": 27,
+      "cost_per_100_rmb": 0.06205866666666668,
+      "successes": 126,
+      "success": 0.84
+    },
+    {
+      "routed": 28,
+      "cost_per_100_rmb": 0.06553200000000002,
+      "successes": 127,
+      "success": 0.8466666666666667
+    },
+    {
+      "routed": 29,
+      "cost_per_100_rmb": 0.06918133333333336,
+      "successes": 128,
+      "success": 0.8533333333333334
+    },
+    {
+      "routed": 30,
+      "cost_per_100_rmb": 0.07298400000000002,
+      "successes": 129,
+      "success": 0.86
+    },
+    {
+      "routed": 31,
+      "cost_per_100_rmb": 0.07695866666666669,
+      "successes": 130,
+      "success": 0.8666666666666667
+    },
+    {
+      "routed": 32,
+      "cost_per_100_rmb": 0.08100400000000002,
+      "successes": 131,
+      "success": 0.8733333333333333
+    },
+    {
+      "routed": 33,
+      "cost_per_100_rmb": 0.08554000000000002,
+      "successes": 132,
+      "success": 0.88
+    },
+    {
+      "routed": 34,
+      "cost_per_100_rmb": 0.09036800000000002,
+      "successes": 133,
+      "success": 0.8866666666666667
+    },
+    {
+      "routed": 35,
+      "cost_per_100_rmb": 0.09554400000000002,
+      "successes": 134,
+      "success": 0.8933333333333333
+    },
+    {
+      "routed": 36,
+      "cost_per_100_rmb": 0.10092800000000002,
+      "successes": 135,
+      "success": 0.9
+    },
+    {
+      "routed": 37,
+      "cost_per_100_rmb": 0.10646000000000001,
+      "successes": 136,
+      "success": 0.9066666666666666
+    },
+    {
+      "routed": 38,
+      "cost_per_100_rmb": 0.11246266666666668,
+      "successes": 137,
+      "success": 0.9133333333333333
+    },
+    {
+      "routed": 39,
+      "cost_per_100_rmb": 0.13297333333333333,
+      "successes": 138,
+      "success": 0.92
+    }
+  ]
+}

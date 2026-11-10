@@ -1,0 +1,31 @@
+# Local hooks only: they run the project's own pinned tools through the project environment.
+# Install once per clone: uv run --no-sync pre-commit install
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff check
+        # --force-exclude keeps pyproject's extend-exclude (the frozen M0 spike scripts) effective even
+        # though pre-commit passes file names explicitly
+        entry: uv run --no-sync python -m ruff check --force-exclude
+        language: system
+        types: [python]
+      - id: no-secrets
+        name: no API keys or home paths
+        entry: uv run --no-sync python scripts/check_no_secrets.py
+        language: system
+        exclude: ^uv\.lock$
+      - id: readme-numbers
+        name: README result numbers match the report
+        # scripts/check_public_numbers.py: the marker blocks against results/numbers.json, the hashes of the
+        # report's sources that are in this copy, and the test-set openings against docs/provenance.md
+        entry: uv run --no-sync python scripts/check_public_numbers.py
+        language: system
+        pass_filenames: false
+        files: ^(README\.md|results/.*|docs/provenance\.md)$
+      - id: pytest
+        name: pytest (full suite, offline)
+        entry: uv run --no-sync python -m pytest -q -p no:cacheprovider
+        language: system
+        pass_filenames: false
+        always_run: true

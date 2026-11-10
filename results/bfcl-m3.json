@@ -1,0 +1,254 @@
+{
+  "benchmark": "BFCL v4, single-turn categories, Qwen FC handler in non-thinking mode (scripts/bfcl_nothink.py)",
+  "bfcl_eval": "2026.3.23",
+  "categories": [
+    "simple_python",
+    "multiple",
+    "parallel",
+    "parallel_multiple",
+    "irrelevance",
+    "live_simple",
+    "live_multiple",
+    "live_parallel",
+    "live_parallel_multiple",
+    "live_irrelevance",
+    "live_relevance"
+  ],
+  "aggregate_rule": "The unweighted mean of the per-category accuracies (correct / n) over the categories run, each category counting once whatever its n, which is recorded beside it. BFCL's own Overall is not used: it counts every category not run (Java, JavaScript, multi-turn, agentic) as 0.",
+  "base_model": "models/Qwen3-1.7B-Q8_0.gguf",
+  "tokenizer": "models/Qwen3-1.7B",
+  "bfcl_environment": {
+    "BFCL_PROJECT_ROOT": "the system's raw folder, as an absolute path",
+    "REMOTE_OPENAI_BASE_URL": "http://127.0.0.1:8080/v1",
+    "PYTHONUTF8": "1",
+    "HF_HUB_OFFLINE": "1",
+    "TQDM_DISABLE": "1"
+  },
+  "git_commit": "8b06fee553848f41b33a580ff3825ec929374dab",
+  "git_dirty": true,
+  "systems": {
+    "b0": {
+      "bfcl_model": "Qwen/Qwen3-1.7B-FC-nothink",
+      "server_command": [
+        "llama-server",
+        "-m",
+        "models/Qwen3-1.7B-Q8_0.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "12288",
+        "--jinja",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8080",
+        "--cache-ram",
+        "0",
+        "-np",
+        "1",
+        "--no-cache-prompt"
+      ],
+      "server_build": "b11349-fb4b2737a",
+      "adapter": null,
+      "raw": "runs/bfcl/m3/b0",
+      "generate": [
+        ".venv-bfcl/Scripts/python.exe",
+        "scripts/bfcl_nothink.py",
+        "generate",
+        "--model",
+        "Qwen/Qwen3-1.7B-FC-nothink",
+        "--test-category",
+        "simple_python,multiple,parallel,parallel_multiple,irrelevance,live_simple,live_multiple,live_parallel,live_parallel_multiple,live_irrelevance,live_relevance",
+        "--skip-server-setup",
+        "--local-model-path",
+        "models/Qwen3-1.7B"
+      ],
+      "evaluate": [
+        ".venv-bfcl/Scripts/python.exe",
+        "scripts/bfcl_nothink.py",
+        "evaluate",
+        "--model",
+        "Qwen/Qwen3-1.7B-FC-nothink",
+        "--test-category",
+        "simple_python,multiple,parallel,parallel_multiple,irrelevance,live_simple,live_multiple,live_parallel,live_parallel_multiple,live_irrelevance,live_relevance"
+      ],
+      "categories": {
+        "simple_python": {
+          "n": 400,
+          "correct": 368,
+          "accuracy": 0.92
+        },
+        "multiple": {
+          "n": 200,
+          "correct": 186,
+          "accuracy": 0.93
+        },
+        "parallel": {
+          "n": 200,
+          "correct": 161,
+          "accuracy": 0.805
+        },
+        "parallel_multiple": {
+          "n": 200,
+          "correct": 149,
+          "accuracy": 0.745
+        },
+        "irrelevance": {
+          "n": 240,
+          "correct": 209,
+          "accuracy": 0.8708333333333333
+        },
+        "live_simple": {
+          "n": 258,
+          "correct": 172,
+          "accuracy": 0.6666666666666666
+        },
+        "live_multiple": {
+          "n": 1053,
+          "correct": 686,
+          "accuracy": 0.6514719848053181
+        },
+        "live_parallel": {
+          "n": 16,
+          "correct": 9,
+          "accuracy": 0.5625
+        },
+        "live_parallel_multiple": {
+          "n": 24,
+          "correct": 15,
+          "accuracy": 0.625
+        },
+        "live_irrelevance": {
+          "n": 884,
+          "correct": 727,
+          "accuracy": 0.8223981900452488
+        },
+        "live_relevance": {
+          "n": 16,
+          "correct": 12,
+          "accuracy": 0.75
+        }
+      },
+      "aggregate": {
+        "categories": 11,
+        "n": 3491,
+        "accuracy": 0.7589881977136879
+      }
+    },
+    "ft": {
+      "bfcl_model": "research-agent/Qwen3-1.7B-FT-FC-nothink",
+      "server_command": [
+        "llama-server",
+        "-m",
+        "models/Qwen3-1.7B-Q8_0.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "12288",
+        "--jinja",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8080",
+        "--cache-ram",
+        "0",
+        "--lora",
+        "runs/train/ft/gguf/checkpoint-1668-f16.gguf",
+        "--lora-init-without-apply",
+        "-np",
+        "1",
+        "--no-cache-prompt"
+      ],
+      "server_build": "b11349-fb4b2737a",
+      "adapter": {
+        "gguf": "runs/train/ft/gguf/checkpoint-1668-f16.gguf",
+        "sha256": "91f76d98b9c96c2f0da67f2634cb512e409937185d1fceab37614f74520c09f0",
+        "selection": "results/checkpoint-selection-ft.json"
+      },
+      "raw": "runs/bfcl/m3/ft",
+      "generate": [
+        ".venv-bfcl/Scripts/python.exe",
+        "scripts/bfcl_nothink.py",
+        "generate",
+        "--model",
+        "research-agent/Qwen3-1.7B-FT-FC-nothink",
+        "--test-category",
+        "simple_python,multiple,parallel,parallel_multiple,irrelevance,live_simple,live_multiple,live_parallel,live_parallel_multiple,live_irrelevance,live_relevance",
+        "--skip-server-setup",
+        "--local-model-path",
+        "models/Qwen3-1.7B"
+      ],
+      "evaluate": [
+        ".venv-bfcl/Scripts/python.exe",
+        "scripts/bfcl_nothink.py",
+        "evaluate",
+        "--model",
+        "research-agent/Qwen3-1.7B-FT-FC-nothink",
+        "--test-category",
+        "simple_python,multiple,parallel,parallel_multiple,irrelevance,live_simple,live_multiple,live_parallel,live_parallel_multiple,live_irrelevance,live_relevance"
+      ],
+      "categories": {
+        "simple_python": {
+          "n": 400,
+          "correct": 353,
+          "accuracy": 0.8825
+        },
+        "multiple": {
+          "n": 200,
+          "correct": 183,
+          "accuracy": 0.915
+        },
+        "parallel": {
+          "n": 200,
+          "correct": 163,
+          "accuracy": 0.815
+        },
+        "parallel_multiple": {
+          "n": 200,
+          "correct": 159,
+          "accuracy": 0.795
+        },
+        "irrelevance": {
+          "n": 240,
+          "correct": 208,
+          "accuracy": 0.8666666666666667
+        },
+        "live_simple": {
+          "n": 258,
+          "correct": 189,
+          "accuracy": 0.7325581395348837
+        },
+        "live_multiple": {
+          "n": 1053,
+          "correct": 689,
+          "accuracy": 0.654320987654321
+        },
+        "live_parallel": {
+          "n": 16,
+          "correct": 10,
+          "accuracy": 0.625
+        },
+        "live_parallel_multiple": {
+          "n": 24,
+          "correct": 17,
+          "accuracy": 0.7083333333333334
+        },
+        "live_irrelevance": {
+          "n": 884,
+          "correct": 631,
+          "accuracy": 0.7138009049773756
+        },
+        "live_relevance": {
+          "n": 16,
+          "correct": 14,
+          "accuracy": 0.875
+        }
+      },
+      "aggregate": {
+        "categories": 11,
+        "n": 3491,
+        "accuracy": 0.7802890938333255
+      }
+    }
+  }
+}

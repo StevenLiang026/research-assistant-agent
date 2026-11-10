@@ -1,0 +1,843 @@
+{
+  "tasks_sha256": "f9aea1731603333d44be037991099f22311472167c5544e5b38313440cabf96e",
+  "seed": 42,
+  "storm_calls": 3,
+  "failure_kinds": [
+    "timeout",
+    "rate_limited",
+    "server_error",
+    "empty_results",
+    "truncated_atom"
+  ],
+  "inputs": [
+    {
+      "report": "runs/m4/faults/ft-r0/report.json",
+      "report_sha256": "09b7abe943bb1c6489b13d5d183148649fe0f8b97e3febe918fe577c498313cb",
+      "timing": "runs/m4/faults/ft-r0/timing.json",
+      "timing_sha256": "9f8f351b56d5b3c5c55e2ac08f9b9e0469a9bf2367d018ccb5598b58362023e6",
+      "system": "ft",
+      "condition": "rate=0"
+    },
+    {
+      "report": "runs/m4/faults/ft-r0.2/report.json",
+      "report_sha256": "8df7bd9f2f067d39751867aeb73b9205e528a243171dfca133e0d6d007e04384",
+      "timing": "runs/m4/faults/ft-r0.2/timing.json",
+      "timing_sha256": "6203714fd6a62637174977df804e843a3008053b2b30a258eeed05742ce32ad3",
+      "system": "ft",
+      "condition": "rate=0.2"
+    },
+    {
+      "report": "runs/m4/faults/ft-r0.5/report.json",
+      "report_sha256": "7595be170ffff640395fe9a6357b2c206383acafb5dcc01ff0ee3ec0593552ac",
+      "timing": "runs/m4/faults/ft-r0.5/timing.json",
+      "timing_sha256": "4b245cf89f803b98d1cd643bfe03b21944689b743625830a6c0d7fda838560d1",
+      "system": "ft",
+      "condition": "rate=0.5"
+    },
+    {
+      "report": "runs/m4/faults/ft-r0.5p/report.json",
+      "report_sha256": "4d88722e77fb6fa78914d2bd0e43fb852f22e200c4d6558c25a22744343440a8",
+      "timing": "runs/m4/faults/ft-r0.5p/timing.json",
+      "timing_sha256": "34744e991b2dd062213328fe989188c7d4d139dad23366c8af617c4a901121c8",
+      "system": "ft",
+      "condition": "rate=0.5,persistent"
+    },
+    {
+      "report": "runs/m4/faults/b0-r0/report.json",
+      "report_sha256": "259c7b3a9398fcd21c206f2ece60144ffedf9c49257f2e4d0c2504ee60b8796e",
+      "timing": "runs/m4/faults/b0-r0/timing.json",
+      "timing_sha256": "08c81762358be9d21f1ba923aabb0d25070c4649ace15d616382001d330f06b8",
+      "system": "b0",
+      "condition": "rate=0"
+    },
+    {
+      "report": "runs/m4/faults/b0-r0.2/report.json",
+      "report_sha256": "85c4b5ff8b7279c936f25e59530bf11439cbb5ce6950c45702fb17d3880217b8",
+      "timing": "runs/m4/faults/b0-r0.2/timing.json",
+      "timing_sha256": "d5b1e2511cf5c4124c34005cf2b038affcdf12774528b3170454debfbeaf91f1",
+      "system": "b0",
+      "condition": "rate=0.2"
+    },
+    {
+      "report": "runs/m4/faults/b0-r0.5/report.json",
+      "report_sha256": "a0c1d86ef5119e33a71b3ff45a89b1f18dda0e74df1b886af216d847daeca50b",
+      "timing": "runs/m4/faults/b0-r0.5/timing.json",
+      "timing_sha256": "a7b0ae6d855eb999feffa9c4cc8a590d9654be1900245c2a50261c507790e826",
+      "system": "b0",
+      "condition": "rate=0.5"
+    },
+    {
+      "report": "runs/m4/faults/b0-r0.5p/report.json",
+      "report_sha256": "add852082a10104e0473da04f2165bb318f4bb38760806972ec0cb530c053574",
+      "timing": "runs/m4/faults/b0-r0.5p/timing.json",
+      "timing_sha256": "376736586116264736809d70180df600dcacb262488c12e54d88c900a6cc2ca2",
+      "system": "b0",
+      "condition": "rate=0.5,persistent"
+    },
+    {
+      "report": "runs/m4/faults/b2-r0/report.json",
+      "report_sha256": "c32a4c8bece7627a3b509ef19cf07d4394e39ae8355cab809cfac2fba133e6e1",
+      "timing": "runs/m4/faults/b2-r0/timing.json",
+      "timing_sha256": "068b8939f695c9bcb44a6c1ca8d213182dc7abe031e0e2d01b9782fd6f414527",
+      "system": "b2",
+      "condition": "rate=0"
+    },
+    {
+      "report": "runs/m4/faults/b2-r0.2/report.json",
+      "report_sha256": "035104b36729da9df445febfa024906b7675307c22439bd70fb7f5303bba7e67",
+      "timing": "runs/m4/faults/b2-r0.2/timing.json",
+      "timing_sha256": "4437c61ef4a707aa2c476fc1a2a0517c539cf57515e78be69994dd67dca09990",
+      "system": "b2",
+      "condition": "rate=0.2"
+    },
+    {
+      "report": "runs/m4/faults/b2-r0.5/report.json",
+      "report_sha256": "0c599e01f02e65f793bdcb975c2dc58b19bcf5027532cda7da365c72cb98976a",
+      "timing": "runs/m4/faults/b2-r0.5/timing.json",
+      "timing_sha256": "2650d98e51f6c5dd42e4f4d2fe184aae4e934406aa1de29798ecd6363d767475",
+      "system": "b2",
+      "condition": "rate=0.5"
+    },
+    {
+      "report": "runs/m4/faults/b2-r0.5p/report.json",
+      "report_sha256": "5daf6e1813dcbb45456a0b9987851925a59952ddae985b398ab303d3304bfc88",
+      "timing": "runs/m4/faults/b2-r0.5p/timing.json",
+      "timing_sha256": "f1f7706f7198a41c0c359e0fb07fc19962f1b45de52ab8da9dc1f79ab40cf52a",
+      "system": "b2",
+      "condition": "rate=0.5,persistent"
+    }
+  ],
+  "rows": [
+    {
+      "system": "b0",
+      "condition": "rate=0",
+      "rate": 0.0,
+      "persistent": false,
+      "tasks": 20,
+      "successes": 3,
+      "success_rate": 0.15,
+      "tasks_with_faults": 0,
+      "recovered": 0,
+      "recovery_rate": null,
+      "empty_result_tasks": 3,
+      "fabricated_ids_after_empty": 2,
+      "retry_storms": 0,
+      "retry_storm_tasks": [],
+      "by_kind": {
+        "timeout": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "rate_limited": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "server_error": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "empty_results": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "truncated_atom": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "html_404": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "delay": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        }
+      },
+      "delay": {
+        "delayed_fetch_calls": 0,
+        "clean_fetch_calls": 0,
+        "mean_ms_delayed": null,
+        "mean_ms_clean": null,
+        "extra_ms_per_call": null
+      }
+    },
+    {
+      "system": "b0",
+      "condition": "rate=0.2",
+      "rate": 0.2,
+      "persistent": false,
+      "tasks": 20,
+      "successes": 1,
+      "success_rate": 0.05,
+      "tasks_with_faults": 6,
+      "recovered": 0,
+      "recovery_rate": 0.0,
+      "empty_result_tasks": 4,
+      "fabricated_ids_after_empty": 3,
+      "retry_storms": 0,
+      "retry_storm_tasks": [],
+      "by_kind": {
+        "timeout": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "rate_limited": {
+          "met": 2,
+          "tasks": 2,
+          "succeeded": 0
+        },
+        "server_error": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "empty_results": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "truncated_atom": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "html_404": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "delay": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        }
+      },
+      "delay": {
+        "delayed_fetch_calls": 0,
+        "clean_fetch_calls": 19,
+        "mean_ms_delayed": null,
+        "mean_ms_clean": 18.0,
+        "extra_ms_per_call": null
+      }
+    },
+    {
+      "system": "b0",
+      "condition": "rate=0.5",
+      "rate": 0.5,
+      "persistent": false,
+      "tasks": 20,
+      "successes": 1,
+      "success_rate": 0.05,
+      "tasks_with_faults": 12,
+      "recovered": 0,
+      "recovery_rate": 0.0,
+      "empty_result_tasks": 7,
+      "fabricated_ids_after_empty": 3,
+      "retry_storms": 0,
+      "retry_storm_tasks": [],
+      "by_kind": {
+        "timeout": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "rate_limited": {
+          "met": 6,
+          "tasks": 6,
+          "succeeded": 0
+        },
+        "server_error": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "empty_results": {
+          "met": 8,
+          "tasks": 7,
+          "succeeded": 0
+        },
+        "truncated_atom": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "html_404": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "delay": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        }
+      },
+      "delay": {
+        "delayed_fetch_calls": 1,
+        "clean_fetch_calls": 8,
+        "mean_ms_delayed": 5055.2,
+        "mean_ms_clean": 4.4,
+        "extra_ms_per_call": 5050.8
+      }
+    },
+    {
+      "system": "b0",
+      "condition": "rate=0.5,persistent",
+      "rate": 0.5,
+      "persistent": true,
+      "tasks": 20,
+      "successes": 1,
+      "success_rate": 0.05,
+      "tasks_with_faults": 11,
+      "recovered": 0,
+      "recovery_rate": 0.0,
+      "empty_result_tasks": 4,
+      "fabricated_ids_after_empty": 0,
+      "retry_storms": 0,
+      "retry_storm_tasks": [],
+      "by_kind": {
+        "timeout": {
+          "met": 4,
+          "tasks": 3,
+          "succeeded": 0
+        },
+        "rate_limited": {
+          "met": 5,
+          "tasks": 3,
+          "succeeded": 0
+        },
+        "server_error": {
+          "met": 5,
+          "tasks": 5,
+          "succeeded": 0
+        },
+        "empty_results": {
+          "met": 2,
+          "tasks": 2,
+          "succeeded": 0
+        },
+        "truncated_atom": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "html_404": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "delay": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        }
+      },
+      "delay": {
+        "delayed_fetch_calls": 1,
+        "clean_fetch_calls": 7,
+        "mean_ms_delayed": 5029.6,
+        "mean_ms_clean": 0.6,
+        "extra_ms_per_call": 5029.0
+      }
+    },
+    {
+      "system": "b2",
+      "condition": "rate=0",
+      "rate": 0.0,
+      "persistent": false,
+      "tasks": 20,
+      "successes": 14,
+      "success_rate": 0.7,
+      "tasks_with_faults": 0,
+      "recovered": 0,
+      "recovery_rate": null,
+      "empty_result_tasks": 0,
+      "fabricated_ids_after_empty": 0,
+      "retry_storms": 0,
+      "retry_storm_tasks": [],
+      "by_kind": {
+        "timeout": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "rate_limited": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "server_error": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "empty_results": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "truncated_atom": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "html_404": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "delay": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        }
+      },
+      "delay": {
+        "delayed_fetch_calls": 0,
+        "clean_fetch_calls": 0,
+        "mean_ms_delayed": null,
+        "mean_ms_clean": null,
+        "extra_ms_per_call": null
+      }
+    },
+    {
+      "system": "b2",
+      "condition": "rate=0.2",
+      "rate": 0.2,
+      "persistent": false,
+      "tasks": 20,
+      "successes": 11,
+      "success_rate": 0.55,
+      "tasks_with_faults": 8,
+      "recovered": 1,
+      "recovery_rate": 0.125,
+      "empty_result_tasks": 1,
+      "fabricated_ids_after_empty": 1,
+      "retry_storms": 0,
+      "retry_storm_tasks": [],
+      "by_kind": {
+        "timeout": {
+          "met": 2,
+          "tasks": 2,
+          "succeeded": 0
+        },
+        "rate_limited": {
+          "met": 2,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "server_error": {
+          "met": 2,
+          "tasks": 2,
+          "succeeded": 0
+        },
+        "empty_results": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "truncated_atom": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "html_404": {
+          "met": 4,
+          "tasks": 4,
+          "succeeded": 1
+        },
+        "delay": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        }
+      },
+      "delay": {
+        "delayed_fetch_calls": 0,
+        "clean_fetch_calls": 37,
+        "mean_ms_delayed": null,
+        "mean_ms_clean": 54.0,
+        "extra_ms_per_call": null
+      }
+    },
+    {
+      "system": "b2",
+      "condition": "rate=0.5",
+      "rate": 0.5,
+      "persistent": false,
+      "tasks": 20,
+      "successes": 7,
+      "success_rate": 0.35,
+      "tasks_with_faults": 13,
+      "recovered": 1,
+      "recovery_rate": 0.07692307692307693,
+      "empty_result_tasks": 6,
+      "fabricated_ids_after_empty": 2,
+      "retry_storms": 0,
+      "retry_storm_tasks": [],
+      "by_kind": {
+        "timeout": {
+          "met": 6,
+          "tasks": 6,
+          "succeeded": 0
+        },
+        "rate_limited": {
+          "met": 8,
+          "tasks": 5,
+          "succeeded": 0
+        },
+        "server_error": {
+          "met": 6,
+          "tasks": 4,
+          "succeeded": 0
+        },
+        "empty_results": {
+          "met": 5,
+          "tasks": 5,
+          "succeeded": 0
+        },
+        "truncated_atom": {
+          "met": 2,
+          "tasks": 2,
+          "succeeded": 0
+        },
+        "html_404": {
+          "met": 4,
+          "tasks": 4,
+          "succeeded": 0
+        },
+        "delay": {
+          "met": 4,
+          "tasks": 4,
+          "succeeded": 1
+        }
+      },
+      "delay": {
+        "delayed_fetch_calls": 4,
+        "clean_fetch_calls": 17,
+        "mean_ms_delayed": 5062.6,
+        "mean_ms_clean": 51.9,
+        "extra_ms_per_call": 5010.6
+      }
+    },
+    {
+      "system": "b2",
+      "condition": "rate=0.5,persistent",
+      "rate": 0.5,
+      "persistent": true,
+      "tasks": 20,
+      "successes": 7,
+      "success_rate": 0.35,
+      "tasks_with_faults": 12,
+      "recovered": 0,
+      "recovery_rate": 0.0,
+      "empty_result_tasks": 2,
+      "fabricated_ids_after_empty": 1,
+      "retry_storms": 2,
+      "retry_storm_tasks": [
+        "e2e-dev-02",
+        "e2e-dev-08"
+      ],
+      "by_kind": {
+        "timeout": {
+          "met": 5,
+          "tasks": 2,
+          "succeeded": 0
+        },
+        "rate_limited": {
+          "met": 15,
+          "tasks": 6,
+          "succeeded": 0
+        },
+        "server_error": {
+          "met": 5,
+          "tasks": 2,
+          "succeeded": 0
+        },
+        "empty_results": {
+          "met": 3,
+          "tasks": 2,
+          "succeeded": 0
+        },
+        "truncated_atom": {
+          "met": 2,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "html_404": {
+          "met": 2,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "delay": {
+          "met": 3,
+          "tasks": 2,
+          "succeeded": 0
+        }
+      },
+      "delay": {
+        "delayed_fetch_calls": 3,
+        "clean_fetch_calls": 25,
+        "mean_ms_delayed": 5124.1,
+        "mean_ms_clean": 56.7,
+        "extra_ms_per_call": 5067.4
+      }
+    },
+    {
+      "system": "ft",
+      "condition": "rate=0",
+      "rate": 0.0,
+      "persistent": false,
+      "tasks": 20,
+      "successes": 9,
+      "success_rate": 0.45,
+      "tasks_with_faults": 0,
+      "recovered": 0,
+      "recovery_rate": null,
+      "empty_result_tasks": 1,
+      "fabricated_ids_after_empty": 0,
+      "retry_storms": 0,
+      "retry_storm_tasks": [],
+      "by_kind": {
+        "timeout": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "rate_limited": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "server_error": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "empty_results": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "truncated_atom": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "html_404": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        },
+        "delay": {
+          "met": 0,
+          "tasks": 0,
+          "succeeded": 0
+        }
+      },
+      "delay": {
+        "delayed_fetch_calls": 0,
+        "clean_fetch_calls": 0,
+        "mean_ms_delayed": null,
+        "mean_ms_clean": null,
+        "extra_ms_per_call": null
+      }
+    },
+    {
+      "system": "ft",
+      "condition": "rate=0.2",
+      "rate": 0.2,
+      "persistent": false,
+      "tasks": 20,
+      "successes": 8,
+      "success_rate": 0.4,
+      "tasks_with_faults": 11,
+      "recovered": 1,
+      "recovery_rate": 0.09090909090909091,
+      "empty_result_tasks": 5,
+      "fabricated_ids_after_empty": 0,
+      "retry_storms": 0,
+      "retry_storm_tasks": [],
+      "by_kind": {
+        "timeout": {
+          "met": 6,
+          "tasks": 4,
+          "succeeded": 0
+        },
+        "rate_limited": {
+          "met": 3,
+          "tasks": 3,
+          "succeeded": 0
+        },
+        "server_error": {
+          "met": 6,
+          "tasks": 5,
+          "succeeded": 0
+        },
+        "empty_results": {
+          "met": 3,
+          "tasks": 3,
+          "succeeded": 0
+        },
+        "truncated_atom": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "html_404": {
+          "met": 3,
+          "tasks": 3,
+          "succeeded": 1
+        },
+        "delay": {
+          "met": 5,
+          "tasks": 4,
+          "succeeded": 0
+        }
+      },
+      "delay": {
+        "delayed_fetch_calls": 5,
+        "clean_fetch_calls": 47,
+        "mean_ms_delayed": 5047.7,
+        "mean_ms_clean": 50.9,
+        "extra_ms_per_call": 4996.8
+      }
+    },
+    {
+      "system": "ft",
+      "condition": "rate=0.5",
+      "rate": 0.5,
+      "persistent": false,
+      "tasks": 20,
+      "successes": 6,
+      "success_rate": 0.3,
+      "tasks_with_faults": 12,
+      "recovered": 0,
+      "recovery_rate": 0.0,
+      "empty_result_tasks": 9,
+      "fabricated_ids_after_empty": 0,
+      "retry_storms": 1,
+      "retry_storm_tasks": [
+        "e2e-dev-03"
+      ],
+      "by_kind": {
+        "timeout": {
+          "met": 6,
+          "tasks": 4,
+          "succeeded": 0
+        },
+        "rate_limited": {
+          "met": 5,
+          "tasks": 4,
+          "succeeded": 0
+        },
+        "server_error": {
+          "met": 9,
+          "tasks": 8,
+          "succeeded": 0
+        },
+        "empty_results": {
+          "met": 7,
+          "tasks": 7,
+          "succeeded": 0
+        },
+        "truncated_atom": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "html_404": {
+          "met": 4,
+          "tasks": 4,
+          "succeeded": 0
+        },
+        "delay": {
+          "met": 5,
+          "tasks": 4,
+          "succeeded": 0
+        }
+      },
+      "delay": {
+        "delayed_fetch_calls": 5,
+        "clean_fetch_calls": 25,
+        "mean_ms_delayed": 5067.3,
+        "mean_ms_clean": 47.9,
+        "extra_ms_per_call": 5019.4
+      }
+    },
+    {
+      "system": "ft",
+      "condition": "rate=0.5,persistent",
+      "rate": 0.5,
+      "persistent": true,
+      "tasks": 20,
+      "successes": 5,
+      "success_rate": 0.25,
+      "tasks_with_faults": 12,
+      "recovered": 0,
+      "recovery_rate": 0.0,
+      "empty_result_tasks": 6,
+      "fabricated_ids_after_empty": 0,
+      "retry_storms": 5,
+      "retry_storm_tasks": [
+        "e2e-dev-03",
+        "e2e-dev-07",
+        "e2e-dev-08",
+        "e2e-dev-09",
+        "e2e-dev-11"
+      ],
+      "by_kind": {
+        "timeout": {
+          "met": 7,
+          "tasks": 4,
+          "succeeded": 0
+        },
+        "rate_limited": {
+          "met": 15,
+          "tasks": 5,
+          "succeeded": 0
+        },
+        "server_error": {
+          "met": 5,
+          "tasks": 3,
+          "succeeded": 0
+        },
+        "empty_results": {
+          "met": 10,
+          "tasks": 5,
+          "succeeded": 0
+        },
+        "truncated_atom": {
+          "met": 2,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "html_404": {
+          "met": 2,
+          "tasks": 1,
+          "succeeded": 0
+        },
+        "delay": {
+          "met": 1,
+          "tasks": 1,
+          "succeeded": 0
+        }
+      },
+      "delay": {
+        "delayed_fetch_calls": 1,
+        "clean_fetch_calls": 24,
+        "mean_ms_delayed": 5119.0,
+        "mean_ms_clean": 51.1,
+        "extra_ms_per_call": 5067.9
+      }
+    }
+  ]
+}

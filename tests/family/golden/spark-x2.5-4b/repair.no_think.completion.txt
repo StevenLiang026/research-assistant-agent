@@ -1,0 +1,1 @@
+<tool_call>search_arxiv<arg_key>query</arg_key><arg_value>KV cache compression</arg_value></tool_call><｜end▁of▁sentence｜>

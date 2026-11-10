@@ -1,0 +1,3 @@
+<tool_call>
+{"name": "book_table", "arguments": {"restaurant": {"name": "Café de Flore", "city": "Paris"}, "party": {"adults": 2, "children": [{"age": 5}]}, "time": "19:30", "requests": ["window seat", "high chair"]}}
+</tool_call><|im_end|>

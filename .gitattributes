@@ -1,0 +1,15 @@
+* text=auto eol=lf
+# Hash-checked files must stay byte-exact on every checkout
+data/eval/*.jsonl -text
+# The review's inputs and outputs, and byte-identical copies of the scripts that ran it (their hashes are in
+# data/eval/sets-manifest.json)
+data/eval/review/** -text
+tools/eval-review/** -text
+data/eval/v2/** -text
+tools/eval-review-v2/** -text
+*.sha256 -text
+results/** -text
+data/glossary/** -text
+# Figures are binary: their line endings are never normalised, whatever git's detection makes of a file
+*.png binary
+*.pdf binary

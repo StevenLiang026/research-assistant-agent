@@ -1,0 +1,1 @@
+<|tool_call_start|>[book_table(restaurant={"name": "Café de Flore", "city": "Paris"}, party={"adults": 2, "children": [{"age": 5}]}, time='19:30', requests=["window seat", "high chair"])]<|tool_call_end|><|im_end|>

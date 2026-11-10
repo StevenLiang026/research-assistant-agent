@@ -1,0 +1,92 @@
+{
+  "rule": "per rate: B0 - max(FT, B4) > margin, and |FT - B4| < B0 - max(FT, B4) (FT and B4 closer to each other than the nearer of them is to B0); required on both rates for ACEBench and for the probe",
+  "margin": 0.0,
+  "probe_sha256": "1d7d5f317a63454b55a93e8f8cd7055ea4ebd9d868a2b9e658eb4e00793256b5",
+  "inputs": {
+    "probe": [
+      "results\\ace-probe-b0.json",
+      "results\\ace-probe-ft.json",
+      "results\\ace-probe-b4.json"
+    ],
+    "acebench": [
+      "results\\acebench-m4.json",
+      "results\\acebench-m4-b4.json"
+    ]
+  },
+  "probe": {
+    "parsable_rate": {
+      "b0": 0.41,
+      "ft": 0.05,
+      "b4": 0.38
+    },
+    "sentence_rate": {
+      "b0": 0.48,
+      "ft": 0.04,
+      "b4": 0.0
+    }
+  },
+  "acebench": {
+    "parsable_rate": {
+      "b0": 0.8457317073170731,
+      "ft": 0.6737804878048781,
+      "b4": 0.7164634146341463
+    },
+    "sentence_rate": {
+      "b0": 0.49,
+      "ft": 0.08,
+      "b4": 0.19
+    }
+  },
+  "checks": {
+    "acebench:parsable_rate": {
+      "rates": {
+        "b0": 0.8457317073170731,
+        "ft": 0.6737804878048781,
+        "b4": 0.7164634146341463
+      },
+      "b0_gap": 0.12926829268292683,
+      "ft_b4_distance": 0.04268292682926822,
+      "b0_above": true,
+      "ft_b4_close": true,
+      "holds": true
+    },
+    "acebench:sentence_rate": {
+      "rates": {
+        "b0": 0.49,
+        "ft": 0.08,
+        "b4": 0.19
+      },
+      "b0_gap": 0.3,
+      "ft_b4_distance": 0.11,
+      "b0_above": true,
+      "ft_b4_close": true,
+      "holds": true
+    },
+    "probe:parsable_rate": {
+      "rates": {
+        "b0": 0.41,
+        "ft": 0.05,
+        "b4": 0.38
+      },
+      "b0_gap": 0.02999999999999997,
+      "ft_b4_distance": 0.33,
+      "b0_above": true,
+      "ft_b4_close": false,
+      "holds": false
+    },
+    "probe:sentence_rate": {
+      "rates": {
+        "b0": 0.48,
+        "ft": 0.04,
+        "b4": 0.0
+      },
+      "b0_gap": 0.44,
+      "ft_b4_distance": 0.04,
+      "b0_above": true,
+      "ft_b4_close": true,
+      "holds": true
+    }
+  },
+  "usable": false,
+  "verdict": "probe unusable: the ordering fails on probe:parsable_rate"
+}

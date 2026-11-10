@@ -1,0 +1,6 @@
+<｜start▁of▁sentence｜><|System|>
+you are a helpful assistant.## Tools
+You have access to the following functions:
+<tools>
+{"name": "book_table", "description": "Book a table at a restaurant.", "parameters": {"type": "object", "properties": {"restaurant": {"type": "object", "properties": {"name": {"type": "string"}, "city": {"type": "string"}}}, "party": {"type": "object", "properties": {"adults": {"type": "integer"}, "children": {"type": "array", "items": {"type": "object", "properties": {"age": {"type": "integer"}}}}}}, "time": {"type": "string"}, "requests": {"type": "array", "items": {"type": "string"}}}, "required": ["restaurant", "party", "time"]}}
+</tools><｜end▁of▁sentence｜><｜start▁of▁sentence｜><|User|>Book a table at Café de Flore in Paris for two adults and a five-year-old at 19:30, by the window, with a high chair.<｜end▁of▁sentence｜><｜start▁of▁sentence｜><|Bot|></think>

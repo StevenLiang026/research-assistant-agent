@@ -1,0 +1,427 @@
+{
+  "run": "runs/train/ft3",
+  "system": "ft",
+  "lora_scale": 1.0,
+  "rule": "The checkpoint with the highest mean single-step success on the development set over the runs s0, s1 (the mean of their successes / n, compared exactly); a tie goes to the later step (the M3 plan, default 1, over the mean of the runs). The chosen checkpoint's development score is optimistically biased: it was chosen on that set. With several sets (item_sets), the development set is their union: a run's successes and n are summed over the sets.",
+  "item_sets": [
+    {
+      "path": "data/eval/dev.jsonl",
+      "sha256": "030586e55fb230e0b4d68038c5580d311fbeb80dad6ce474a9b57cb0db524763"
+    },
+    {
+      "path": "data/eval/v2/dev-v2.jsonl",
+      "sha256": "a61cff681c65a33666f78f97f74c0e95da4663c652cbd363230d3d833527c9d0"
+    }
+  ],
+  "base_model": "models/Nanbeige4.1-3B-Q8_0.gguf",
+  "server_args": [
+    "-m",
+    "models/Nanbeige4.1-3B-Q8_0.gguf",
+    "-ngl",
+    "99",
+    "-c",
+    "8192",
+    "--jinja",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "8080",
+    "--cache-ram",
+    "0",
+    "--lora",
+    "<checkpoint gguf>",
+    "--lora-init-without-apply",
+    "-np",
+    "1"
+  ],
+  "server_slots": 1,
+  "git_commit": "a4dac8018c5b49954f8871ae19a41e0d77b08851",
+  "git_dirty": true,
+  "partial": true,
+  "checkpoints_listed": [
+    1308,
+    1635,
+    1962,
+    2289,
+    2614
+  ],
+  "variants": [
+    {
+      "name": "s0",
+      "args": [
+        "--mode",
+        "think",
+        "--seed",
+        "0",
+        "--reasoning-budget",
+        "1280",
+        "--signals"
+      ]
+    },
+    {
+      "name": "s1",
+      "args": [
+        "--mode",
+        "think",
+        "--seed",
+        "1",
+        "--reasoning-budget",
+        "1280",
+        "--signals"
+      ]
+    }
+  ],
+  "selection": {
+    "metric": "mean",
+    "variants": [
+      "s0",
+      "s1"
+    ]
+  },
+  "checkpoints": [
+    {
+      "step": 1308,
+      "gguf": "runs/train/ft3/gguf/checkpoint-1308-f16.gguf",
+      "sha256": "937b20f81a7821328bb69bbd1cd2b08d1314e5d10c8217f67037a08c8239fb2a",
+      "n": 276,
+      "successes": 210.5,
+      "rate": 0.7626811594202898,
+      "server_build": "b11349-fb4b2737a",
+      "variants": {
+        "s0": {
+          "n": 276,
+          "successes": 208,
+          "rate": 0.7536231884057971,
+          "statuses": {
+            "ok": 276
+          },
+          "sets": {
+            "data/eval/dev.jsonl": {
+              "n": 150,
+              "successes": 116,
+              "rate": 0.7733333333333333,
+              "statuses": {
+                "ok": 150
+              },
+              "records": "runs/eval/select-ft3/dev/checkpoint-1308.s0.jsonl"
+            },
+            "data/eval/v2/dev-v2.jsonl": {
+              "n": 126,
+              "successes": 92,
+              "rate": 0.7301587301587301,
+              "statuses": {
+                "ok": 126
+              },
+              "records": "runs/eval/select-ft3/dev-v2/checkpoint-1308.s0.jsonl"
+            }
+          }
+        },
+        "s1": {
+          "n": 276,
+          "successes": 213,
+          "rate": 0.7717391304347826,
+          "statuses": {
+            "ok": 276
+          },
+          "sets": {
+            "data/eval/dev.jsonl": {
+              "n": 150,
+              "successes": 114,
+              "rate": 0.76,
+              "statuses": {
+                "ok": 150
+              },
+              "records": "runs/eval/select-ft3/dev/checkpoint-1308.s1.jsonl"
+            },
+            "data/eval/v2/dev-v2.jsonl": {
+              "n": 126,
+              "successes": 99,
+              "rate": 0.7857142857142857,
+              "statuses": {
+                "ok": 126
+              },
+              "records": "runs/eval/select-ft3/dev-v2/checkpoint-1308.s1.jsonl"
+            }
+          }
+        }
+      }
+    },
+    {
+      "step": 1635,
+      "gguf": "runs/train/ft3/gguf/checkpoint-1635-f16.gguf",
+      "sha256": "0665d4c2ce29112c246e5c0a50f451224d670813f23ec66f08a424380a6d7237",
+      "n": 276,
+      "successes": 222,
+      "rate": 0.8043478260869565,
+      "server_build": "b11349-fb4b2737a",
+      "variants": {
+        "s0": {
+          "n": 276,
+          "successes": 220,
+          "rate": 0.7971014492753623,
+          "statuses": {
+            "ok": 276
+          },
+          "sets": {
+            "data/eval/dev.jsonl": {
+              "n": 150,
+              "successes": 122,
+              "rate": 0.8133333333333334,
+              "statuses": {
+                "ok": 150
+              },
+              "records": "runs/eval/select-ft3/dev/checkpoint-1635.s0.jsonl"
+            },
+            "data/eval/v2/dev-v2.jsonl": {
+              "n": 126,
+              "successes": 98,
+              "rate": 0.7777777777777778,
+              "statuses": {
+                "ok": 126
+              },
+              "records": "runs/eval/select-ft3/dev-v2/checkpoint-1635.s0.jsonl"
+            }
+          }
+        },
+        "s1": {
+          "n": 276,
+          "successes": 224,
+          "rate": 0.8115942028985508,
+          "statuses": {
+            "ok": 276
+          },
+          "sets": {
+            "data/eval/dev.jsonl": {
+              "n": 150,
+              "successes": 120,
+              "rate": 0.8,
+              "statuses": {
+                "ok": 150
+              },
+              "records": "runs/eval/select-ft3/dev/checkpoint-1635.s1.jsonl"
+            },
+            "data/eval/v2/dev-v2.jsonl": {
+              "n": 126,
+              "successes": 104,
+              "rate": 0.8253968253968254,
+              "statuses": {
+                "ok": 126
+              },
+              "records": "runs/eval/select-ft3/dev-v2/checkpoint-1635.s1.jsonl"
+            }
+          }
+        }
+      }
+    },
+    {
+      "step": 1962,
+      "gguf": "runs/train/ft3/gguf/checkpoint-1962-f16.gguf",
+      "sha256": "6b7536679c4d978925d47f56b8e45642e2740d50e33fac683d8d0605a9fc2457",
+      "n": 276,
+      "successes": 212,
+      "rate": 0.7681159420289855,
+      "server_build": "b11349-fb4b2737a",
+      "variants": {
+        "s0": {
+          "n": 276,
+          "successes": 214,
+          "rate": 0.7753623188405797,
+          "statuses": {
+            "ok": 276
+          },
+          "sets": {
+            "data/eval/dev.jsonl": {
+              "n": 150,
+              "successes": 116,
+              "rate": 0.7733333333333333,
+              "statuses": {
+                "ok": 150
+              },
+              "records": "runs/eval/select-ft3/dev/checkpoint-1962.s0.jsonl"
+            },
+            "data/eval/v2/dev-v2.jsonl": {
+              "n": 126,
+              "successes": 98,
+              "rate": 0.7777777777777778,
+              "statuses": {
+                "ok": 126
+              },
+              "records": "runs/eval/select-ft3/dev-v2/checkpoint-1962.s0.jsonl"
+            }
+          }
+        },
+        "s1": {
+          "n": 276,
+          "successes": 210,
+          "rate": 0.7608695652173914,
+          "statuses": {
+            "ok": 276
+          },
+          "sets": {
+            "data/eval/dev.jsonl": {
+              "n": 150,
+              "successes": 114,
+              "rate": 0.76,
+              "statuses": {
+                "ok": 150
+              },
+              "records": "runs/eval/select-ft3/dev/checkpoint-1962.s1.jsonl"
+            },
+            "data/eval/v2/dev-v2.jsonl": {
+              "n": 126,
+              "successes": 96,
+              "rate": 0.7619047619047619,
+              "statuses": {
+                "ok": 126
+              },
+              "records": "runs/eval/select-ft3/dev-v2/checkpoint-1962.s1.jsonl"
+            }
+          }
+        }
+      }
+    },
+    {
+      "step": 2289,
+      "gguf": "runs/train/ft3/gguf/checkpoint-2289-f16.gguf",
+      "sha256": "8409cd8ca80815a83ae4d9b34a57471797b627056c5f41bca121148546309665",
+      "n": 276,
+      "successes": 216,
+      "rate": 0.782608695652174,
+      "server_build": "b11349-fb4b2737a",
+      "variants": {
+        "s0": {
+          "n": 276,
+          "successes": 219,
+          "rate": 0.7934782608695652,
+          "statuses": {
+            "ok": 276
+          },
+          "sets": {
+            "data/eval/dev.jsonl": {
+              "n": 150,
+              "successes": 118,
+              "rate": 0.7866666666666666,
+              "statuses": {
+                "ok": 150
+              },
+              "records": "runs/eval/select-ft3/dev/checkpoint-2289.s0.jsonl"
+            },
+            "data/eval/v2/dev-v2.jsonl": {
+              "n": 126,
+              "successes": 101,
+              "rate": 0.8015873015873016,
+              "statuses": {
+                "ok": 126
+              },
+              "records": "runs/eval/select-ft3/dev-v2/checkpoint-2289.s0.jsonl"
+            }
+          }
+        },
+        "s1": {
+          "n": 276,
+          "successes": 213,
+          "rate": 0.7717391304347826,
+          "statuses": {
+            "ok": 276
+          },
+          "sets": {
+            "data/eval/dev.jsonl": {
+              "n": 150,
+              "successes": 117,
+              "rate": 0.78,
+              "statuses": {
+                "ok": 150
+              },
+              "records": "runs/eval/select-ft3/dev/checkpoint-2289.s1.jsonl"
+            },
+            "data/eval/v2/dev-v2.jsonl": {
+              "n": 126,
+              "successes": 96,
+              "rate": 0.7619047619047619,
+              "statuses": {
+                "ok": 126
+              },
+              "records": "runs/eval/select-ft3/dev-v2/checkpoint-2289.s1.jsonl"
+            }
+          }
+        }
+      }
+    },
+    {
+      "step": 2614,
+      "gguf": "runs/train/ft3/gguf/checkpoint-2614-f16.gguf",
+      "sha256": "69f1d644cab301ad22ac40a44dbd661e8f39c8fcfc974a467aefc0c0ea8e236d",
+      "n": 276,
+      "successes": 214.5,
+      "rate": 0.7771739130434783,
+      "server_build": "b11349-fb4b2737a",
+      "variants": {
+        "s0": {
+          "n": 276,
+          "successes": 216,
+          "rate": 0.782608695652174,
+          "statuses": {
+            "ok": 276
+          },
+          "sets": {
+            "data/eval/dev.jsonl": {
+              "n": 150,
+              "successes": 116,
+              "rate": 0.7733333333333333,
+              "statuses": {
+                "ok": 150
+              },
+              "records": "runs/eval/select-ft3/dev/checkpoint-2614.s0.jsonl"
+            },
+            "data/eval/v2/dev-v2.jsonl": {
+              "n": 126,
+              "successes": 100,
+              "rate": 0.7936507936507936,
+              "statuses": {
+                "ok": 126
+              },
+              "records": "runs/eval/select-ft3/dev-v2/checkpoint-2614.s0.jsonl"
+            }
+          }
+        },
+        "s1": {
+          "n": 276,
+          "successes": 213,
+          "rate": 0.7717391304347826,
+          "statuses": {
+            "ok": 276
+          },
+          "sets": {
+            "data/eval/dev.jsonl": {
+              "n": 150,
+              "successes": 120,
+              "rate": 0.8,
+              "statuses": {
+                "ok": 150
+              },
+              "records": "runs/eval/select-ft3/dev/checkpoint-2614.s1.jsonl"
+            },
+            "data/eval/v2/dev-v2.jsonl": {
+              "n": 126,
+              "successes": 93,
+              "rate": 0.7380952380952381,
+              "statuses": {
+                "ok": 126
+              },
+              "records": "runs/eval/select-ft3/dev-v2/checkpoint-2614.s1.jsonl"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "final_adapter": null,
+  "chosen": {
+    "step": 1635,
+    "gguf": "runs/train/ft3/gguf/checkpoint-1635-f16.gguf",
+    "sha256": "0665d4c2ce29112c246e5c0a50f451224d670813f23ec66f08a424380a6d7237",
+    "n": 276,
+    "successes": 222,
+    "rate": 0.8043478260869565
+  }
+}

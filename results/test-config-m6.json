@@ -1,0 +1,115 @@
+{
+  "_doc": {
+    "milestone": "The stage the opens are logged under and the routed calls' spending is booked under (docs/plan.md, 里程碑; docs/m6-计划.md): M6, the third and last open.",
+    "purpose": "What the opens are for. Each open's line in data/eval/test-access.jsonl and data/eval/e2e-test-access.jsonl states it, followed by the git commit and this file's SHA-256.",
+    "systems": "The systems the session runs, from ft, b0, b1, ftr, ft2, ft2r, b4 and b2, in that order whatever the list's. M6 runs ft2 (FT2) then ft2r (FT2+R2) on the server with the ft2 adapter; FT, B2 and FT+R are not run again (reference).",
+    "adapters": "The adapter of the server of every local system run: ft2 for ft2 and ft2r.",
+    "adapters.<system>": "One adapter: its GGUF, the GGUF's SHA-256 and the selection that chose it.",
+    "adapters.<system>.gguf": "The GGUF the system's llama-server loads, relative to the repository root.",
+    "adapters.<system>.sha256": "The GGUF's SHA-256, 64 lower-case hex digits; the preflight refuses a file with another, and the routing file must record the same.",
+    "adapters.<system>.selection": "The checkpoint selection whose chosen GGUF and SHA-256 these must be, relative to the repository root.",
+    "server": "The llama-server of the local systems (research_agent.llm.server.LocalServer: -ngl 99, --jinja, 127.0.0.1, no prompt cache, one slot: scripts/run_test.py SLOTS), as in M3 and M5.",
+    "server.model": "The base model GGUF, relative to the repository root.",
+    "server.port": "The port the server listens on; nothing may answer on it before it starts.",
+    "server.ctx_size": "The context size (-c): 8192, as in every development, M3 and M5 run.",
+    "server.timeout_s": "Seconds the server may take to print its ready line and answer /health.",
+    "server.llama_cpp_build": "The build_info the server's /props must report (b11349, as in M3 to M5).",
+    "tokenizer": "The model folder whose chat template renders the local prompts and counts the context, relative to the repository root.",
+    "b2": "The spending of the cloud model: here ft2r's routed calls, booked under M6.",
+    "b2.max_cost_rmb": "What each spending system's single-step and end-to-end runs together may spend, in RMB (5, as in M3 and M5); the preflight checks that the milestone's budget can take it.",
+    "e2e": "The end-to-end runs.",
+    "e2e.seed": "The seed of every task's run (42, as in M3 and M5).",
+    "e2e.today": "The date the tasks run on, YYYY-MM-DD; null for the corpus recording date, as in M3 and M5.",
+    "e2e_routing": "How the routed system routes a multi-step task: stepwise (docs/m6-计划.md §3.3 C7: every step decided on its own, a final text answer never routed), unlike M4 and M5's sticky; the end-to-end results are descriptive only.",
+    "statistics": "The comparison statistics, as in M3 and M5.",
+    "statistics.seed": "The seed of the paired, the cluster and the stratified bootstrap.",
+    "statistics.resamples": "The resamples of each bootstrap.",
+    "routing": "ft2r's frozen routing configuration (scripts/route_curve.py under the cost objective, docs/m6-计划.md §3.3; validated on data/eval/dev-ext.jsonl by scripts/route_validate.py); required when ft2r runs.",
+    "routing.path": "The routing file, relative to the repository root.",
+    "routing.sha256": "Its SHA-256. The preflight also checks its dev_sha256 against data/eval/dev.jsonl, its adapter_sha256 against adapters.ft2, its rules and chosen policy; the dry run checks ft2r's routed count and successes on the development set against its chosen point.",
+    "reference": "The systems of earlier milestones that the comparisons use without running them, their records scored in this session (the development records in a dry run).",
+    "reference.milestone": "M3, the block's milestone: its completion markers in data/eval/test-completions.jsonl vouch for the results files of ft and b2; ftr carries its own milestone, M5, whose markers vouch for its file.",
+    "reference.systems.<system>": "One reference system: results, its results file of that milestone; records, the per-item records that file was scored from, with records_sha256; dev_records, its development records, with dev_records_sha256; milestone, when it is not the block's.",
+    "comparisons": "The preregistered hypotheses (docs/m6-预登记.md): H1 by McNemar and H3 by the stratified one-sided non-inferiority bootstrap, their two p-values Holm-adjusted together in this order; the third and fourth rows (FT2+R2 against B2, H2 withdrawn before the open, and against FT+R) are descriptive, outside the family, with no p.",
+    "comparisons[].name": "The comparison's name; results/numbers.json keys its numbers compare.test-m6.<name>.*.",
+    "comparisons[].a": "The system compared: the difference is a's success rate minus b's.",
+    "comparisons[].b": "The system a is compared with.",
+    "comparisons[].test": "mcnemar: the exact McNemar test on the discordant items (H1).",
+    "comparisons[].acebench": "H3: the raw ACEBench folders of a (FT2, this milestone) and b (B0, M4), read answer by answer and compared by the stratified bootstrap over the 30 (language, category) strata, with the margin.",
+    "comparisons[].descriptive": "true: compared like a tested row (difference, intervals, discordant counts) but outside the Holm family, with no p.",
+    "gpu": "The GPU before and during the session (nvidia-smi).",
+    "gpu.idle_max_mib": "The most GPU memory in use, in MiB, that still counts as idle at the preflight.",
+    "gpu.sample_ms": "The interval of the GPU sampling beside the server, in milliseconds."
+  },
+  "milestone": "M6",
+  "purpose": "M6: FT2 against FT (H1) and FT2 non-inferior to B0 on ACEBench (H3) on the locked single-step and end-to-end test sets, as preregistered in docs/m6-预登记.md; H2 (FT2+R2 against B2) withdrawn before the open after gate (iii) failed on dev-ext, FT2+R2 descriptive; the third and last open",
+  "systems": ["ft2", "ft2r"],
+  "adapters": {
+    "ft2": {
+      "gguf": "runs/train/ft2/gguf/checkpoint-1644-f16.gguf",
+      "sha256": "1d5a7155873edfbd4dd45ace44266d4cbf02468bd72f9851af154a200bbd95f7",
+      "selection": "results/checkpoint-selection-ft2.json"
+    }
+  },
+  "server": {
+    "model": "models/Qwen3-1.7B-Q8_0.gguf",
+    "port": 8080,
+    "ctx_size": 8192,
+    "timeout_s": 120,
+    "llama_cpp_build": "b11349-fb4b2737a"
+  },
+  "tokenizer": "models/Qwen3-1.7B",
+  "b2": {
+    "max_cost_rmb": 5.0
+  },
+  "e2e": {
+    "seed": 42,
+    "today": null
+  },
+  "e2e_routing": "stepwise",
+  "statistics": {
+    "seed": 42,
+    "resamples": 10000
+  },
+  "routing": {
+    "path": "results/routing-m6.json",
+    "sha256": "ef56742a0c9b5e183009b88f29ae84df03258b157ffcfafa1d23dc2b45d3b623"
+  },
+  "reference": {
+    "milestone": "M3",
+    "systems": {
+      "b2": {
+        "results": "results/test-m3-b2.json",
+        "records": "runs/test-m3/open-1/b2.jsonl",
+        "records_sha256": "a60e30fc1fdd8054c16014aa8e3aaa85b922681c87364e77e6d468ff3228c960",
+        "dev_records": "runs/eval/dev-b2-m3.jsonl",
+        "dev_records_sha256": "5141f7e149455631cfad5b86e307e4e4cce6c1d2b2095ac9c3024b30e8e2290a"
+      },
+      "ft": {
+        "results": "results/test-m3-ft.json",
+        "records": "runs/test-m3/open-1/ft.jsonl",
+        "records_sha256": "f39269d811e45264f2e529db2e36d422d16338f233ff1d088a01bb845aa8c11e",
+        "dev_records": "runs/eval/select-ft/checkpoint-1668.jsonl",
+        "dev_records_sha256": "3d57386c9dea4b164e9e57d347b839d245c767b87efb4bf82a4056073ce670c0"
+      },
+      "ftr": {
+        "milestone": "M5",
+        "results": "results/test-m5-ftr.json",
+        "records": "runs/test-m5/open-2/ftr.jsonl",
+        "records_sha256": "eb271a3514e9164d2f605c8e54df2ad6cc910f4857c351d63f3cc9ce1e51dcd0",
+        "dev_records": "runs/m4/dev-ftr-live.jsonl",
+        "dev_records_sha256": "cb23f2d24c8e898bbd1381d67d0bba5d5b820b6dd03821cca1e874dbd726d0f4"
+      }
+    }
+  },
+  "comparisons": [
+    {"name": "ft2-vs-ft", "a": "ft2", "b": "ft", "test": "mcnemar"},
+    {"name": "ft2-vs-b0-acebench", "acebench": {"a": "runs/acebench/m6/ft", "b": "runs/acebench/m4/b0", "margin": 0.02}},
+    {"name": "ft2r-vs-b2", "a": "ft2r", "b": "b2", "descriptive": true},
+    {"name": "ft2r-vs-ftr", "a": "ft2r", "b": "ftr", "descriptive": true}
+  ],
+  "gpu": {
+    "idle_max_mib": 1500,
+    "sample_ms": 200
+  }
+}

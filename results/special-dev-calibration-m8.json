@@ -1,0 +1,1555 @@
+{
+  "calibration": "dev set B against ACEBench's failure pattern (docs/m8-计划.md WP2, 校准)",
+  "rules": {
+    "K1": "B0's lenient special rate (incorrect, missing and irrelevant items, both languages pooled) minus FT's is at least 5 percentage points",
+    "K2": "FT's share of the incorrect items answered by calling with the invalid value (a call found, loose ones included, that keeps an invalid value: called_with_invalid) or with the missing case's sentence in place of the item's own (a missing sentence of the set stands, the item's sentence does not) is above B0's; the broad count (failures called and wrong_case: any call, any other case's sentence) is recorded beside it and decides nothing",
+    "K3": "FT's count of altered verbatim values on the valid items (zh_altered) is above B0's",
+    "PG1": "PG1 when K1 holds: dev set B's lenient special rate of a checkpoint is at least B0's plus 5 points; when K1 does not hold: its strict special rate is at least 0.75",
+    "scoring": {
+      "sentence": "An answer holds a sentence when the sentence's fixed words (expected.fixed) stand in it in order, each after the one before, as plain case-sensitive substrings. Of the placements, the shortest is taken, preferring, in this order, one whose words neither cut into an ASCII word (its letters, digits and underscores, and a dot between two of them: date.name, 2.5) nor overlap an occurrence of a value or a name the sentence is to be filled with and that lies on one line, then one of the first two kinds on several lines, then one whose words merely avoid the fillers, then any. Its slots are the text between consecutive fixed words, and its edge slots, when the template has them, the text on the line before the first fixed word (from the last full stop) and after the last one (to the first full stop); the rest of the answer, besides the fixed words and those full stops, is outside the sentence. A set's sentences are read from its refusal items by family and case, every fixed-word list of a family kept (a family written in several placeholder styles has one per style), and no fixed-word list may stand for two cases.",
+      "names": "A parameter or a function is named when its name stands on its own: no ASCII letter, digit, underscore or dot right before it, and neither such a character nor a dot followed by one right after it (address in address.city is not named). A value appears when it is a plain substring.",
+      "placeholders": "The template is the shortest placement of the sentence's fixed words on one line of the system message, preferring one whose words do not cut into an ASCII word. Its slots, stripped, are its placeholders, and so are its edge placeholders: a token right before its first or right after its last fixed word, quotes and blanks aside, written as (x), <x>, {x}, [x], {{x}}, <<x>>, ${x}, $x, %x%, __x__, a full-width bracket pair or a word in capitals. An answer leaves a placeholder when it holds verbatim, outside the values and names it is filled with, an edge placeholder or a slot that shows itself as one (it holds a punctuation mark or a symbol, or it is written in capitals), or when a slot that is a plain word fills the same slot of the answer's sentence alone (so a plain-word placeholder that is also the filler of its own slot reads as left: the items do not say which filler goes to which slot).",
+      "slots": "Every slot of a template, its edge slots included, holds one filler, told by its placeholder: in an incorrect sentence the slot whose placeholder names a value ('value' in any letter case, or 值) holds the invalid values and the other slot their parameters; in a missing sentence the slot whose placeholder names a function ('func', 'api' as a word, 函数 or 接口) holds the function (api) and the other slot the missing parameters; an irrelevant sentence has no slot. Several values or names in one slot are joined by ', ', as research_agent.data.special_mix writes its answers.",
+      "calls": "Exact call (valid items): the answer, stripped and with at most one surrounding Markdown code fence removed, parses whole in the item's call_format with scripts/render_format_data.py's parser, and its calls equal the expected ones as a multiset after normalisation (research_agent.eval.ace_probe.same_calls; the items carry no tool schema, so no default is filled in; calls it cannot compare are not the expected ones). A call is found in an answer when the answer so read parses in any of the three notations or as a Python list of calls [f(k=v), ...] (each call read from its own text), when it holds a <tool_call> block, or when a fenced block, a line, a JSON array or a YAML list (from a line '- name:' to the end of its block) inside it parses, the YAML list whole or else item by item (the calls of the items that parse: a greedy loop of calls that the answer budget cuts leaves its last item unfinished); otherwise loosely (the notation 'loose'): a JSON object with a name and arguments or parameters (an object, or the JSON text of one), or an array holding such objects, anywhere in the answer, fenced or not, a function definition (its parameters a schema with properties) aside; a Python call with at least one literal argument, positional or keyword, of one of the item's functions (the names its system message gives functions, by \"name\" or by a ### heading, and those its expectation names), anywhere; a YAML block from a line '- name:' or 'name:' to the end of its block (its indented lines, and its list items, or its keys up to the next 'name:') holding such objects, read whole or else item by item, with PyYAML's safe loader when the block nests no deeper than MAX_YAML_DEPTH levels (deeper, PyYAML's C loader ends the process, and no call nests so deep), dates left as text, or without PyYAML with the subset after its bare scalars are quoted. What a parser cannot read (nested deeper than it goes, an integer too long to write) holds no call for it. Every block, line and \"name\" key is read once, a YAML block twice at most, so the search is linear in the answer.",
+      "strict": "Refusal items (the special kinds and priority), by expected.case: no call is found (CALL_RULE), and the answer, its surrounding whitespace aside and one sentence mark at its end (. ! ? or the full-width 。！？) in place of the sentence's own final mark or none, is exactly the item's sentence with every slot filled (SLOT_RULE): the fixed words in order and around them only the slots, whitespace where a slot meets a fixed word aside, each slot holding its filler bare or in its placeholder's own brackets when the fixed words leave them out. Incorrect: the value slot holds exactly the expected values and the parameter slot exactly the expected parameters, both in one order that keeps each value with its parameter; missing: the function slot holds the api and the parameter slot exactly the expected top-level parameters, in any order; irrelevant: the sentence alone. So no other text, no second sentence and no leftover placeholder. Anything outside the sentence (SENTENCE_RULE) but whitespace, a mark or a symbol as much as a word, is counted as extra_text too, the one sentence mark the answer may end with aside. Where the sentence is looked for, the answer's end is read the same way.",
+      "lenient": "Refusal items: ACEBench's substring rule (its eval_main.py, special_eval, which looks for a phrase and then for the values or the names, never for brackets) with the item's sentence: its fixed words, each stripped of the bracket characters at its ends that belong to the placeholders beside it (closing ones at its start, opening ones at its end), the last one of the sentence's final mark too, a word left empty skipped and the whitespace collapsed (lenient_words), stand in the answer, its whitespace collapsed, in order; and incorrect: every expected value stands anywhere in the answer; missing: the function (api) and every expected parameter; irrelevant: nothing more. Plain case-sensitive substrings, as ACEBench's; a call or a placeholder in the answer does not matter.",
+      "failures": "Refusal items, the first that applies, none when strict: no_answer (the run recorded none), empty, called (a call is found, a loose one included), wrong_case (the item's sentence does not stand in the answer, another case's sentence of the set does: of any family, in any of its styles), no_sentence, placeholder_left, wrong_values (incorrect: the value slot does not hold the values), wrong_params (the parameter slot does not hold the parameters, kept with their values; missing: or the function slot not the api), extra_text (the sentence is filled right, but the answer is not that sentence alone: other text, a mark or a symbol, a second sentence). Valid items, none when the call is exact: no_answer, empty, zh_altered or wrong_call (the answer parses whole in call_format), with_text (a call in call_format inside other text), other_notation (a call in another notation, a loose one included), refused (no call, and a refusal sentence of a known family stands in the answer: FALSE_REFUSAL_RULE), no_call (no call, other text). Either kind: scoring_error, the scorer failed on the item, which then counts as neither strict nor lenient, nor exact nor refused. zh_altered, for a valid item with verbatim values whose answer holds a call (a loose one included): some verbatim value is inside no argument value of the calls, both read with research_agent.normalize.normalize_text (the first MAX_VALUES values of the calls read; the same containment tells called_with_invalid).",
+      "false_refusals": "A valid item is refused (false_refusal) when its answer holds no call (CALL_RULE, loose calls included), whatever its wording. Its form (refusal_form): 'sentence' when a refusal sentence of a known family stands in it (one of the set's, or of research_agent.data.special_mix.FAMILIES in any placeholder style: training_sentences), 'empty' when it is empty or blank, 'other_text' otherwise. An answer the run did not record (no_answer) is no refusal. A summary's false_refusals counts every form, false_refusals_by each."
+    }
+  },
+  "items": {
+    "path": "data/eval/special-dev-b.jsonl",
+    "sha256": "9a7e912bbce9008026f64d902a95cdef6f13b77842d21931c5d202e10e7cf1f5",
+    "locked": true,
+    "n": 260
+  },
+  "runs": {
+    "b0": {
+      "path": "runs/m8/special-dev/b-b0.jsonl",
+      "sha256": "1ba4b207fec1ba0c5d91908564e617a912673888f59d36812469005d14ccb902",
+      "manifest": "runs/m8/special-dev/b-b0.manifest.json",
+      "family": "nanbeige4.1-3b",
+      "adapters": [
+        {
+          "id": 0,
+          "path": "runs/train/ft3/gguf/checkpoint-1635-f16.gguf",
+          "sha256": "0665d4c2ce29112c246e5c0a50f451224d670813f23ec66f08a424380a6d7237"
+        }
+      ],
+      "errors": 0,
+      "scoring_errors": 0
+    },
+    "ft": {
+      "path": "runs/m8/special-dev/b-ft3.jsonl",
+      "sha256": "ac64dcdd67b692477a372103536cc4c3bba315a87cc1999ab7503bb9dc172123",
+      "manifest": "runs/m8/special-dev/b-ft3.manifest.json",
+      "family": "nanbeige4.1-3b",
+      "adapters": [
+        {
+          "id": 0,
+          "path": "runs/train/ft3/gguf/checkpoint-1635-f16.gguf",
+          "sha256": "0665d4c2ce29112c246e5c0a50f451224d670813f23ec66f08a424380a6d7237"
+        }
+      ],
+      "errors": 0,
+      "scoring_errors": 0
+    }
+  },
+  "K1": {
+    "b0": 0.6866666666666666,
+    "ft": 0.6866666666666666,
+    "difference": 0.0,
+    "threshold": 0.05,
+    "holds": false
+  },
+  "K2": {
+    "b0": {
+      "n": 50,
+      "count": 4,
+      "share": 0.08,
+      "called_with_invalid": 4,
+      "missing_sentence": 0,
+      "broad": {
+        "count": 9,
+        "share": 0.18,
+        "called": 9,
+        "wrong_case": 0
+      }
+    },
+    "ft": {
+      "n": 50,
+      "count": 6,
+      "share": 0.12,
+      "called_with_invalid": 6,
+      "missing_sentence": 0,
+      "broad": {
+        "count": 10,
+        "share": 0.2,
+        "called": 10,
+        "wrong_case": 0
+      }
+    },
+    "holds": true
+  },
+  "K3": {
+    "b0": 0,
+    "ft": 0,
+    "holds": false
+  },
+  "pg1_fallback": true,
+  "pg1": {
+    "basis": "strict",
+    "b0_lenient_special": 0.6866666666666666,
+    "rule": "strict special rate >= 0.75"
+  },
+  "summaries": {
+    "b0": {
+      "n": 260,
+      "scoring_errors": 0,
+      "special": {
+        "n": 150,
+        "strict": 26,
+        "strict_rate": 0.17333333333333334,
+        "lenient": 103,
+        "lenient_rate": 0.6866666666666666,
+        "extra_text": 32,
+        "called_with_invalid": 4,
+        "scoring_errors": 0,
+        "failures": {
+          "no_answer": 0,
+          "empty": 0,
+          "called": 13,
+          "wrong_case": 2,
+          "no_sentence": 71,
+          "placeholder_left": 11,
+          "wrong_values": 4,
+          "wrong_params": 2,
+          "extra_text": 21,
+          "scoring_error": 0
+        }
+      },
+      "priority": {
+        "n": 20,
+        "strict": 0,
+        "strict_rate": 0.0,
+        "lenient": 14,
+        "lenient_rate": 0.7,
+        "extra_text": 3,
+        "called_with_invalid": 0,
+        "scoring_errors": 0,
+        "failures": {
+          "no_answer": 0,
+          "empty": 0,
+          "called": 4,
+          "wrong_case": 0,
+          "no_sentence": 15,
+          "placeholder_left": 1,
+          "wrong_values": 0,
+          "wrong_params": 0,
+          "extra_text": 0,
+          "scoring_error": 0
+        }
+      },
+      "valid": {
+        "n": 90,
+        "exact": 58,
+        "exact_rate": 0.6444444444444445,
+        "false_refusals": 11,
+        "false_refusals_by": {
+          "sentence": 5,
+          "other_text": 6,
+          "empty": 0
+        },
+        "zh_altered": 0,
+        "zh_checked": 14,
+        "verbatim_items": 18,
+        "scoring_errors": 0,
+        "failures": {
+          "no_answer": 0,
+          "empty": 0,
+          "refused": 5,
+          "with_text": 4,
+          "other_notation": 8,
+          "zh_altered": 0,
+          "wrong_call": 9,
+          "no_call": 6,
+          "scoring_error": 0
+        }
+      },
+      "kinds": {
+        "incorrect": {
+          "n": 50,
+          "strict": 1,
+          "strict_rate": 0.02,
+          "lenient": 33,
+          "lenient_rate": 0.66,
+          "extra_text": 11,
+          "called_with_invalid": 4,
+          "scoring_errors": 0,
+          "failures": {
+            "no_answer": 0,
+            "empty": 0,
+            "called": 9,
+            "wrong_case": 0,
+            "no_sentence": 26,
+            "placeholder_left": 5,
+            "wrong_values": 4,
+            "wrong_params": 2,
+            "extra_text": 3,
+            "scoring_error": 0
+          }
+        },
+        "missing": {
+          "n": 50,
+          "strict": 1,
+          "strict_rate": 0.02,
+          "lenient": 28,
+          "lenient_rate": 0.56,
+          "extra_text": 3,
+          "called_with_invalid": 0,
+          "scoring_errors": 0,
+          "failures": {
+            "no_answer": 0,
+            "empty": 0,
+            "called": 4,
+            "wrong_case": 2,
+            "no_sentence": 37,
+            "placeholder_left": 6,
+            "wrong_values": 0,
+            "wrong_params": 0,
+            "extra_text": 0,
+            "scoring_error": 0
+          }
+        },
+        "irrelevant": {
+          "n": 50,
+          "strict": 24,
+          "strict_rate": 0.48,
+          "lenient": 42,
+          "lenient_rate": 0.84,
+          "extra_text": 18,
+          "called_with_invalid": 0,
+          "scoring_errors": 0,
+          "failures": {
+            "no_answer": 0,
+            "empty": 0,
+            "called": 0,
+            "wrong_case": 0,
+            "no_sentence": 8,
+            "placeholder_left": 0,
+            "wrong_values": 0,
+            "wrong_params": 0,
+            "extra_text": 18,
+            "scoring_error": 0
+          }
+        },
+        "priority": {
+          "n": 20,
+          "strict": 0,
+          "strict_rate": 0.0,
+          "lenient": 14,
+          "lenient_rate": 0.7,
+          "extra_text": 3,
+          "called_with_invalid": 0,
+          "scoring_errors": 0,
+          "failures": {
+            "no_answer": 0,
+            "empty": 0,
+            "called": 4,
+            "wrong_case": 0,
+            "no_sentence": 15,
+            "placeholder_left": 1,
+            "wrong_values": 0,
+            "wrong_params": 0,
+            "extra_text": 0,
+            "scoring_error": 0
+          }
+        },
+        "valid_verbatim": {
+          "n": 30,
+          "exact": 16,
+          "exact_rate": 0.5333333333333333,
+          "false_refusals": 4,
+          "false_refusals_by": {
+            "sentence": 3,
+            "other_text": 1,
+            "empty": 0
+          },
+          "zh_altered": 0,
+          "zh_checked": 14,
+          "verbatim_items": 18,
+          "scoring_errors": 0,
+          "failures": {
+            "no_answer": 0,
+            "empty": 0,
+            "refused": 3,
+            "with_text": 2,
+            "other_notation": 4,
+            "zh_altered": 0,
+            "wrong_call": 4,
+            "no_call": 1,
+            "scoring_error": 0
+          }
+        },
+        "valid_multiturn": {
+          "n": 30,
+          "exact": 22,
+          "exact_rate": 0.7333333333333333,
+          "false_refusals": 2,
+          "false_refusals_by": {
+            "sentence": 0,
+            "other_text": 2,
+            "empty": 0
+          },
+          "zh_altered": 0,
+          "zh_checked": 0,
+          "verbatim_items": 0,
+          "scoring_errors": 0,
+          "failures": {
+            "no_answer": 0,
+            "empty": 0,
+            "refused": 0,
+            "with_text": 2,
+            "other_notation": 1,
+            "zh_altered": 0,
+            "wrong_call": 3,
+            "no_call": 2,
+            "scoring_error": 0
+          }
+        },
+        "valid_nearmiss": {
+          "n": 30,
+          "exact": 20,
+          "exact_rate": 0.6666666666666666,
+          "false_refusals": 5,
+          "false_refusals_by": {
+            "sentence": 2,
+            "other_text": 3,
+            "empty": 0
+          },
+          "zh_altered": 0,
+          "zh_checked": 0,
+          "verbatim_items": 0,
+          "scoring_errors": 0,
+          "failures": {
+            "no_answer": 0,
+            "empty": 0,
+            "refused": 2,
+            "with_text": 0,
+            "other_notation": 3,
+            "zh_altered": 0,
+            "wrong_call": 2,
+            "no_call": 3,
+            "scoring_error": 0
+          }
+        }
+      },
+      "languages": {
+        "zh": {
+          "special": {
+            "n": 75,
+            "strict": 13,
+            "strict_rate": 0.17333333333333334,
+            "lenient": 55,
+            "lenient_rate": 0.7333333333333333,
+            "extra_text": 11,
+            "called_with_invalid": 1,
+            "scoring_errors": 0,
+            "failures": {
+              "no_answer": 0,
+              "empty": 0,
+              "called": 6,
+              "wrong_case": 1,
+              "no_sentence": 43,
+              "placeholder_left": 2,
+              "wrong_values": 0,
+              "wrong_params": 0,
+              "extra_text": 10,
+              "scoring_error": 0
+            }
+          },
+          "priority": {
+            "n": 10,
+            "strict": 0,
+            "strict_rate": 0.0,
+            "lenient": 8,
+            "lenient_rate": 0.8,
+            "extra_text": 0,
+            "called_with_invalid": 0,
+            "scoring_errors": 0,
+            "failures": {
+              "no_answer": 0,
+              "empty": 0,
+              "called": 1,
+              "wrong_case": 0,
+              "no_sentence": 9,
+              "placeholder_left": 0,
+              "wrong_values": 0,
+              "wrong_params": 0,
+              "extra_text": 0,
+              "scoring_error": 0
+            }
+          },
+          "valid": {
+            "n": 54,
+            "exact": 36,
+            "exact_rate": 0.6666666666666666,
+            "false_refusals": 10,
+            "false_refusals_by": {
+              "sentence": 5,
+              "other_text": 5,
+              "empty": 0
+            },
+            "zh_altered": 0,
+            "zh_checked": 14,
+            "verbatim_items": 18,
+            "scoring_errors": 0,
+            "failures": {
+              "no_answer": 0,
+              "empty": 0,
+              "refused": 5,
+              "with_text": 3,
+              "other_notation": 1,
+              "zh_altered": 0,
+              "wrong_call": 4,
+              "no_call": 5,
+              "scoring_error": 0
+            }
+          },
+          "kinds": {
+            "incorrect": {
+              "n": 25,
+              "strict": 0,
+              "strict_rate": 0.0,
+              "lenient": 16,
+              "lenient_rate": 0.64,
+              "extra_text": 1,
+              "called_with_invalid": 1,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 3,
+                "wrong_case": 0,
+                "no_sentence": 21,
+                "placeholder_left": 1,
+                "wrong_values": 0,
+                "wrong_params": 0,
+                "extra_text": 0,
+                "scoring_error": 0
+              }
+            },
+            "missing": {
+              "n": 25,
+              "strict": 0,
+              "strict_rate": 0.0,
+              "lenient": 16,
+              "lenient_rate": 0.64,
+              "extra_text": 0,
+              "called_with_invalid": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 3,
+                "wrong_case": 1,
+                "no_sentence": 20,
+                "placeholder_left": 1,
+                "wrong_values": 0,
+                "wrong_params": 0,
+                "extra_text": 0,
+                "scoring_error": 0
+              }
+            },
+            "irrelevant": {
+              "n": 25,
+              "strict": 13,
+              "strict_rate": 0.52,
+              "lenient": 23,
+              "lenient_rate": 0.92,
+              "extra_text": 10,
+              "called_with_invalid": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 0,
+                "wrong_case": 0,
+                "no_sentence": 2,
+                "placeholder_left": 0,
+                "wrong_values": 0,
+                "wrong_params": 0,
+                "extra_text": 10,
+                "scoring_error": 0
+              }
+            },
+            "priority": {
+              "n": 10,
+              "strict": 0,
+              "strict_rate": 0.0,
+              "lenient": 8,
+              "lenient_rate": 0.8,
+              "extra_text": 0,
+              "called_with_invalid": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 1,
+                "wrong_case": 0,
+                "no_sentence": 9,
+                "placeholder_left": 0,
+                "wrong_values": 0,
+                "wrong_params": 0,
+                "extra_text": 0,
+                "scoring_error": 0
+              }
+            },
+            "valid_verbatim": {
+              "n": 18,
+              "exact": 8,
+              "exact_rate": 0.4444444444444444,
+              "false_refusals": 4,
+              "false_refusals_by": {
+                "sentence": 3,
+                "other_text": 1,
+                "empty": 0
+              },
+              "zh_altered": 0,
+              "zh_checked": 14,
+              "verbatim_items": 18,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "refused": 3,
+                "with_text": 2,
+                "other_notation": 1,
+                "zh_altered": 0,
+                "wrong_call": 3,
+                "no_call": 1,
+                "scoring_error": 0
+              }
+            },
+            "valid_multiturn": {
+              "n": 18,
+              "exact": 14,
+              "exact_rate": 0.7777777777777778,
+              "false_refusals": 2,
+              "false_refusals_by": {
+                "sentence": 0,
+                "other_text": 2,
+                "empty": 0
+              },
+              "zh_altered": 0,
+              "zh_checked": 0,
+              "verbatim_items": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "refused": 0,
+                "with_text": 1,
+                "other_notation": 0,
+                "zh_altered": 0,
+                "wrong_call": 1,
+                "no_call": 2,
+                "scoring_error": 0
+              }
+            },
+            "valid_nearmiss": {
+              "n": 18,
+              "exact": 14,
+              "exact_rate": 0.7777777777777778,
+              "false_refusals": 4,
+              "false_refusals_by": {
+                "sentence": 2,
+                "other_text": 2,
+                "empty": 0
+              },
+              "zh_altered": 0,
+              "zh_checked": 0,
+              "verbatim_items": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "refused": 2,
+                "with_text": 0,
+                "other_notation": 0,
+                "zh_altered": 0,
+                "wrong_call": 0,
+                "no_call": 2,
+                "scoring_error": 0
+              }
+            }
+          }
+        },
+        "en": {
+          "special": {
+            "n": 75,
+            "strict": 13,
+            "strict_rate": 0.17333333333333334,
+            "lenient": 48,
+            "lenient_rate": 0.64,
+            "extra_text": 21,
+            "called_with_invalid": 3,
+            "scoring_errors": 0,
+            "failures": {
+              "no_answer": 0,
+              "empty": 0,
+              "called": 7,
+              "wrong_case": 1,
+              "no_sentence": 28,
+              "placeholder_left": 9,
+              "wrong_values": 4,
+              "wrong_params": 2,
+              "extra_text": 11,
+              "scoring_error": 0
+            }
+          },
+          "priority": {
+            "n": 10,
+            "strict": 0,
+            "strict_rate": 0.0,
+            "lenient": 6,
+            "lenient_rate": 0.6,
+            "extra_text": 3,
+            "called_with_invalid": 0,
+            "scoring_errors": 0,
+            "failures": {
+              "no_answer": 0,
+              "empty": 0,
+              "called": 3,
+              "wrong_case": 0,
+              "no_sentence": 6,
+              "placeholder_left": 1,
+              "wrong_values": 0,
+              "wrong_params": 0,
+              "extra_text": 0,
+              "scoring_error": 0
+            }
+          },
+          "valid": {
+            "n": 36,
+            "exact": 22,
+            "exact_rate": 0.6111111111111112,
+            "false_refusals": 1,
+            "false_refusals_by": {
+              "sentence": 0,
+              "other_text": 1,
+              "empty": 0
+            },
+            "zh_altered": 0,
+            "zh_checked": 0,
+            "verbatim_items": 0,
+            "scoring_errors": 0,
+            "failures": {
+              "no_answer": 0,
+              "empty": 0,
+              "refused": 0,
+              "with_text": 1,
+              "other_notation": 7,
+              "zh_altered": 0,
+              "wrong_call": 5,
+              "no_call": 1,
+              "scoring_error": 0
+            }
+          },
+          "kinds": {
+            "incorrect": {
+              "n": 25,
+              "strict": 1,
+              "strict_rate": 0.04,
+              "lenient": 17,
+              "lenient_rate": 0.68,
+              "extra_text": 10,
+              "called_with_invalid": 3,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 6,
+                "wrong_case": 0,
+                "no_sentence": 5,
+                "placeholder_left": 4,
+                "wrong_values": 4,
+                "wrong_params": 2,
+                "extra_text": 3,
+                "scoring_error": 0
+              }
+            },
+            "missing": {
+              "n": 25,
+              "strict": 1,
+              "strict_rate": 0.04,
+              "lenient": 12,
+              "lenient_rate": 0.48,
+              "extra_text": 3,
+              "called_with_invalid": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 1,
+                "wrong_case": 1,
+                "no_sentence": 17,
+                "placeholder_left": 5,
+                "wrong_values": 0,
+                "wrong_params": 0,
+                "extra_text": 0,
+                "scoring_error": 0
+              }
+            },
+            "irrelevant": {
+              "n": 25,
+              "strict": 11,
+              "strict_rate": 0.44,
+              "lenient": 19,
+              "lenient_rate": 0.76,
+              "extra_text": 8,
+              "called_with_invalid": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 0,
+                "wrong_case": 0,
+                "no_sentence": 6,
+                "placeholder_left": 0,
+                "wrong_values": 0,
+                "wrong_params": 0,
+                "extra_text": 8,
+                "scoring_error": 0
+              }
+            },
+            "priority": {
+              "n": 10,
+              "strict": 0,
+              "strict_rate": 0.0,
+              "lenient": 6,
+              "lenient_rate": 0.6,
+              "extra_text": 3,
+              "called_with_invalid": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 3,
+                "wrong_case": 0,
+                "no_sentence": 6,
+                "placeholder_left": 1,
+                "wrong_values": 0,
+                "wrong_params": 0,
+                "extra_text": 0,
+                "scoring_error": 0
+              }
+            },
+            "valid_verbatim": {
+              "n": 12,
+              "exact": 8,
+              "exact_rate": 0.6666666666666666,
+              "false_refusals": 0,
+              "false_refusals_by": {
+                "sentence": 0,
+                "other_text": 0,
+                "empty": 0
+              },
+              "zh_altered": 0,
+              "zh_checked": 0,
+              "verbatim_items": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "refused": 0,
+                "with_text": 0,
+                "other_notation": 3,
+                "zh_altered": 0,
+                "wrong_call": 1,
+                "no_call": 0,
+                "scoring_error": 0
+              }
+            },
+            "valid_multiturn": {
+              "n": 12,
+              "exact": 8,
+              "exact_rate": 0.6666666666666666,
+              "false_refusals": 0,
+              "false_refusals_by": {
+                "sentence": 0,
+                "other_text": 0,
+                "empty": 0
+              },
+              "zh_altered": 0,
+              "zh_checked": 0,
+              "verbatim_items": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "refused": 0,
+                "with_text": 1,
+                "other_notation": 1,
+                "zh_altered": 0,
+                "wrong_call": 2,
+                "no_call": 0,
+                "scoring_error": 0
+              }
+            },
+            "valid_nearmiss": {
+              "n": 12,
+              "exact": 6,
+              "exact_rate": 0.5,
+              "false_refusals": 1,
+              "false_refusals_by": {
+                "sentence": 0,
+                "other_text": 1,
+                "empty": 0
+              },
+              "zh_altered": 0,
+              "zh_checked": 0,
+              "verbatim_items": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "refused": 0,
+                "with_text": 0,
+                "other_notation": 3,
+                "zh_altered": 0,
+                "wrong_call": 2,
+                "no_call": 1,
+                "scoring_error": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "ft": {
+      "n": 260,
+      "scoring_errors": 0,
+      "special": {
+        "n": 150,
+        "strict": 49,
+        "strict_rate": 0.32666666666666666,
+        "lenient": 103,
+        "lenient_rate": 0.6866666666666666,
+        "extra_text": 8,
+        "called_with_invalid": 6,
+        "scoring_errors": 0,
+        "failures": {
+          "no_answer": 0,
+          "empty": 0,
+          "called": 13,
+          "wrong_case": 4,
+          "no_sentence": 66,
+          "placeholder_left": 11,
+          "wrong_values": 2,
+          "wrong_params": 0,
+          "extra_text": 5,
+          "scoring_error": 0
+        }
+      },
+      "priority": {
+        "n": 20,
+        "strict": 0,
+        "strict_rate": 0.0,
+        "lenient": 11,
+        "lenient_rate": 0.55,
+        "extra_text": 2,
+        "called_with_invalid": 0,
+        "scoring_errors": 0,
+        "failures": {
+          "no_answer": 0,
+          "empty": 0,
+          "called": 3,
+          "wrong_case": 1,
+          "no_sentence": 10,
+          "placeholder_left": 4,
+          "wrong_values": 1,
+          "wrong_params": 1,
+          "extra_text": 0,
+          "scoring_error": 0
+        }
+      },
+      "valid": {
+        "n": 90,
+        "exact": 64,
+        "exact_rate": 0.7111111111111111,
+        "false_refusals": 11,
+        "false_refusals_by": {
+          "sentence": 8,
+          "other_text": 3,
+          "empty": 0
+        },
+        "zh_altered": 0,
+        "zh_checked": 14,
+        "verbatim_items": 18,
+        "scoring_errors": 0,
+        "failures": {
+          "no_answer": 0,
+          "empty": 0,
+          "refused": 8,
+          "with_text": 1,
+          "other_notation": 5,
+          "zh_altered": 0,
+          "wrong_call": 9,
+          "no_call": 3,
+          "scoring_error": 0
+        }
+      },
+      "kinds": {
+        "incorrect": {
+          "n": 50,
+          "strict": 6,
+          "strict_rate": 0.12,
+          "lenient": 28,
+          "lenient_rate": 0.56,
+          "extra_text": 2,
+          "called_with_invalid": 6,
+          "scoring_errors": 0,
+          "failures": {
+            "no_answer": 0,
+            "empty": 0,
+            "called": 10,
+            "wrong_case": 0,
+            "no_sentence": 25,
+            "placeholder_left": 7,
+            "wrong_values": 2,
+            "wrong_params": 0,
+            "extra_text": 0,
+            "scoring_error": 0
+          }
+        },
+        "missing": {
+          "n": 50,
+          "strict": 3,
+          "strict_rate": 0.06,
+          "lenient": 30,
+          "lenient_rate": 0.6,
+          "extra_text": 1,
+          "called_with_invalid": 0,
+          "scoring_errors": 0,
+          "failures": {
+            "no_answer": 0,
+            "empty": 0,
+            "called": 3,
+            "wrong_case": 4,
+            "no_sentence": 36,
+            "placeholder_left": 4,
+            "wrong_values": 0,
+            "wrong_params": 0,
+            "extra_text": 0,
+            "scoring_error": 0
+          }
+        },
+        "irrelevant": {
+          "n": 50,
+          "strict": 40,
+          "strict_rate": 0.8,
+          "lenient": 45,
+          "lenient_rate": 0.9,
+          "extra_text": 5,
+          "called_with_invalid": 0,
+          "scoring_errors": 0,
+          "failures": {
+            "no_answer": 0,
+            "empty": 0,
+            "called": 0,
+            "wrong_case": 0,
+            "no_sentence": 5,
+            "placeholder_left": 0,
+            "wrong_values": 0,
+            "wrong_params": 0,
+            "extra_text": 5,
+            "scoring_error": 0
+          }
+        },
+        "priority": {
+          "n": 20,
+          "strict": 0,
+          "strict_rate": 0.0,
+          "lenient": 11,
+          "lenient_rate": 0.55,
+          "extra_text": 2,
+          "called_with_invalid": 0,
+          "scoring_errors": 0,
+          "failures": {
+            "no_answer": 0,
+            "empty": 0,
+            "called": 3,
+            "wrong_case": 1,
+            "no_sentence": 10,
+            "placeholder_left": 4,
+            "wrong_values": 1,
+            "wrong_params": 1,
+            "extra_text": 0,
+            "scoring_error": 0
+          }
+        },
+        "valid_verbatim": {
+          "n": 30,
+          "exact": 19,
+          "exact_rate": 0.6333333333333333,
+          "false_refusals": 5,
+          "false_refusals_by": {
+            "sentence": 3,
+            "other_text": 2,
+            "empty": 0
+          },
+          "zh_altered": 0,
+          "zh_checked": 14,
+          "verbatim_items": 18,
+          "scoring_errors": 0,
+          "failures": {
+            "no_answer": 0,
+            "empty": 0,
+            "refused": 3,
+            "with_text": 0,
+            "other_notation": 3,
+            "zh_altered": 0,
+            "wrong_call": 3,
+            "no_call": 2,
+            "scoring_error": 0
+          }
+        },
+        "valid_multiturn": {
+          "n": 30,
+          "exact": 25,
+          "exact_rate": 0.8333333333333334,
+          "false_refusals": 1,
+          "false_refusals_by": {
+            "sentence": 1,
+            "other_text": 0,
+            "empty": 0
+          },
+          "zh_altered": 0,
+          "zh_checked": 0,
+          "verbatim_items": 0,
+          "scoring_errors": 0,
+          "failures": {
+            "no_answer": 0,
+            "empty": 0,
+            "refused": 1,
+            "with_text": 1,
+            "other_notation": 1,
+            "zh_altered": 0,
+            "wrong_call": 2,
+            "no_call": 0,
+            "scoring_error": 0
+          }
+        },
+        "valid_nearmiss": {
+          "n": 30,
+          "exact": 20,
+          "exact_rate": 0.6666666666666666,
+          "false_refusals": 5,
+          "false_refusals_by": {
+            "sentence": 4,
+            "other_text": 1,
+            "empty": 0
+          },
+          "zh_altered": 0,
+          "zh_checked": 0,
+          "verbatim_items": 0,
+          "scoring_errors": 0,
+          "failures": {
+            "no_answer": 0,
+            "empty": 0,
+            "refused": 4,
+            "with_text": 0,
+            "other_notation": 1,
+            "zh_altered": 0,
+            "wrong_call": 4,
+            "no_call": 1,
+            "scoring_error": 0
+          }
+        }
+      },
+      "languages": {
+        "zh": {
+          "special": {
+            "n": 75,
+            "strict": 24,
+            "strict_rate": 0.32,
+            "lenient": 58,
+            "lenient_rate": 0.7733333333333333,
+            "extra_text": 1,
+            "called_with_invalid": 3,
+            "scoring_errors": 0,
+            "failures": {
+              "no_answer": 0,
+              "empty": 0,
+              "called": 3,
+              "wrong_case": 0,
+              "no_sentence": 46,
+              "placeholder_left": 2,
+              "wrong_values": 0,
+              "wrong_params": 0,
+              "extra_text": 0,
+              "scoring_error": 0
+            }
+          },
+          "priority": {
+            "n": 10,
+            "strict": 0,
+            "strict_rate": 0.0,
+            "lenient": 7,
+            "lenient_rate": 0.7,
+            "extra_text": 0,
+            "called_with_invalid": 0,
+            "scoring_errors": 0,
+            "failures": {
+              "no_answer": 0,
+              "empty": 0,
+              "called": 0,
+              "wrong_case": 0,
+              "no_sentence": 9,
+              "placeholder_left": 0,
+              "wrong_values": 0,
+              "wrong_params": 1,
+              "extra_text": 0,
+              "scoring_error": 0
+            }
+          },
+          "valid": {
+            "n": 54,
+            "exact": 37,
+            "exact_rate": 0.6851851851851852,
+            "false_refusals": 10,
+            "false_refusals_by": {
+              "sentence": 7,
+              "other_text": 3,
+              "empty": 0
+            },
+            "zh_altered": 0,
+            "zh_checked": 14,
+            "verbatim_items": 18,
+            "scoring_errors": 0,
+            "failures": {
+              "no_answer": 0,
+              "empty": 0,
+              "refused": 7,
+              "with_text": 1,
+              "other_notation": 2,
+              "zh_altered": 0,
+              "wrong_call": 4,
+              "no_call": 3,
+              "scoring_error": 0
+            }
+          },
+          "kinds": {
+            "incorrect": {
+              "n": 25,
+              "strict": 0,
+              "strict_rate": 0.0,
+              "lenient": 15,
+              "lenient_rate": 0.6,
+              "extra_text": 1,
+              "called_with_invalid": 3,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 3,
+                "wrong_case": 0,
+                "no_sentence": 20,
+                "placeholder_left": 2,
+                "wrong_values": 0,
+                "wrong_params": 0,
+                "extra_text": 0,
+                "scoring_error": 0
+              }
+            },
+            "missing": {
+              "n": 25,
+              "strict": 0,
+              "strict_rate": 0.0,
+              "lenient": 19,
+              "lenient_rate": 0.76,
+              "extra_text": 0,
+              "called_with_invalid": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 0,
+                "wrong_case": 0,
+                "no_sentence": 25,
+                "placeholder_left": 0,
+                "wrong_values": 0,
+                "wrong_params": 0,
+                "extra_text": 0,
+                "scoring_error": 0
+              }
+            },
+            "irrelevant": {
+              "n": 25,
+              "strict": 24,
+              "strict_rate": 0.96,
+              "lenient": 24,
+              "lenient_rate": 0.96,
+              "extra_text": 0,
+              "called_with_invalid": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 0,
+                "wrong_case": 0,
+                "no_sentence": 1,
+                "placeholder_left": 0,
+                "wrong_values": 0,
+                "wrong_params": 0,
+                "extra_text": 0,
+                "scoring_error": 0
+              }
+            },
+            "priority": {
+              "n": 10,
+              "strict": 0,
+              "strict_rate": 0.0,
+              "lenient": 7,
+              "lenient_rate": 0.7,
+              "extra_text": 0,
+              "called_with_invalid": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 0,
+                "wrong_case": 0,
+                "no_sentence": 9,
+                "placeholder_left": 0,
+                "wrong_values": 0,
+                "wrong_params": 1,
+                "extra_text": 0,
+                "scoring_error": 0
+              }
+            },
+            "valid_verbatim": {
+              "n": 18,
+              "exact": 10,
+              "exact_rate": 0.5555555555555556,
+              "false_refusals": 4,
+              "false_refusals_by": {
+                "sentence": 2,
+                "other_text": 2,
+                "empty": 0
+              },
+              "zh_altered": 0,
+              "zh_checked": 14,
+              "verbatim_items": 18,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "refused": 2,
+                "with_text": 0,
+                "other_notation": 1,
+                "zh_altered": 0,
+                "wrong_call": 3,
+                "no_call": 2,
+                "scoring_error": 0
+              }
+            },
+            "valid_multiturn": {
+              "n": 18,
+              "exact": 16,
+              "exact_rate": 0.8888888888888888,
+              "false_refusals": 1,
+              "false_refusals_by": {
+                "sentence": 1,
+                "other_text": 0,
+                "empty": 0
+              },
+              "zh_altered": 0,
+              "zh_checked": 0,
+              "verbatim_items": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "refused": 1,
+                "with_text": 1,
+                "other_notation": 0,
+                "zh_altered": 0,
+                "wrong_call": 0,
+                "no_call": 0,
+                "scoring_error": 0
+              }
+            },
+            "valid_nearmiss": {
+              "n": 18,
+              "exact": 11,
+              "exact_rate": 0.6111111111111112,
+              "false_refusals": 5,
+              "false_refusals_by": {
+                "sentence": 4,
+                "other_text": 1,
+                "empty": 0
+              },
+              "zh_altered": 0,
+              "zh_checked": 0,
+              "verbatim_items": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "refused": 4,
+                "with_text": 0,
+                "other_notation": 1,
+                "zh_altered": 0,
+                "wrong_call": 1,
+                "no_call": 1,
+                "scoring_error": 0
+              }
+            }
+          }
+        },
+        "en": {
+          "special": {
+            "n": 75,
+            "strict": 25,
+            "strict_rate": 0.3333333333333333,
+            "lenient": 45,
+            "lenient_rate": 0.6,
+            "extra_text": 7,
+            "called_with_invalid": 3,
+            "scoring_errors": 0,
+            "failures": {
+              "no_answer": 0,
+              "empty": 0,
+              "called": 10,
+              "wrong_case": 4,
+              "no_sentence": 20,
+              "placeholder_left": 9,
+              "wrong_values": 2,
+              "wrong_params": 0,
+              "extra_text": 5,
+              "scoring_error": 0
+            }
+          },
+          "priority": {
+            "n": 10,
+            "strict": 0,
+            "strict_rate": 0.0,
+            "lenient": 4,
+            "lenient_rate": 0.4,
+            "extra_text": 2,
+            "called_with_invalid": 0,
+            "scoring_errors": 0,
+            "failures": {
+              "no_answer": 0,
+              "empty": 0,
+              "called": 3,
+              "wrong_case": 1,
+              "no_sentence": 1,
+              "placeholder_left": 4,
+              "wrong_values": 1,
+              "wrong_params": 0,
+              "extra_text": 0,
+              "scoring_error": 0
+            }
+          },
+          "valid": {
+            "n": 36,
+            "exact": 27,
+            "exact_rate": 0.75,
+            "false_refusals": 1,
+            "false_refusals_by": {
+              "sentence": 1,
+              "other_text": 0,
+              "empty": 0
+            },
+            "zh_altered": 0,
+            "zh_checked": 0,
+            "verbatim_items": 0,
+            "scoring_errors": 0,
+            "failures": {
+              "no_answer": 0,
+              "empty": 0,
+              "refused": 1,
+              "with_text": 0,
+              "other_notation": 3,
+              "zh_altered": 0,
+              "wrong_call": 5,
+              "no_call": 0,
+              "scoring_error": 0
+            }
+          },
+          "kinds": {
+            "incorrect": {
+              "n": 25,
+              "strict": 6,
+              "strict_rate": 0.24,
+              "lenient": 13,
+              "lenient_rate": 0.52,
+              "extra_text": 1,
+              "called_with_invalid": 3,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 7,
+                "wrong_case": 0,
+                "no_sentence": 5,
+                "placeholder_left": 5,
+                "wrong_values": 2,
+                "wrong_params": 0,
+                "extra_text": 0,
+                "scoring_error": 0
+              }
+            },
+            "missing": {
+              "n": 25,
+              "strict": 3,
+              "strict_rate": 0.12,
+              "lenient": 11,
+              "lenient_rate": 0.44,
+              "extra_text": 1,
+              "called_with_invalid": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 3,
+                "wrong_case": 4,
+                "no_sentence": 11,
+                "placeholder_left": 4,
+                "wrong_values": 0,
+                "wrong_params": 0,
+                "extra_text": 0,
+                "scoring_error": 0
+              }
+            },
+            "irrelevant": {
+              "n": 25,
+              "strict": 16,
+              "strict_rate": 0.64,
+              "lenient": 21,
+              "lenient_rate": 0.84,
+              "extra_text": 5,
+              "called_with_invalid": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 0,
+                "wrong_case": 0,
+                "no_sentence": 4,
+                "placeholder_left": 0,
+                "wrong_values": 0,
+                "wrong_params": 0,
+                "extra_text": 5,
+                "scoring_error": 0
+              }
+            },
+            "priority": {
+              "n": 10,
+              "strict": 0,
+              "strict_rate": 0.0,
+              "lenient": 4,
+              "lenient_rate": 0.4,
+              "extra_text": 2,
+              "called_with_invalid": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "called": 3,
+                "wrong_case": 1,
+                "no_sentence": 1,
+                "placeholder_left": 4,
+                "wrong_values": 1,
+                "wrong_params": 0,
+                "extra_text": 0,
+                "scoring_error": 0
+              }
+            },
+            "valid_verbatim": {
+              "n": 12,
+              "exact": 9,
+              "exact_rate": 0.75,
+              "false_refusals": 1,
+              "false_refusals_by": {
+                "sentence": 1,
+                "other_text": 0,
+                "empty": 0
+              },
+              "zh_altered": 0,
+              "zh_checked": 0,
+              "verbatim_items": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "refused": 1,
+                "with_text": 0,
+                "other_notation": 2,
+                "zh_altered": 0,
+                "wrong_call": 0,
+                "no_call": 0,
+                "scoring_error": 0
+              }
+            },
+            "valid_multiturn": {
+              "n": 12,
+              "exact": 9,
+              "exact_rate": 0.75,
+              "false_refusals": 0,
+              "false_refusals_by": {
+                "sentence": 0,
+                "other_text": 0,
+                "empty": 0
+              },
+              "zh_altered": 0,
+              "zh_checked": 0,
+              "verbatim_items": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "refused": 0,
+                "with_text": 0,
+                "other_notation": 1,
+                "zh_altered": 0,
+                "wrong_call": 2,
+                "no_call": 0,
+                "scoring_error": 0
+              }
+            },
+            "valid_nearmiss": {
+              "n": 12,
+              "exact": 9,
+              "exact_rate": 0.75,
+              "false_refusals": 0,
+              "false_refusals_by": {
+                "sentence": 0,
+                "other_text": 0,
+                "empty": 0
+              },
+              "zh_altered": 0,
+              "zh_checked": 0,
+              "verbatim_items": 0,
+              "scoring_errors": 0,
+              "failures": {
+                "no_answer": 0,
+                "empty": 0,
+                "refused": 0,
+                "with_text": 0,
+                "other_notation": 0,
+                "zh_altered": 0,
+                "wrong_call": 3,
+                "no_call": 0,
+                "scoring_error": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

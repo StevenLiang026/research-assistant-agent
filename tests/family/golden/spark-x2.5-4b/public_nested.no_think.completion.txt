@@ -1,0 +1,1 @@
+<tool_call>book_table<arg_key>restaurant</arg_key><arg_value>{"name": "Café de Flore", "city": "Paris"}</arg_value><arg_key>party</arg_key><arg_value>{"adults": 2, "children": [{"age": 5}]}</arg_value><arg_key>time</arg_key><arg_value>19:30</arg_value><arg_key>requests</arg_key><arg_value>["window seat", "high chair"]</arg_value></tool_call><｜end▁of▁sentence｜>

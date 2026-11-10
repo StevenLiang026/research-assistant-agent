@@ -1,0 +1,494 @@
+{
+  "about": "M8's choice of the FT5 checkpoint for its one ACEBench run (docs/m8-计划.md WP4), made mechanically by scripts/decide_m8.py with the rules written before FT5 had a score.",
+  "rules": {
+    "sum": "Per checkpoint, the successes of seeds 0 and 1 over data/eval/dev.jsonl and data/eval/v2/dev-v2.jsonl under the normalized scorer, the runtime rules applied to every record offline; the higher sum first, a tie to the later step.",
+    "PG1": "Dev set B lenient special rate >= B0's on B + 0.05; when K1 failed, the strict special rate >= 0.75.",
+    "PG2": "Dev set B strict special rate >= 0.70.",
+    "PG3": "False refusals on dev set B's valid items <= FT3's + 2.",
+    "PG4": "Exact-call rate on dev set B's valid items >= FT3's - 0.05, and zh alterations <= FT3's.",
+    "MG": "The chosen checkpoint's sum >= FT3 step 1635's sum (the same metric) - 10.",
+    "decision": "The first checkpoint of the ranking passing PG1 to PG4 is chosen; GO when MG passes, NO-GO when it fails or no checkpoint passes the gates.",
+    "dev_set_b": "Run for the ranking's checkpoints in order until one passes PG1 to PG4; a checkpoint reached without a run stops the decision until it is run.",
+    "counts": "The gates read every dev set B run's records scored again against dev set B by research_agent.eval.special_dev as it is now; every record ok, no item the scorer fails on, and the run's summary and, for B0 and FT3, the calibration's summaries counting the same."
+  },
+  "scorer": "normalized",
+  "selection": {
+    "path": "results/checkpoint-selection-ft5.json",
+    "sha256": "e8b739c8a1d636cfaee8dddeb6f64c0191c85cdc4a53f1b5715aaa759ebc49a7",
+    "run": "runs/train/ft5"
+  },
+  "item_sets": [
+    {
+      "path": "data/eval/dev.jsonl",
+      "sha256": "030586e55fb230e0b4d68038c5580d311fbeb80dad6ce474a9b57cb0db524763",
+      "n": 150
+    },
+    {
+      "path": "data/eval/v2/dev-v2.jsonl",
+      "sha256": "a61cff681c65a33666f78f97f74c0e95da4663c652cbd363230d3d833527c9d0",
+      "n": 126
+    }
+  ],
+  "dev_set_b": {
+    "path": "data/eval/special-dev-b.jsonl",
+    "sha256": "9a7e912bbce9008026f64d902a95cdef6f13b77842d21931c5d202e10e7cf1f5"
+  },
+  "special_dev": {
+    "b0": {
+      "path": "runs/m8/special-dev/b-b0.summary.json",
+      "sha256": "d245f407599a4467fdc91b5bb0b5b63f409f8c8aa8d1500478ddd98dae8e8086",
+      "records": {
+        "path": "runs/m8/special-dev/b-b0.jsonl",
+        "sha256": "1ba4b207fec1ba0c5d91908564e617a912673888f59d36812469005d14ccb902"
+      },
+      "manifest": {
+        "path": "runs/m8/special-dev/b-b0.manifest.json",
+        "sha256": "8e93d1d31865a311d5250650b007bb953a66168d4b6734f7e7be97335f2a6268"
+      },
+      "adapters": [
+        "0665d4c2ce29112c246e5c0a50f451224d670813f23ec66f08a424380a6d7237"
+      ],
+      "lora_scale": 0.0,
+      "statuses": {
+        "ok": 260
+      },
+      "counts": {
+        "special_n": 150,
+        "strict": 26,
+        "lenient": 103,
+        "valid_n": 90,
+        "exact": 58,
+        "false_refusals": 11,
+        "zh_altered": 0
+      },
+      "scoring_errors": 0
+    },
+    "ft3": {
+      "path": "runs/m8/special-dev/b-ft3.summary.json",
+      "sha256": "5964eb3749df58f4cae293d6c869e4f181e37daccd299d231d629de3baa69c1b",
+      "records": {
+        "path": "runs/m8/special-dev/b-ft3.jsonl",
+        "sha256": "ac64dcdd67b692477a372103536cc4c3bba315a87cc1999ab7503bb9dc172123"
+      },
+      "manifest": {
+        "path": "runs/m8/special-dev/b-ft3.manifest.json",
+        "sha256": "608309385a77c11dc105443961a010c3ed43c6e534856e0c2bbdba7688d49b57"
+      },
+      "adapters": [
+        "0665d4c2ce29112c246e5c0a50f451224d670813f23ec66f08a424380a6d7237"
+      ],
+      "lora_scale": 1.0,
+      "statuses": {
+        "ok": 260
+      },
+      "counts": {
+        "special_n": 150,
+        "strict": 49,
+        "lenient": 103,
+        "valid_n": 90,
+        "exact": 64,
+        "false_refusals": 11,
+        "zh_altered": 0
+      },
+      "scoring_errors": 0
+    },
+    "348": {
+      "path": "runs/m8/special-dev/b-ft5-348.summary.json",
+      "sha256": "98bf94c760b3b041461a2b2fbe7ef1554105d8cef87830c8f75c79e03e3684c8",
+      "records": {
+        "path": "runs/m8/special-dev/b-ft5-348.jsonl",
+        "sha256": "caf55c5bedcefa22137a439b0a48aec8bdeeef5f87ef1115e5e53f98e2ca833e"
+      },
+      "manifest": {
+        "path": "runs/m8/special-dev/b-ft5-348.manifest.json",
+        "sha256": "b3faaaf3eae079ce4056ee8af2b9fa593290bec4ca5f72a6ba4211e364c876f6"
+      },
+      "adapters": [
+        "7a7b4de801a30e152bef5cc19f8657b0b60eda24141618808af323d923c4f529"
+      ],
+      "lora_scale": 1.0,
+      "statuses": {
+        "ok": 260
+      },
+      "counts": {
+        "special_n": 150,
+        "strict": 82,
+        "lenient": 99,
+        "valid_n": 90,
+        "exact": 71,
+        "false_refusals": 8,
+        "zh_altered": 0
+      },
+      "scoring_errors": 0
+    },
+    "232": {
+      "path": "runs/m8/special-dev/b-ft5-232.summary.json",
+      "sha256": "70d4f4781ea02d748b34aa7a59ef7dc8eaac264de6aa2271fd1ec1b3a4a4e3ab",
+      "records": {
+        "path": "runs/m8/special-dev/b-ft5-232.jsonl",
+        "sha256": "40daa9db65902a798ea61f4657731eb8d22bbc7d2eacea38a2894b503f25974f"
+      },
+      "manifest": {
+        "path": "runs/m8/special-dev/b-ft5-232.manifest.json",
+        "sha256": "289b3edd78f9a7476baea0fa76c6f563f6494d2f114d77ffc3ca229a7c0b7504"
+      },
+      "adapters": [
+        "6d88a783f79dcb6db58942a6ef1de806f067c7ffd54e8d941d207026cccb53c2"
+      ],
+      "lora_scale": 1.0,
+      "statuses": {
+        "ok": 260
+      },
+      "counts": {
+        "special_n": 150,
+        "strict": 76,
+        "lenient": 94,
+        "valid_n": 90,
+        "exact": 71,
+        "false_refusals": 10,
+        "zh_altered": 0
+      },
+      "scoring_errors": 0
+    },
+    "116": {
+      "path": "runs/m8/special-dev/b-ft5-116.summary.json",
+      "sha256": "587ef4d56d180730504f5210fc2a871a63b49ff40adcbd4db278860627d57c6a",
+      "records": {
+        "path": "runs/m8/special-dev/b-ft5-116.jsonl",
+        "sha256": "2f58c9e7c49b40bb274ce654d38548d19541542922b70e5f3efe39c0aed10130"
+      },
+      "manifest": {
+        "path": "runs/m8/special-dev/b-ft5-116.manifest.json",
+        "sha256": "dc9909e3b4abf26802bec45cb0682373911ba7592ab1958023d0d6e3f92e4954"
+      },
+      "adapters": [
+        "5e56e2e8f40f4458895f7291dde7ff939a4d952af7c300a5c6a11a7046dca452"
+      ],
+      "lora_scale": 1.0,
+      "statuses": {
+        "ok": 260
+      },
+      "counts": {
+        "special_n": 150,
+        "strict": 63,
+        "lenient": 85,
+        "valid_n": 90,
+        "exact": 67,
+        "false_refusals": 12,
+        "zh_altered": 1
+      },
+      "scoring_errors": 0
+    },
+    "462": {
+      "path": "runs/m8/special-dev/b-ft5-462.summary.json",
+      "sha256": "8b19fc346e45dddc7c24bf18257af1368215ded7a7ca4c5b8917ac167d6a4811",
+      "records": {
+        "path": "runs/m8/special-dev/b-ft5-462.jsonl",
+        "sha256": "bd1b2533ab9fec9d6f4703a1ad6d77980d519c086da2030d928d02fd298f7829"
+      },
+      "manifest": {
+        "path": "runs/m8/special-dev/b-ft5-462.manifest.json",
+        "sha256": "0b06bb337af9c3827eea9b307dbc78833b64613158db062b469d5229b5891a5a"
+      },
+      "adapters": [
+        "966cb775b6fb82f09380b89efb2332e1724a68541bada60d230f7906d97dc596"
+      ],
+      "lora_scale": 1.0,
+      "statuses": {
+        "ok": 260
+      },
+      "counts": {
+        "special_n": 150,
+        "strict": 79,
+        "lenient": 96,
+        "valid_n": 90,
+        "exact": 73,
+        "false_refusals": 6,
+        "zh_altered": 1
+      },
+      "scoring_errors": 0
+    }
+  },
+  "special_generation": {
+    "answer_tokens": 1200,
+    "base_seed": 0,
+    "decoding": {
+      "min_p": 0.0,
+      "presence_penalty": 0.0,
+      "temperature": 0.0,
+      "top_k": 0,
+      "top_p": 1.0
+    },
+    "mode": "think",
+    "reasoning_budget": 1280,
+    "sample": 0
+  },
+  "special_base": {
+    "server_props.model_path": "models/Nanbeige4.1-3B-Q8_0.gguf",
+    "server_props.build_info": "b11349-fb4b2737a",
+    "family.name": "nanbeige4.1-3b",
+    "family.template_sha256": "757f108242fb797d23b79f72c088cb5b4bc37fb3744e29dc8771c1dc2b1cb335"
+  },
+  "special_scorer": {
+    "module": "research_agent.eval.special_dev",
+    "path": "src/research_agent/eval/special_dev.py",
+    "sha256": "030d1ff55453c5c0293c801c24295dca5ab88aae2ff958df8b7c76d0e1356fa8"
+  },
+  "calibration": {
+    "path": "results/special-dev-calibration-m8.json",
+    "sha256": "3ef7939abe03a2896d17b5ddf1d9ad3c5cb9d44524e2ff5be2245ba634ffd773",
+    "items_sha256": "9a7e912bbce9008026f64d902a95cdef6f13b77842d21931c5d202e10e7cf1f5",
+    "runs": {
+      "b0": "1ba4b207fec1ba0c5d91908564e617a912673888f59d36812469005d14ccb902",
+      "ft": "ac64dcdd67b692477a372103536cc4c3bba315a87cc1999ab7503bb9dc172123"
+    }
+  },
+  "pg1_fallback": true,
+  "b0": {
+    "special_dev": {
+      "special_n": 150,
+      "strict": 26,
+      "lenient": 103,
+      "valid_n": 90,
+      "exact": 58,
+      "false_refusals": 11,
+      "zh_altered": 0
+    }
+  },
+  "baseline": {
+    "path": "results/checkpoint-selection-ft3.json",
+    "sha256": "6938a9accb4e73d9a5f771e784633947b7c0679d3fe73257fcf8cd269975a174",
+    "step": 1635,
+    "gguf": "runs/train/ft3/gguf/checkpoint-1635-f16.gguf",
+    "gguf_sha256": "0665d4c2ce29112c246e5c0a50f451224d670813f23ec66f08a424380a6d7237",
+    "s0": 238,
+    "s0_without_rules": 230,
+    "s1": 237,
+    "s1_without_rules": 232,
+    "sum": 475,
+    "sum_without_rules": 462,
+    "special_dev": {
+      "special_n": 150,
+      "strict": 49,
+      "lenient": 103,
+      "valid_n": 90,
+      "exact": 64,
+      "false_refusals": 11,
+      "zh_altered": 0
+    }
+  },
+  "candidates": [
+    {
+      "step": 116,
+      "gguf": "runs/train/ft5/gguf/checkpoint-116-f16.gguf",
+      "sha256": "5e56e2e8f40f4458895f7291dde7ff939a4d952af7c300a5c6a11a7046dca452",
+      "s0": 230,
+      "s0_without_rules": 227,
+      "s1": 238,
+      "s1_without_rules": 232,
+      "sum": 468,
+      "sum_without_rules": 459,
+      "special_dev": {
+        "special_n": 150,
+        "strict": 63,
+        "lenient": 85,
+        "valid_n": 90,
+        "exact": 67,
+        "false_refusals": 12,
+        "zh_altered": 1
+      },
+      "gates": {
+        "PG1": {
+          "measure": "strict special (K1 failed)",
+          "value": 0.42,
+          "threshold": 0.75,
+          "passed": false
+        },
+        "PG2": {
+          "measure": "strict special",
+          "value": 0.42,
+          "threshold": 0.7,
+          "passed": false
+        },
+        "PG3": {
+          "measure": "false refusals",
+          "value": 12,
+          "threshold": 13,
+          "passed": true
+        },
+        "PG4": {
+          "measure": "exact calls and zh alterations",
+          "exact": 0.7444444444444445,
+          "exact_threshold": 0.6611111111111111,
+          "zh_altered": 1,
+          "zh_threshold": 0,
+          "passed": false
+        }
+      },
+      "passes": false
+    },
+    {
+      "step": 232,
+      "gguf": "runs/train/ft5/gguf/checkpoint-232-f16.gguf",
+      "sha256": "6d88a783f79dcb6db58942a6ef1de806f067c7ffd54e8d941d207026cccb53c2",
+      "s0": 234,
+      "s0_without_rules": 228,
+      "s1": 234,
+      "s1_without_rules": 227,
+      "sum": 468,
+      "sum_without_rules": 455,
+      "special_dev": {
+        "special_n": 150,
+        "strict": 76,
+        "lenient": 94,
+        "valid_n": 90,
+        "exact": 71,
+        "false_refusals": 10,
+        "zh_altered": 0
+      },
+      "gates": {
+        "PG1": {
+          "measure": "strict special (K1 failed)",
+          "value": 0.5066666666666667,
+          "threshold": 0.75,
+          "passed": false
+        },
+        "PG2": {
+          "measure": "strict special",
+          "value": 0.5066666666666667,
+          "threshold": 0.7,
+          "passed": false
+        },
+        "PG3": {
+          "measure": "false refusals",
+          "value": 10,
+          "threshold": 13,
+          "passed": true
+        },
+        "PG4": {
+          "measure": "exact calls and zh alterations",
+          "exact": 0.7888888888888889,
+          "exact_threshold": 0.6611111111111111,
+          "zh_altered": 0,
+          "zh_threshold": 0,
+          "passed": true
+        }
+      },
+      "passes": false
+    },
+    {
+      "step": 348,
+      "gguf": "runs/train/ft5/gguf/checkpoint-348-f16.gguf",
+      "sha256": "7a7b4de801a30e152bef5cc19f8657b0b60eda24141618808af323d923c4f529",
+      "s0": 235,
+      "s0_without_rules": 229,
+      "s1": 236,
+      "s1_without_rules": 231,
+      "sum": 471,
+      "sum_without_rules": 460,
+      "special_dev": {
+        "special_n": 150,
+        "strict": 82,
+        "lenient": 99,
+        "valid_n": 90,
+        "exact": 71,
+        "false_refusals": 8,
+        "zh_altered": 0
+      },
+      "gates": {
+        "PG1": {
+          "measure": "strict special (K1 failed)",
+          "value": 0.5466666666666666,
+          "threshold": 0.75,
+          "passed": false
+        },
+        "PG2": {
+          "measure": "strict special",
+          "value": 0.5466666666666666,
+          "threshold": 0.7,
+          "passed": false
+        },
+        "PG3": {
+          "measure": "false refusals",
+          "value": 8,
+          "threshold": 13,
+          "passed": true
+        },
+        "PG4": {
+          "measure": "exact calls and zh alterations",
+          "exact": 0.7888888888888889,
+          "exact_threshold": 0.6611111111111111,
+          "zh_altered": 0,
+          "zh_threshold": 0,
+          "passed": true
+        }
+      },
+      "passes": false
+    },
+    {
+      "step": 462,
+      "gguf": "runs/train/ft5/gguf/checkpoint-462-f16.gguf",
+      "sha256": "966cb775b6fb82f09380b89efb2332e1724a68541bada60d230f7906d97dc596",
+      "s0": 228,
+      "s0_without_rules": 224,
+      "s1": 233,
+      "s1_without_rules": 226,
+      "sum": 461,
+      "sum_without_rules": 450,
+      "special_dev": {
+        "special_n": 150,
+        "strict": 79,
+        "lenient": 96,
+        "valid_n": 90,
+        "exact": 73,
+        "false_refusals": 6,
+        "zh_altered": 1
+      },
+      "gates": {
+        "PG1": {
+          "measure": "strict special (K1 failed)",
+          "value": 0.5266666666666666,
+          "threshold": 0.75,
+          "passed": false
+        },
+        "PG2": {
+          "measure": "strict special",
+          "value": 0.5266666666666666,
+          "threshold": 0.7,
+          "passed": false
+        },
+        "PG3": {
+          "measure": "false refusals",
+          "value": 6,
+          "threshold": 13,
+          "passed": true
+        },
+        "PG4": {
+          "measure": "exact calls and zh alterations",
+          "exact": 0.8111111111111111,
+          "exact_threshold": 0.6611111111111111,
+          "zh_altered": 1,
+          "zh_threshold": 0,
+          "passed": false
+        }
+      },
+      "passes": false
+    }
+  ],
+  "ranking": [
+    348,
+    232,
+    116,
+    462
+  ],
+  "walk": [
+    348,
+    232,
+    116,
+    462
+  ],
+  "chosen": null,
+  "mg": null,
+  "decision": "NO-GO",
+  "reason": "no checkpoint passes PG1-PG4"
+}

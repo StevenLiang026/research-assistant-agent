@@ -1,0 +1,49 @@
+# Python and tooling
+.venv/
+.venv-*/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Secrets: only .env.example (names, no values) is tracked
+.env
+.env.*
+!.env.example
+
+# Local databases (the response cache and the spending ledger live under runs/ and cache/, already ignored)
+*.sqlite
+*.sqlite3
+*.db
+
+# Local assistant and editor configuration
+.claude/
+.mcp.json
+
+# Large or non-redistributable artefacts
+models/
+*.gguf
+*.safetensors
+runs/
+data/raw/
+data/cassettes/fulltext/
+cache/
+
+# Agent output (personal reading notes stay local unless the owner opts in)
+notes/
+
+# Local logs from setup and spikes
+*.log
+
+# v2 review: the pool and its batches hold the drafted items (build_pool.py rebuilds them byte-identically);
+# the per-batch first reviews are merged into verdicts.jsonl
+data/eval/v2/review/pool.jsonl
+data/eval/v2/review/batches/
+data/eval/v2/review/verdicts/
+# the hand-written items' per-batch first reviews are merged into handwritten-verdicts.jsonl, the writers'
+# per-batch specs into handwritten-specs-v2.jsonl
+data/eval/v2/review/handwritten-verdicts/
+data/eval/v2/handwritten-specs/batch-*.jsonl
+# end-to-end v2: the writers' batches hold the same 150 texts as the locked e2e-test-v2.jsonl (their digests
+# are in e2e-build.md); the slot batches beside them are committed (draw_e2e_slots.py --check redraws them)
+data/eval/v2/e2e-drafts/tasks-*.jsonl

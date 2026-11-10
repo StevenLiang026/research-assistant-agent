@@ -1,0 +1,1 @@
+<tool_call>get_paper<arg_key>arxiv_id</arg_key><arg_value>2609.01234</arg_value></tool_call><tool_call>get_paper<arg_key>arxiv_id</arg_key><arg_value>2609.05678</arg_value></tool_call><｜end▁of▁sentence｜>

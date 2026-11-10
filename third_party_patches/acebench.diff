@@ -1,0 +1,73 @@
+diff --git a/category.py b/category.py
+index 72eaea1..290fc64 100644
+--- a/category.py
++++ b/category.py
+@@ -1,4 +1,5 @@
+ ACE_DATA_CATEGORY = {
++    "smoke_single_function": ["normal_single_turn_single_function"],
+ 
+     "normal":[
+         "normal_single_turn_single_function",
+diff --git a/model_inference/apimodel_inference.py b/model_inference/apimodel_inference.py
+index 091d470..d1ba703 100644
+--- a/model_inference/apimodel_inference.py
++++ b/model_inference/apimodel_inference.py
+@@ -40,6 +40,9 @@ class APIModelInference(BaseHandler):
+         elif "deepseek-r1" in self.model_name:
+             api_key = os.getenv("DEEPSEEK_API_KEY")
+             base_url = os.getenv("DEEPSEEK_BASE_URL")
++        elif self.model_name.startswith("local-"):
++            api_key = os.getenv("LOCAL_OPENAI_API_KEY", "EMPTY")
++            base_url = os.getenv("LOCAL_OPENAI_BASE_URL")
+         elif "o1" in self.model_name:
+             api_key = os.getenv("GPT_AGENT_API_KEY")
+             base_url = os.getenv("GPT_BASE_URL")
+diff --git a/model_inference/inference_map.py b/model_inference/inference_map.py
+index 942202b..35c2285 100644
+--- a/model_inference/inference_map.py
++++ b/model_inference/inference_map.py
+@@ -4,6 +4,28 @@ from model_inference.apimodel_inference import APIModelInference
+ 
+ inference_map_groups = {
+     APIModelInference: [
++        "local-qwen3-1.7b-base",
++        "local-qwen3-1.7b-lora",
++        "local-qwen3-hybrid-base",
++        "local-qwen3-hybrid-lora",
++        "local-qwen3-instruct-2507-base",
++        "local-qwen3-instruct-2507-lora",
++        "local-qwen3-thinking-2507-base",
++        "local-qwen3-thinking-2507-lora",
++        "local-qwen3.5-4b-base",
++        "local-qwen3.5-4b-lora",
++        "local-granite-4.2-3b-base",
++        "local-granite-4.2-3b-lora",
++        "local-nanbeige4-thinking-2511-base",
++        "local-nanbeige4-thinking-2511-lora",
++        "local-nanbeige4.1-3b-base",
++        "local-nanbeige4.1-3b-lora",
++        "local-minicpm5-2b-base",
++        "local-minicpm5-2b-lora",
++        "local-spark-x2.5-4b-base",
++        "local-spark-x2.5-4b-lora",
++        "local-lfm2.5-2.6b-base",
++        "local-lfm2.5-2.6b-lora",
+         "o1-preview",
+         "deepseek-chat",
+         "gpt-4o",
+diff --git a/model_inference/model_infer.py b/model_inference/model_infer.py
+index ae68610..50993bb 100644
+--- a/model_inference/model_infer.py
++++ b/model_inference/model_infer.py
+@@ -4,7 +4,10 @@ import os
+ import subprocess
+ from openai import OpenAI
+ import google.generativeai as genai
+-from vllm import LLM, SamplingParams
++try:
++    from vllm import LLM, SamplingParams
++except ImportError:  # vllm is Linux-only; API-based evaluation does not need it
++    LLM = SamplingParams = None
+ import time
+ 
+ 

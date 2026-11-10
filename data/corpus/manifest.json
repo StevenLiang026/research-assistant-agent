@@ -1,0 +1,586 @@
+{
+  "categories": [
+    "cs.CL",
+    "cs.LG",
+    "cs.AI",
+    "cs.IR",
+    "cs.CV",
+    "stat.ML"
+  ],
+  "complete": true,
+  "failed": [],
+  "fulltext": {
+    "200": 296,
+    "404": 4
+  },
+  "listing_size": 50,
+  "metadata": {
+    "200": 300
+  },
+  "papers": 300,
+  "per_topic": 15,
+  "recorded_on": "2026-10-10",
+  "stopped": null,
+  "topics": [
+    {
+      "id": "tokenization",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22tokenizer%22+OR+all:%22tokenization%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "分词",
+      "papers": [
+        "2608.18062",
+        "2608.26449",
+        "2609.05022",
+        "2608.00582",
+        "2608.07713",
+        "2609.39001",
+        "2607.10016",
+        "2608.30092",
+        "2607.26831",
+        "2609.01386",
+        "2607.24276",
+        "2609.33395",
+        "2608.24176",
+        "2607.17689",
+        "2609.15433"
+      ],
+      "phrases": [
+        "tokenizer",
+        "tokenization"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "position-extrapolation",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22length+extrapolation%22+OR+all:%22context+extension%22+OR+all:%22rotary+position%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "位置编码与长度外推",
+      "papers": [
+        "2608.10021",
+        "2608.29715",
+        "2609.01252",
+        "2609.32178",
+        "2607.13458",
+        "2609.30576",
+        "2607.24502",
+        "2609.06712",
+        "2608.10296",
+        "2607.07740",
+        "2610.10114",
+        "2609.34556",
+        "2607.25507",
+        "2609.16871",
+        "2607.17675"
+      ],
+      "phrases": [
+        "length extrapolation",
+        "context extension",
+        "rotary position"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "mixture-of-experts",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22mixture+of+experts%22+OR+all:%22mixture-of-experts%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "混合专家",
+      "papers": [
+        "2608.24195",
+        "2607.12255",
+        "2607.06633",
+        "2609.37533",
+        "2607.29039",
+        "2608.22972",
+        "2607.08250",
+        "2608.17402",
+        "2609.02204",
+        "2609.40316",
+        "2608.10947",
+        "2608.12251",
+        "2609.21672",
+        "2609.34634",
+        "2607.01844"
+      ],
+      "phrases": [
+        "mixture of experts",
+        "mixture-of-experts"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "ssm-linear-attention",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22state+space+model%22+OR+all:%22linear+attention%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "状态空间与线性注意力",
+      "papers": [
+        "2607.07953",
+        "2609.39034",
+        "2608.28444",
+        "2609.12814",
+        "2609.36529",
+        "2609.35664",
+        "2608.07616",
+        "2610.11251",
+        "2610.10761",
+        "2609.22506",
+        "2609.12399",
+        "2608.06628",
+        "2608.12149",
+        "2609.33093",
+        "2607.21553"
+      ],
+      "phrases": [
+        "state space model",
+        "linear attention"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "looped-transformers",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22looped+transformer%22+OR+all:%22recurrent+depth%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "循环深度 Transformer",
+      "papers": [
+        "2610.07591",
+        "2607.13491",
+        "2609.33144",
+        "2608.13987",
+        "2610.02185",
+        "2609.17184",
+        "2608.03624",
+        "2608.26556",
+        "2610.10625",
+        "2609.11516",
+        "2610.10381",
+        "2607.20594",
+        "2607.27656",
+        "2608.11233",
+        "2609.34538"
+      ],
+      "phrases": [
+        "looped transformer",
+        "recurrent depth"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "scaling-laws",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22scaling+law%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "缩放定律",
+      "papers": [
+        "2609.05016",
+        "2609.32100",
+        "2609.38526",
+        "2607.25184",
+        "2610.05269",
+        "2609.01431",
+        "2609.07868",
+        "2610.00985",
+        "2607.01487",
+        "2609.33533",
+        "2609.40295",
+        "2609.36263",
+        "2609.01343",
+        "2609.38011",
+        "2609.27588"
+      ],
+      "phrases": [
+        "scaling law"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "pretraining-data",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22data+mixture%22+OR+all:%22pretraining+data%22+OR+all:%22data+selection%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "预训练数据",
+      "papers": [
+        "2607.15267",
+        "2609.21888",
+        "2607.24717",
+        "2607.22769",
+        "2609.37255",
+        "2609.19754",
+        "2609.06652",
+        "2607.01104",
+        "2610.00814",
+        "2607.18199",
+        "2610.03702",
+        "2608.10579",
+        "2608.16926",
+        "2608.13721",
+        "2608.16927"
+      ],
+      "phrases": [
+        "data mixture",
+        "pretraining data",
+        "data selection"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "speculative-decoding",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22speculative+decoding%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "投机解码",
+      "papers": [
+        "2610.08678",
+        "2607.08690",
+        "2610.07822",
+        "2610.10929",
+        "2610.07659",
+        "2608.24004",
+        "2609.27396",
+        "2608.03447",
+        "2609.01068",
+        "2607.11131",
+        "2608.05448",
+        "2607.21804",
+        "2609.21704",
+        "2607.16673",
+        "2608.26004"
+      ],
+      "phrases": [
+        "speculative decoding"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "kv-cache",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22KV+cache%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "KV cache",
+      "papers": [
+        "2607.01520",
+        "2609.31415",
+        "2609.03235",
+        "2609.11582",
+        "2609.34060",
+        "2609.07966",
+        "2609.32831",
+        "2609.26425",
+        "2607.00760",
+        "2609.39329",
+        "2609.05764",
+        "2607.22389",
+        "2609.09768",
+        "2610.06286",
+        "2609.19880"
+      ],
+      "phrases": [
+        "KV cache"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "lora-peft",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22low-rank+adaptation%22+OR+all:%22parameter-efficient+fine-tuning%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "LoRA 与参数高效微调",
+      "papers": [
+        "2607.19391",
+        "2608.01142",
+        "2609.02639",
+        "2610.05800",
+        "2608.01471",
+        "2609.08354",
+        "2607.20914",
+        "2607.22251",
+        "2608.31036",
+        "2609.14106",
+        "2610.09122",
+        "2609.25058",
+        "2607.29048",
+        "2609.33927",
+        "2609.06072"
+      ],
+      "phrases": [
+        "low-rank adaptation",
+        "parameter-efficient fine-tuning"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "reward-models",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22reward+model%22+OR+all:%22reward+modeling%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "奖励模型",
+      "papers": [
+        "2609.33803",
+        "2608.02951",
+        "2609.34345",
+        "2609.32720",
+        "2608.01556",
+        "2609.33221",
+        "2607.15740",
+        "2608.26956",
+        "2607.29185",
+        "2608.24174",
+        "2609.03952",
+        "2609.37372",
+        "2607.09153",
+        "2610.05370",
+        "2609.22947"
+      ],
+      "phrases": [
+        "reward model",
+        "reward modeling"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "preference-optimization",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22direct+preference+optimization%22+OR+all:%22preference+optimization%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "偏好优化",
+      "papers": [
+        "2610.07592",
+        "2608.19598",
+        "2609.34673",
+        "2610.09219",
+        "2609.38647",
+        "2609.32445",
+        "2607.09796",
+        "2608.09568",
+        "2609.22256",
+        "2607.16947",
+        "2609.35044",
+        "2610.04352",
+        "2608.19808",
+        "2610.01511",
+        "2607.13712"
+      ],
+      "phrases": [
+        "direct preference optimization",
+        "preference optimization"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "rl-verifiable-rewards",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22verifiable+rewards%22+OR+all:%22GRPO%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "可验证奖励的强化学习",
+      "papers": [
+        "2609.29050",
+        "2608.14791",
+        "2607.19044",
+        "2609.29230",
+        "2609.36058",
+        "2608.24696",
+        "2607.23802",
+        "2610.11519",
+        "2609.03181",
+        "2608.13698",
+        "2609.36864",
+        "2607.01181",
+        "2609.28765",
+        "2607.14506",
+        "2610.00661"
+      ],
+      "phrases": [
+        "verifiable rewards",
+        "GRPO"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "llm-as-judge",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22LLM-as-a-judge%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "LLM 作评审",
+      "papers": [
+        "2607.02235",
+        "2607.25640",
+        "2609.06367",
+        "2609.10996",
+        "2609.02942",
+        "2609.33955",
+        "2610.00406",
+        "2608.24419",
+        "2610.05094",
+        "2608.05726",
+        "2610.08923",
+        "2610.02877",
+        "2609.37145",
+        "2609.12191",
+        "2608.18300"
+      ],
+      "phrases": [
+        "LLM-as-a-judge"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "hallucination",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22hallucination%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "幻觉",
+      "papers": [
+        "2608.23897",
+        "2608.10008",
+        "2607.23361",
+        "2610.04409",
+        "2607.01117",
+        "2609.22152",
+        "2609.04561",
+        "2609.01888",
+        "2609.33893",
+        "2607.17883",
+        "2608.30653",
+        "2609.09895",
+        "2608.15804",
+        "2608.03782",
+        "2610.12455"
+      ],
+      "phrases": [
+        "hallucination"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "rag",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22retrieval-augmented+generation%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "检索增强生成",
+      "papers": [
+        "2607.01852",
+        "2607.11159",
+        "2607.24799",
+        "2608.30163",
+        "2607.26071",
+        "2610.07622",
+        "2609.04647",
+        "2608.21252",
+        "2608.11030",
+        "2608.01450",
+        "2609.00513",
+        "2609.28108",
+        "2608.23965",
+        "2609.11390",
+        "2609.10046"
+      ],
+      "phrases": [
+        "retrieval-augmented generation"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "quantization",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22quantization%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "量化",
+      "papers": [
+        "2608.12239",
+        "2609.00049",
+        "2608.22322",
+        "2609.16085",
+        "2608.18147",
+        "2608.30394",
+        "2608.24173",
+        "2609.11716",
+        "2608.19388",
+        "2608.11016",
+        "2609.00066",
+        "2608.27512",
+        "2607.07964",
+        "2608.08188",
+        "2607.14181"
+      ],
+      "phrases": [
+        "quantization"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "distillation",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22knowledge+distillation%22+OR+all:%22on-policy+distillation%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "蒸馏",
+      "papers": [
+        "2607.23346",
+        "2609.33791",
+        "2610.04882",
+        "2609.35390",
+        "2608.27857",
+        "2609.08337",
+        "2609.21619",
+        "2607.04037",
+        "2610.09639",
+        "2609.08341",
+        "2607.04751",
+        "2608.19408",
+        "2609.10321",
+        "2609.38360",
+        "2608.16333"
+      ],
+      "phrases": [
+        "knowledge distillation",
+        "on-policy distillation"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "tool-use-agents",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22tool+use%22+OR+all:%22function+calling%22+OR+all:%22tool+calling%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "工具调用与智能体",
+      "papers": [
+        "2609.00949",
+        "2608.06370",
+        "2608.22472",
+        "2608.23635",
+        "2608.18171",
+        "2610.07086",
+        "2607.04686",
+        "2608.17275",
+        "2607.29250",
+        "2609.13559",
+        "2609.25373",
+        "2608.27750",
+        "2607.09822",
+        "2609.21967",
+        "2608.03403"
+      ],
+      "phrases": [
+        "tool use",
+        "function calling",
+        "tool calling"
+      ],
+      "shortfall": 0
+    },
+    {
+      "id": "test-time-scaling",
+      "listed": 50,
+      "listing": "https://export.arxiv.org/api/query?max_results=50&search_query=%28all:%22test-time+scaling%22+OR+all:%22test-time+compute%22%29+AND+%28cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.AI+OR+cat:cs.IR+OR+cat:cs.CV+OR+cat:stat.ML%29+AND+submittedDate:%5B202607010000+TO+202610102359%5D&sortBy=relevance&sortOrder=descending&start=0",
+      "name": "测试时扩展",
+      "papers": [
+        "2608.11829",
+        "2609.19499",
+        "2608.26070",
+        "2609.35748",
+        "2608.28660",
+        "2608.10928",
+        "2609.27374",
+        "2609.35228",
+        "2609.38332",
+        "2609.39632",
+        "2608.03961",
+        "2608.22971",
+        "2608.08675",
+        "2608.30156",
+        "2608.09898"
+      ],
+      "phrases": [
+        "test-time scaling",
+        "test-time compute"
+      ],
+      "shortfall": 0
+    }
+  ],
+  "window": [
+    "2026-07-01",
+    "2026-10-10"
+  ]
+}

@@ -1,0 +1,1 @@
+<|tool_call_start|>[get_paper(arxiv_id='2609.01234'), get_paper(arxiv_id='2609.05678')]<|tool_call_end|><|im_end|>

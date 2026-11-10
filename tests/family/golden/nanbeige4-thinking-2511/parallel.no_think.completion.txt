@@ -1,0 +1,6 @@
+<tool_call>
+{"name": "get_paper", "arguments": {"arxiv_id": "2609.01234"}}
+</tool_call>
+<tool_call>
+{"name": "get_paper", "arguments": {"arxiv_id": "2609.05678"}}
+</tool_call><|im_end|>

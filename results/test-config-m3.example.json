@@ -1,0 +1,82 @@
+{
+  "_doc": {
+    "milestone": "The stage the opens are logged under and b2's spending is booked under (docs/plan.md, 里程碑): M3.",
+    "purpose": "What the opens are for. Each open's line in data/eval/test-access.jsonl and data/eval/e2e-test-access.jsonl states it, followed by the git commit and this file's SHA-256.",
+    "systems": "The systems the session runs, from ft, b0, b1, b4 and b2; ft is required. They run in this order whatever the list's: ft, b0 and b1 on the server with the ft adapter, b4 on the server with the b4 adapter, then b2 on DeepSeek.",
+    "adapters": "The adapter of each fine-tuned system configured (ft, b4): the checkpoint results/checkpoint-selection-<run>.json chose on the development set.",
+    "adapters.<system>": "One adapter: its GGUF, the GGUF's SHA-256 and the selection that chose it.",
+    "adapters.<system>.gguf": "The GGUF the system's llama-server loads, relative to the repository root (runs/train/<run>/gguf/checkpoint-<N>-f16.gguf).",
+    "adapters.<system>.sha256": "The GGUF's SHA-256, 64 lower-case hex digits; the preflight refuses a file with another.",
+    "adapters.<system>.selection": "The checkpoint selection whose chosen GGUF and SHA-256 these must be, relative to the repository root; null not to cross-check.",
+    "server": "The llama-server of the local systems (research_agent.llm.server.LocalServer: -ngl 99, --jinja, 127.0.0.1, no prompt cache, one slot: scripts/run_test.py SLOTS).",
+    "server.model": "The base model GGUF, relative to the repository root.",
+    "server.port": "The port both servers listen on, one after the other; nothing may answer on it before a server starts.",
+    "server.ctx_size": "The context size (-c): 8192, as in every M2 and M3 development run.",
+    "server.timeout_s": "Seconds a server may take to print its ready line and answer /health.",
+    "server.llama_cpp_build": "The build_info each server's /props must report (the development runs used b11349); null not to check it.",
+    "tokenizer": "The model folder whose chat template renders the local prompts and counts the context, relative to the repository root.",
+    "b1_block_sha256_16": "The SHA-256 prefix (16 hex digits) of b1's demonstrations block (research_agent.eval.systems), as every M2 and M3 b1 run recorded it; required when b1 runs.",
+    "b2": "The cloud system's spending.",
+    "b2.max_cost_rmb": "What b2's single-step and end-to-end runs together may spend, in RMB (the M3 plan: 5); the preflight checks that the milestone's budget can take it.",
+    "e2e": "The end-to-end runs.",
+    "e2e.seed": "The seed of every task's run (42, as in the development runs).",
+    "e2e.today": "The date the tasks run on, YYYY-MM-DD; null for the corpus recording date, as the development runs used.",
+    "statistics": "The comparison statistics (the M3 plan, default 2).",
+    "statistics.seed": "The seed of the paired and the cluster bootstrap.",
+    "statistics.resamples": "The resamples of each bootstrap.",
+    "comparisons": "The preregistered primary comparisons, McNemar's p-values Holm-adjusted together in this order.",
+    "comparisons[].name": "The comparison's name, letters, digits, '-' and '_'; results/numbers.json keys its numbers compare.test-m3.<name>.*.",
+    "comparisons[].a": "The system compared: the difference is a's success rate minus b's.",
+    "comparisons[].b": "The system a is compared with.",
+    "comparisons[].deferred": "Only for a comparison a later milestone runs: why it is not run now.",
+    "comparisons[].p": "Only for a deferred comparison: the p-value it enters Holm with (1, the conservative choice).",
+    "gpu": "The GPU before and during the session (nvidia-smi).",
+    "gpu.idle_max_mib": "The most GPU memory in use, in MiB, that still counts as idle at the preflight (1500, as for the overnight training).",
+    "gpu.sample_ms": "The interval of the GPU sampling beside each server, in milliseconds (the plan: 200)."
+  },
+  "milestone": "M3",
+  "purpose": "M3 phase 4: FT against B0, B1 and B4 (and B2 described) on the locked single-step and end-to-end test sets, as preregistered in docs/m3-预登记.md",
+  "systems": ["ft", "b0", "b1", "b4", "b2"],
+  "adapters": {
+    "ft": {
+      "gguf": "<runs/train/ft/gguf/checkpoint-N-f16.gguf: the checkpoint results/checkpoint-selection-ft.json chose>",
+      "sha256": "<the SHA-256 of that GGUF>",
+      "selection": "results/checkpoint-selection-ft.json"
+    },
+    "b4": {
+      "gguf": "<runs/train/b4/gguf/checkpoint-N-f16.gguf: the checkpoint results/checkpoint-selection-b4.json chose>",
+      "sha256": "<the SHA-256 of that GGUF>",
+      "selection": "results/checkpoint-selection-b4.json"
+    }
+  },
+  "server": {
+    "model": "models/Qwen3-1.7B-Q8_0.gguf",
+    "port": 8080,
+    "ctx_size": 8192,
+    "timeout_s": 120,
+    "llama_cpp_build": "<the build_info of /props on the server the development runs used>"
+  },
+  "tokenizer": "models/Qwen3-1.7B",
+  "b1_block_sha256_16": "27998771f1d7f9ba",
+  "b2": {
+    "max_cost_rmb": 5.0
+  },
+  "e2e": {
+    "seed": 42,
+    "today": null
+  },
+  "statistics": {
+    "seed": 42,
+    "resamples": 10000
+  },
+  "comparisons": [
+    {"name": "ft-vs-b0", "a": "ft", "b": "b0"},
+    {"name": "ft-vs-b1", "a": "ft", "b": "b1"},
+    {"name": "ft-vs-b4", "a": "ft", "b": "b4"},
+    {"name": "ftr-vs-b2", "a": "ft+r", "b": "b2", "deferred": "FT+R, the fine-tuned model routing to B2 when unsure, is built in M4; M3 enters this comparison at p = 1 (the M3 plan, default 2)", "p": 1.0}
+  ],
+  "gpu": {
+    "idle_max_mib": 1500,
+    "sample_ms": 200
+  }
+}

@@ -1,0 +1,3 @@
+<tool_call>
+{"name": "get_paper", "arguments": {"arxiv_id": "2609.04321"}}
+</tool_call><|im_end|>

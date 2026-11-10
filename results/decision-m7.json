@@ -1,0 +1,180 @@
+{
+  "about": "WP8 steps 1 and 2 for system A (docs/m7-本地提升计划.md; docs/m7-预登记.md, revision 2), decided once on the held-out sets by scripts/decide_m7.py from aggregates alone: whether M7's final system keeps its vote and its runtime rules.",
+  "config": {
+    "path": "results/test-config-m7.json",
+    "sha256": "ea67037769b9489acd37aa28c463e44066738807531e8240a8356fc54a281b7b"
+  },
+  "system": {
+    "adapter": {
+      "path": "runs/train/ft3/gguf/checkpoint-1635-f16.gguf",
+      "sha256": "0665d4c2ce29112c246e5c0a50f451224d670813f23ec66f08a424380a6d7237"
+    },
+    "base": "models/Nanbeige4.1-3B-Q8_0.gguf",
+    "tokenizer": "models/Nanbeige4.1-3B",
+    "family": {
+      "name": "nanbeige4.1-3b",
+      "template_sha256": "757f108242fb797d23b79f72c088cb5b4bc37fb3744e29dc8771c1dc2b1cb335",
+      "tokenizer_json_sha256": "1d8f0326910136aca20831249220b38ce5299527647bc8c6b65404485c479740",
+      "bos": "turn",
+      "thinking": "only",
+      "lora_targets": [
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "o_proj",
+        "gate_proj",
+        "up_proj",
+        "down_proj"
+      ],
+      "remote": false,
+      "remote_files": {},
+      "revision": null
+    },
+    "generation": {
+      "mode": "think",
+      "decoding": {
+        "temperature": 0.6,
+        "top_p": 0.95,
+        "top_k": 0,
+        "min_p": 0.0,
+        "presence_penalty": 0.0
+      },
+      "reasoning_budget": 1280,
+      "answer_tokens": 512,
+      "base_seed": 0,
+      "sample": 0,
+      "votes": 5
+    },
+    "votes": 5,
+    "vote_mode": "final"
+  },
+  "sets": [
+    {
+      "path": "data/eval/dev-ext.jsonl",
+      "sha256": "89463e10054a7c9a3e121392c19379da342b976c32a0e5a11e819989677001d5",
+      "n": 132
+    },
+    {
+      "path": "data/eval/v2/dev-v2-ext.jsonl",
+      "sha256": "cb8be1aff82f3796e74884fbe6c010cb90d45b11718b492d2338fed9408a0b00",
+      "n": 23
+    }
+  ],
+  "runs": [
+    {
+      "set": "data/eval/dev-ext.jsonl",
+      "greedy": {
+        "path": "runs/m7/dev-ext-ft3-1635-greedy.jsonl",
+        "sha256": "3ab22e17ddfbdfae02d7636f8a8be312642934e6a1142267d08ba3ec62b0e5be"
+      },
+      "samples": [
+        {
+          "path": "runs/m7/heldout/dev-ext-ft3-1635-s0.jsonl",
+          "sha256": "7958f3fa6c4b5a8b6f25e7baaf213803b57f050f62a12b96327b0556cbb99d13"
+        },
+        {
+          "path": "runs/m7/heldout/dev-ext-ft3-1635-s1.jsonl",
+          "sha256": "b2017219970e5a5200843f4ab5f063f89beb0e6e2f9083ddd60dcc94313005bd"
+        },
+        {
+          "path": "runs/m7/heldout/dev-ext-ft3-1635-s2.jsonl",
+          "sha256": "37cbfc3d82568968541aef09bb106194ad8fa0200c16afd850b986648da43e54"
+        },
+        {
+          "path": "runs/m7/heldout/dev-ext-ft3-1635-s3.jsonl",
+          "sha256": "6077d0faffc2dbb78c26baad4bd198cec13a3559e76e3532e0a0946ac5573ed0"
+        },
+        {
+          "path": "runs/m7/heldout/dev-ext-ft3-1635-s4.jsonl",
+          "sha256": "09e42e5856161a9bdb21046d11a5cf60eae4dbdef203508d2ac79d01a6493bcf"
+        }
+      ]
+    },
+    {
+      "set": "data/eval/v2/dev-v2-ext.jsonl",
+      "greedy": {
+        "path": "runs/m7/dev-v2-ext-ft3-1635-greedy.jsonl",
+        "sha256": "3da49ff42cf3cac088f15a9ab2a9bdd69382c9e1321da6c7879bac46c16d15ac"
+      },
+      "samples": [
+        {
+          "path": "runs/m7/heldout/dev-v2-ext-ft3-1635-s0.jsonl",
+          "sha256": "f7a077a10c5517c9e548dd164b769c9e622fb0e254e0659e056a0b360faa3eef"
+        },
+        {
+          "path": "runs/m7/heldout/dev-v2-ext-ft3-1635-s1.jsonl",
+          "sha256": "2534f2f4534bc048669f2b98e9bc3b5e1061970728a10de7dac055e6fa44a21e"
+        },
+        {
+          "path": "runs/m7/heldout/dev-v2-ext-ft3-1635-s2.jsonl",
+          "sha256": "6d50b884e6fbb0934ab22b835e7c78ba3a7ec3c47d96d3c78d566a41bc84267c"
+        },
+        {
+          "path": "runs/m7/heldout/dev-v2-ext-ft3-1635-s3.jsonl",
+          "sha256": "6b4d7518563a9f4abc18fcd22118e65646b8236cbeaea6c3b79ff360de1bba93"
+        },
+        {
+          "path": "runs/m7/heldout/dev-v2-ext-ft3-1635-s4.jsonl",
+          "sha256": "27318c34e38334bfc96ecbca7aa03759d96b51a4bb7b4f06d0245d42d59eac06"
+        }
+      ]
+    }
+  ],
+  "scorers": [
+    "default",
+    "normalized"
+  ],
+  "scorer": "normalized",
+  "totals": {
+    "items": 155,
+    "default": {
+      "greedy": 134,
+      "greedy_rules": 135,
+      "vote": 136,
+      "vote_rules": 137,
+      "rules_fixes": 1,
+      "rules_breaks": 0
+    },
+    "normalized": {
+      "greedy": 134,
+      "greedy_rules": 135,
+      "vote": 136,
+      "vote_rules": 137,
+      "rules_fixes": 1,
+      "rules_breaks": 0
+    }
+  },
+  "decisions": {
+    "vote": {
+      "rule": "step 1: the vote is kept unless, under the normalized scorer over both held-out sets, the vote with the rules gets fewer items right than the greedy answers with the rules",
+      "kept": true,
+      "vote_rules": 137,
+      "greedy_rules": 135
+    },
+    "rules": {
+      "rule": "step 2: the rules are kept unless, under the normalized scorer over both held-out sets, they turn fewer greedy answers from wrong to right than from right to wrong",
+      "kept": true,
+      "fixes": 1,
+      "breaks": 0
+    }
+  },
+  "final": {
+    "vote": true,
+    "rules": true,
+    "records": "vote_rules",
+    "n": {
+      "drafted": 142,
+      "handwritten": 13
+    },
+    "right": {
+      "default": {
+        "drafted": 126,
+        "handwritten": 11
+      },
+      "normalized": {
+        "drafted": 126,
+        "handwritten": 11
+      }
+    }
+  }
+}

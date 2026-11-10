@@ -1,0 +1,188 @@
+{
+  "run_root": "runs/bakeoff/m7",
+  "results": "results/bakeoff-m7.json",
+  "data": ["data/raw/public/*.jsonl", "data/raw/synth/synth-m6.jsonl"],
+  "overlap_report": "data/synth/benchmark-overlap-m6-all.json",
+  "dev_items": "data/eval/dev.jsonl",
+  "reasoning": ["data/raw/synth/reasoning-m7-teacher.jsonl", "data/raw/synth/reasoning-m7-rationalized.jsonl"],
+  "schedule": {
+    "stop_step": 274,
+    "extend_step": 548,
+    "save_steps": 274,
+    "max_length": {"none": 4096, "only": 5120, "hybrid": 5120},
+    "seed": 42,
+    "qlora": true
+  },
+  "smoke": {"steps": 20, "items": 20, "positions": 16, "forced_budget": 32},
+  "thresholds": {
+    "template_rate": 0.005,
+    "peak_reserved_gb": 7.0,
+    "ft3_hours": 60.0,
+    "tie": 3,
+    "hybrid_margin": 5,
+    "gpu_used_mib": 1500,
+    "ram_gb": 4.0
+  },
+  "ft3": {"data_factor": 1.45, "epochs": 2},
+  "variants": {
+    "none": {"nothink": ["--mode", "no_think"]},
+    "only": {
+      "think-s0": ["--mode", "think", "--seed", "0", "--reasoning-budget", "{R}"],
+      "think-s1": ["--mode", "think", "--seed", "1", "--reasoning-budget", "{R}"],
+      "think-s2": ["--mode", "think", "--seed", "2", "--reasoning-budget", "{R}"],
+      "think-greedy": ["--greedy", "--reasoning-budget", "{R}"]
+    },
+    "hybrid": {
+      "think-s0": ["--mode", "think", "--seed", "0", "--reasoning-budget", "{R}"],
+      "think-s1": ["--mode", "think", "--seed", "1", "--reasoning-budget", "{R}"],
+      "think-s2": ["--mode", "think", "--seed", "2", "--reasoning-budget", "{R}"],
+      "think-greedy": ["--greedy", "--reasoning-budget", "{R}"],
+      "nothink": ["--mode", "no_think"]
+    }
+  },
+  "primary": {
+    "none": {"mode": "no_think", "variants": ["nothink"]},
+    "only": {"mode": "think", "variants": ["think-s0", "think-s1", "think-s2"]},
+    "hybrid": {"mode": "think", "variants": ["think-s0", "think-s1", "think-s2"]}
+  },
+  "b0": {
+    "no_think": ["--mode", "no_think"],
+    "think": ["--mode", "think", "--seed", "0", "--reasoning-budget", "{R}"]
+  },
+  "reference": {
+    "key": "c0",
+    "name": "Qwen3-4B",
+    "model": "Qwen/Qwen3-4B",
+    "revision": "1cfa9a720891",
+    "thinking": "hybrid",
+    "mode": "no_think",
+    "score": "runs/m7/g2-dev-ft3pilot.score.json",
+    "source": "runs/m7/g2.json",
+    "P": 107,
+    "train": "runs/train/ft3-pilot",
+    "resume_from": "runs/train/ft3-pilot/trainer/checkpoint-274",
+    "extension": null
+  },
+  "candidates": {
+    "c1": {
+      "name": "Qwen3-4B-Instruct-2507",
+      "hf": "models/Qwen3-4B-Instruct-2507",
+      "gguf": "models/Qwen3-4B-Instruct-2507-Q8_0.gguf",
+      "family": "qwen3-instruct-2507",
+      "thinking": "none",
+      "reasoning_budget": null,
+      "model": "Qwen/Qwen3-4B-Instruct-2507",
+      "revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+      "exempt": ["S0", "S1", "S2", "S3", "S4"],
+      "exempt_reason": "the same architecture and tokenizer as the reference, whose pipeline G2 validated (docs/m7-底座对比预登记.md, C1 的豁免)",
+      "record_only": ["S5", "S6"]
+    },
+    "c2": {
+      "name": "Qwen3-4B-Thinking-2507",
+      "hf": "models/Qwen3-4B-Thinking-2507",
+      "gguf": "models/Qwen3-4B-Thinking-2507-Q8_0.gguf",
+      "family": "qwen3-thinking-2507",
+      "thinking": "only",
+      "reasoning_budget": 1280,
+      "model": "Qwen/Qwen3-4B-Thinking-2507",
+      "revision": "768f209d9ea81521153ed38c47d515654e938aea",
+      "exempt": [],
+      "exempt_reason": null,
+      "record_only": ["S6"]
+    },
+    "c3": {
+      "name": "Qwen3.5-4B",
+      "hf": "models/Qwen3.5-4B",
+      "gguf": "models/Qwen3.5-4B-Q8_0.gguf",
+      "family": null,
+      "thinking": "hybrid",
+      "reasoning_budget": null,
+      "model": "Qwen/Qwen3.5-4B",
+      "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+      "exempt": [],
+      "exempt_reason": null,
+      "record_only": ["S6"]
+    },
+    "c4": {
+      "name": "Nanbeige4-3B-Thinking-2511",
+      "hf": "models/Nanbeige4-3B-Thinking-2511",
+      "gguf": "models/Nanbeige4-3B-Thinking-2511-Q8_0.gguf",
+      "family": null,
+      "thinking": "only",
+      "reasoning_budget": null,
+      "model": "Nanbeige/Nanbeige4-3B-Thinking-2511",
+      "revision": "396a1fb7a5e1a87941b321b4da85bc510b424d00",
+      "exempt": [],
+      "exempt_reason": null,
+      "record_only": ["S6"]
+    },
+    "c5": {
+      "name": "Nanbeige4.1-3B",
+      "hf": "models/Nanbeige4.1-3B",
+      "gguf": "models/Nanbeige4.1-3B-Q8_0.gguf",
+      "family": null,
+      "thinking": "only",
+      "reasoning_budget": null,
+      "model": "Nanbeige/Nanbeige4.1-3B",
+      "revision": "9c4555c37921c0982af8fffeee1e0a6e6b953c4f",
+      "exempt": [],
+      "exempt_reason": null,
+      "record_only": ["S6"]
+    },
+    "c6": {
+      "name": "MiniCPM5-2B",
+      "hf": "models/MiniCPM5-2B",
+      "gguf": "models/MiniCPM5-2B-Q8_0.gguf",
+      "family": null,
+      "thinking": "hybrid",
+      "reasoning_budget": null,
+      "model": "openbmb/MiniCPM5-2B",
+      "revision": "f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+      "exempt": [],
+      "exempt_reason": null,
+      "record_only": ["S6"],
+      "skipped": "cut line 2 (docs/m7-计划.md 砍线): wave 4 more than a day behind on 2026-10-26"
+    },
+    "c7": {
+      "name": "Spark-X2.5-4B",
+      "hf": "models/Spark-X2.5-4B",
+      "gguf": "models/Spark-X2.5-4B-Q8_0.gguf",
+      "family": null,
+      "thinking": "hybrid",
+      "reasoning_budget": null,
+      "model": "XHToken/Spark-X2.5-4B",
+      "revision": "0bcb35678590218655dff3765b9e61c83b35e9c4",
+      "exempt": [],
+      "exempt_reason": null,
+      "record_only": ["S6"],
+      "skipped": "cut line 2 (docs/m7-计划.md 砍线): wave 4 more than a day behind on 2026-10-26"
+    },
+    "c8": {
+      "name": "granite-4.2-3b",
+      "hf": "models/granite-4.2-3b",
+      "gguf": "models/granite-4.2-3b-Q8_0.gguf",
+      "family": null,
+      "thinking": "hybrid",
+      "reasoning_budget": null,
+      "model": "ibm-granite/granite-4.2-3b",
+      "revision": "e459acceac81e5fe67c07d9cfc72329a332e7eb1",
+      "exempt": [],
+      "exempt_reason": null,
+      "record_only": ["S6"]
+    },
+    "c9": {
+      "name": "LFM2.5-2.6B",
+      "hf": "models/LFM2.5-2.6B",
+      "gguf": "models/LFM2.5-2.6B-Q8_0.gguf",
+      "family": null,
+      "thinking": "only",
+      "reasoning_budget": null,
+      "model": "LiquidAI/LFM2.5-2.6B",
+      "revision": "654f9463ce32b05d0429d76fe1f580b27d4c1ac0",
+      "exempt": [],
+      "exempt_reason": null,
+      "record_only": ["S6"],
+      "skipped": "cut line 2 (docs/m7-计划.md 砍线): wave 4 more than a day behind on 2026-10-26"
+    }
+  }
+}

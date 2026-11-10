@@ -1,0 +1,35 @@
+<|im_start|>system
+# Tools
+
+You have access to the following functions:
+
+<tools>
+{"name": "book_table", "description": "Book a table at a restaurant.", "parameters": {"type": "object", "properties": {"restaurant": {"type": "object", "properties": {"name": {"type": "string"}, "city": {"type": "string"}}}, "party": {"type": "object", "properties": {"adults": {"type": "integer"}, "children": {"type": "array", "items": {"type": "object", "properties": {"age": {"type": "integer"}}}}}}, "time": {"type": "string"}, "requests": {"type": "array", "items": {"type": "string"}}}, "required": ["restaurant", "party", "time"]}}
+</tools>
+
+If you choose to call a function ONLY reply in the following format with NO suffix:
+
+<tool_call>
+<function=example_function_name>
+<parameter=example_parameter_1>
+value_1
+</parameter>
+<parameter=example_parameter_2>
+This is the value for the second parameter
+that can span
+multiple lines
+</parameter>
+</function>
+</tool_call>
+
+<IMPORTANT>
+Reminder:
+- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags
+- Required parameters MUST be specified
+- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after
+- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls
+</IMPORTANT><|im_end|>
+<|im_start|>user
+Book a table at Café de Flore in Paris for two adults and a five-year-old at 19:30, by the window, with a high chair.<|im_end|>
+<|im_start|>assistant
+<think></think>

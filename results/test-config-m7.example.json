@@ -1,0 +1,131 @@
+{
+  "_doc": {
+    "milestone": "The stage the opens are logged under and B2's spending is booked under (docs/plan.md, 里程碑): M7.",
+    "purpose": "What the opens are for. Each open's line in data/eval/v2/test-v2-access.jsonl and e2e-test-v2-access.jsonl states it, followed by the git commit and this file's SHA-256.",
+    "test_sets": "v2 (docs/m7-计划.md WP-I): data/eval/v2/test-v2.jsonl (300 items) and e2e-test-v2.jsonl (150 tasks), with their own access logs and completion markers (data/eval/v2/test-completions-v2.jsonl). Its development set is data/eval/dev.jsonl and data/eval/v2/dev-v2.jsonl jointly (276 items), which the dry run runs and the frozen file was frozen on. A v2 configuration has no reference: every system compared runs in the session.",
+    "scorers": "The scorers besides the default one whose results every single-step file carries too (eval.metrics.SCORERS): normalized, the primary scorer of revision 2 (S1 to S3, docs/m7-本地提升计划.md WP1), under results/test-m7-<system>.json's \"scorers\" block; the default scorer's results stay where they always were and are reported beside it.",
+    "systems": "The systems the session runs, each with its options ({} for none), in this order whatever the object's (docs/m7-本地提升计划.md WP5, WP10): ft2 (FT2, which H1 compares final with) on the server with the ft2 adapter, then final and finalg on the server with the final adapter, then b2 (B2, the reference) on DeepSeek. The R3 routing (ft3r) is no longer run (revision 1).",
+    "systems.<system>": "A system's options (scripts/run_test.py, A system's options), every one optional.",
+    "systems.<system>.votes": "final: K = 5 (the plan's K), the vote over five samples, sample k the run with base seed k, the greedy answer breaking ties (agent.vote); WP8 step 1 (scripts/decide_m7.py on the held-out sets) drops it when the vote with the rules falls below the greedy answers with the rules, and final is then its greedy candidate (decoding greedy, no votes).",
+    "systems.<system>.vote_mode": "final: the vote's answer keys in the final mode (agent.vote: the analysis' keys with S1, S2 and the flag of the ids found in the history).",
+    "systems.<system>.rules": "final: true, the runtime rules (agent.rules: transient_retry, id_repair) on every candidate's answer before the vote; WP8 step 2 drops them when on the held-out greedy records they break more items than they fix.",
+    "systems.<system>.glossary": "final: null, no glossary note (system A: FT3 was not trained with one); a system with one names its zh-en glossary file and that file's SHA-256.",
+    "systems.<system>.glossary.path": "The glossary file (data/glossary/zh-en.json), relative to the repository root.",
+    "systems.<system>.glossary.sha256": "Its SHA-256; the preflight refuses a file with another, and the frozen file must record it.",
+    "systems.<system>.frozen": "final's alone, and required for it: the frozen file of the final system, written by scripts/freeze_final.py from FT3's development runs at step 1635 (the greedy runs and seeds 0 to 4 over dev and dev-v2), never by hand.",
+    "systems.<system>.frozen.path": "results/final-m7.json.",
+    "systems.<system>.frozen.sha256": "Its SHA-256, a placeholder until scripts/freeze_final.py has written the file (it reads this configuration with the placeholder). The preflight refuses another file, one that records another adapter, base model, generation (votes included), vote mode, rules version, glossary or development sets than this configuration gives now; the dry run holds final's per-item successes under both scorers and finalg's per-item outputs over all 276 development items against it.",
+    "systems.<system>.decoding": "finalg: greedy, the final adapter's generation decoded greedily (the greedy candidate of final's vote, the model alone).",
+    "systems.<system>.end_to_end": "finalg: false, single step only (the owner's decision of 2026-10-30): it has no end-to-end run and no results/test-m7-e2e-finalg.json. Every other system runs single step and then end to end.",
+    "adapters": "The adapter of the server of every local system run: final for final and finalg, ft2 for ft2.",
+    "adapters.<system>": "One adapter: its GGUF, the GGUF's SHA-256 and the selection that chose it; for final also its server's base model, its tokenizer folder and the generation of the systems on its server.",
+    "adapters.<system>.gguf": "The GGUF the system's llama-server loads, relative to the repository root: FT3's checkpoint 1635 for final (the owner's decision of 2026-10-30: system A; FT4 is not trained for this opening).",
+    "adapters.<system>.sha256": "The GGUF's SHA-256, 64 lower-case hex digits; the preflight refuses a file with another, and the frozen file and every development run it was frozen from must record it.",
+    "adapters.<system>.selection": "The checkpoint selection whose chosen GGUF and SHA-256 these must be, relative to the repository root (FT3's: step 1635, results/checkpoint-selection-ft3.json).",
+    "adapters.<system>.model": "The base model GGUF this adapter's server loads, relative to the repository root: Nanbeige4.1-3B in Q8_0, the bake-off winner's; without it, server.model.",
+    "adapters.<system>.tokenizer": "The model folder whose family (research_agent.family.registry) renders and encodes the prompts of the systems on this server and counts their context, relative to the repository root; without it, the configuration's tokenizer.",
+    "adapters.<system>.generation": "How the systems on this server generate (scripts/run_test.py, the family path), as scripts/run_eval.py ran FT3 on the development sets: final's samples with it, its greedy candidate and finalg with it decoded greedily. Without it, the legacy path of M3 to M6 (ft2 here).",
+    "adapters.<system>.generation.mode": "think, the mode FT3 was trained and selected in.",
+    "adapters.<system>.generation.decoding": "sampled (the family's own sampling of think mode), which final's vote needs; its greedy candidate and finalg decode greedily.",
+    "adapters.<system>.generation.reasoning_budget": "R = 1280, the reasoning budget of FT3's selection and of every development run the frozen file was frozen from. server.ctx_size must hold 4096 + R + 520.",
+    "adapters.<system>.generation.base_seed": "0: sample k of final's vote draws its requests' seeds from base seed k (research_agent.llm.generation.request_seed), as the --seed k development runs did.",
+    "server": "The llama-server of the local systems (research_agent.llm.server.LocalServer: -ngl 99, --jinja, 127.0.0.1, no prompt cache, one slot: scripts/run_test.py SLOTS): FT2's, and final's but for its own base model.",
+    "server.model": "The base model GGUF of a server whose adapter names none (FT2's: Qwen3-1.7B), relative to the repository root.",
+    "server.port": "The port both servers listen on, one after the other; nothing may answer on it before a server starts.",
+    "server.ctx_size": "The context size (-c) of both servers: 8192, which holds a thinking server's 4096 + R + 520 for R up to 3576 (docs/m7-计划.md §2 端到端预算).",
+    "server.timeout_s": "Seconds a server may take to print its ready line and answer /health.",
+    "server.llama_cpp_build": "The build_info each server's /props must report: b11349, as in M3 to M6 and the M7 development runs.",
+    "tokenizer": "The model folder of the chat template and the token counter of a server whose adapter names no tokenizer (FT2's) and of b2's context check, relative to the repository root.",
+    "b2": "The spending of the cloud model: B2's runs, booked under M7; final and finalg spend nothing.",
+    "b2.max_cost_rmb": "What B2's single-step and end-to-end runs together may spend, in RMB; the preflight checks that the M7 budget can take it (spent + 5 <= 50: at most 45 RMB spent before the opening).",
+    "e2e": "The end-to-end runs.",
+    "e2e.seed": "The seed of every task's run (42, as in M3 to M6 and the development runs).",
+    "e2e.today": "The date the tasks run on, YYYY-MM-DD; null for the corpus recording date.",
+    "statistics": "The comparison statistics.",
+    "statistics.seed": "The seed of the paired, the cluster and the stratified bootstrap.",
+    "statistics.resamples": "The resamples of each bootstrap.",
+    "comparisons": "The preregistered hypotheses (docs/m7-预登记.md, revision 2): H1 by McNemar on the normalized scorer and H3 by the stratified one-sided non-inferiority bootstrap, their p-values Holm-adjusted together in this order; the rows after them are descriptive, outside the family, with no p.",
+    "comparisons[].name": "The comparison's name; results/numbers.json keys its numbers compare.test-m7.<name>.*.",
+    "comparisons[].a": "The system compared: the difference is a's success rate minus b's.",
+    "comparisons[].b": "The system a is compared with.",
+    "comparisons[].test": "mcnemar: the exact McNemar test on the discordant items (H1: final better than FT2).",
+    "comparisons[].scorer": "The scorer the two systems' single-step successes are compared under: normalized (H1, and final against finalg and against B2), or default (H1's difference on the default scorer, descriptive); a row without one compares under the default scorer.",
+    "comparisons[].acebench": "H3: the raw ACEBench folders of a (FT3 at step 1635, the final adapter: results/acebench-m7.json's ft side) and b (its base, untrained), both run in think mode (scripts/run_acebench.py), read answer by answer and compared by the stratified bootstrap over the (language, category) strata, with the margin.",
+    "comparisons[].acebench.a": "The final adapter's raw folder (scripts/run_acebench.py: runs/acebench/m7/ft), relative to the repository root.",
+    "comparisons[].acebench.b": "The base model's raw folder, beside it.",
+    "comparisons[].acebench.margin": "The non-inferiority margin: 0.02, two percentage points.",
+    "comparisons[].descriptive": "true: compared like a tested row (difference, intervals, discordant counts) but outside the Holm family, with no p: final against finalg (what the vote and the rules add) and against B2 on the normalized scorer, and against FT2 on the default scorer.",
+    "gpu": "The GPU before and during the session (nvidia-smi).",
+    "gpu.idle_max_mib": "The most GPU memory in use, in MiB, that still counts as idle at the preflight.",
+    "gpu.sample_ms": "The interval of the GPU sampling beside each server, in milliseconds."
+  },
+  "milestone": "M7",
+  "purpose": "M7: the final local system (FT3 at step 1635 voting over five samples with the runtime rules) on the locked v2 single-step and end-to-end test sets, final against FT2 (H1, normalized scorer) and the final adapter non-inferior to its base on ACEBench (H3), finalg and B2 beside them, as preregistered in docs/m7-预登记.md, revision 2",
+  "test_sets": "v2",
+  "scorers": ["normalized"],
+  "systems": {
+    "ft2": {},
+    "final": {
+      "votes": 5,
+      "vote_mode": "final",
+      "rules": true,
+      "glossary": null,
+      "frozen": {
+        "path": "results/final-m7.json",
+        "sha256": "<the SHA-256 of results/final-m7.json, which scripts/freeze_final.py writes>"
+      }
+    },
+    "finalg": {"decoding": "greedy", "end_to_end": false},
+    "b2": {}
+  },
+  "adapters": {
+    "final": {
+      "gguf": "runs/train/ft3/gguf/checkpoint-1635-f16.gguf",
+      "sha256": "0665d4c2ce29112c246e5c0a50f451224d670813f23ec66f08a424380a6d7237",
+      "selection": "results/checkpoint-selection-ft3.json",
+      "model": "models/Nanbeige4.1-3B-Q8_0.gguf",
+      "tokenizer": "models/Nanbeige4.1-3B",
+      "generation": {
+        "mode": "think",
+        "decoding": "sampled",
+        "reasoning_budget": 1280,
+        "base_seed": 0
+      }
+    },
+    "ft2": {
+      "gguf": "runs/train/ft2/gguf/checkpoint-1644-f16.gguf",
+      "sha256": "1d5a7155873edfbd4dd45ace44266d4cbf02468bd72f9851af154a200bbd95f7",
+      "selection": "results/checkpoint-selection-ft2.json"
+    }
+  },
+  "server": {
+    "model": "models/Qwen3-1.7B-Q8_0.gguf",
+    "port": 8080,
+    "ctx_size": 8192,
+    "timeout_s": 120,
+    "llama_cpp_build": "b11349-fb4b2737a"
+  },
+  "tokenizer": "models/Qwen3-1.7B",
+  "b2": {
+    "max_cost_rmb": 5.0
+  },
+  "e2e": {
+    "seed": 42,
+    "today": null
+  },
+  "statistics": {
+    "seed": 42,
+    "resamples": 10000
+  },
+  "comparisons": [
+    {"name": "final-vs-ft2", "a": "final", "b": "ft2", "test": "mcnemar", "scorer": "normalized"},
+    {"name": "final-vs-b0-acebench", "acebench": {"a": "runs/acebench/m7/ft", "b": "runs/acebench/m7/b0", "margin": 0.02}},
+    {"name": "final-vs-finalg", "a": "final", "b": "finalg", "scorer": "normalized", "descriptive": true},
+    {"name": "final-vs-b2", "a": "final", "b": "b2", "scorer": "normalized", "descriptive": true},
+    {"name": "final-vs-ft2-default", "a": "final", "b": "ft2", "scorer": "default", "descriptive": true}
+  ],
+  "gpu": {
+    "idle_max_mib": 1500,
+    "sample_ms": 200
+  }
+}

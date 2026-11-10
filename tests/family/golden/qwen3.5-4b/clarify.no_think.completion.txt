@@ -1,0 +1,10 @@
+<tool_call>
+<function=ask_clarification>
+<parameter=question>
+你指的是哪一篇论文?请给出 arXiv 编号或标题。
+</parameter>
+<parameter=missing>
+["paper_id"]
+</parameter>
+</function>
+</tool_call><|im_end|>

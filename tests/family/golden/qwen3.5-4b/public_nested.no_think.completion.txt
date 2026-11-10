@@ -1,0 +1,16 @@
+<tool_call>
+<function=book_table>
+<parameter=restaurant>
+{"name": "Café de Flore", "city": "Paris"}
+</parameter>
+<parameter=party>
+{"adults": 2, "children": [{"age": 5}]}
+</parameter>
+<parameter=time>
+19:30
+</parameter>
+<parameter=requests>
+["window seat", "high chair"]
+</parameter>
+</function>
+</tool_call><|im_end|>

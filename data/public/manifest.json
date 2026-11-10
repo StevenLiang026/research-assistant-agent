@@ -1,0 +1,384 @@
+{
+  "generated": "2026-10-09T23:57:24+00:00",
+  "seed": 42,
+  "context_tokens": 3072,
+  "model": "models/Qwen3-1.7B",
+  "sources": {
+    "toolace": {
+      "repo": "Team-ACE/ToolACE",
+      "revision": "6bda777c88d21e5a204703c1ee45597a8fa4f734",
+      "license": "apache-2.0",
+      "gated": false,
+      "last_modified": "2024-09-04T02:37:59+00:00",
+      "files": {
+        "data.json": 37154735
+      },
+      "notice_files": [],
+      "plan_count": 1500,
+      "seed": 42,
+      "configs": [],
+      "excluded_configs": {},
+      "per_file": [
+        {
+          "file": "data.json",
+          "config": null,
+          "rows": 11300,
+          "converted": 10586,
+          "dropped": {
+            "tool list missing or unparseable": 678,
+            "tool call unparseable": 31,
+            "a user or assistant turn is empty": 5
+          }
+        }
+      ],
+      "rows": 11300,
+      "converted": 10586,
+      "dropped": {
+        "tool list missing or unparseable": 678,
+        "tool call unparseable": 31,
+        "a user or assistant turn is empty": 5
+      },
+      "pool": {
+        "samples": 10586,
+        "no_call": 1329,
+        "no_call_share": 0.1255,
+        "parallel_steps": 4126,
+        "multi_step": 648
+      },
+      "draw": {
+        "no_call_share": null,
+        "candidates": 10586,
+        "excluded_for_length": 10,
+        "fit": 10576,
+        "no_call": 184,
+        "with_call": 1316
+      },
+      "written": {
+        "samples": 1500,
+        "no_call": 184,
+        "no_call_share": 0.1227,
+        "parallel_steps": 580,
+        "multi_step": 82
+      },
+      "path": "data/raw/public/toolace.jsonl",
+      "sha256": "9a0c59b404082fce4e1449de4e68d9ac9727a89bcbb74a5ea945a4b48dcb50cc",
+      "tokens": {
+        "samples": 1500,
+        "min": 177,
+        "median": 631,
+        "mean": 694,
+        "p95": 1346,
+        "max": 2153,
+        "over_context": 0,
+        "context_tokens": 3072
+      },
+      "seconds": 6.4
+    },
+    "glaive_v2": {
+      "repo": "glaiveai/glaive-function-calling-v2",
+      "revision": "e7f4b6456019f5d8bcb991ef0dd67d8ff23221ac",
+      "license": "apache-2.0",
+      "gated": false,
+      "last_modified": "2023-09-27T18:04:08+00:00",
+      "files": {
+        "glaive-function-calling-v2.json": 271190065
+      },
+      "notice_files": [],
+      "plan_count": 800,
+      "seed": 42,
+      "configs": [],
+      "excluded_configs": {},
+      "per_file": [
+        {
+          "file": "glaive-function-calling-v2.json",
+          "config": null,
+          "rows": 112960,
+          "converted": 112745,
+          "dropped": {
+            "tool result without a call": 164,
+            "call names a tool not in the list": 25,
+            "tool call unparseable": 22,
+            "a user or assistant turn is empty": 4
+          }
+        }
+      ],
+      "rows": 112960,
+      "converted": 112745,
+      "dropped": {
+        "tool result without a call": 164,
+        "call names a tool not in the list": 25,
+        "tool call unparseable": 22,
+        "a user or assistant turn is empty": 4
+      },
+      "pool": {
+        "samples": 112745,
+        "no_call": 49574,
+        "no_call_share": 0.4397,
+        "parallel_steps": 0,
+        "multi_step": 19584
+      },
+      "draw": {
+        "no_call_share": 0.1,
+        "candidates": 112745,
+        "excluded_for_length": 27,
+        "fit": 112718,
+        "no_call": 80,
+        "with_call": 720
+      },
+      "written": {
+        "samples": 800,
+        "no_call": 80,
+        "no_call_share": 0.1,
+        "parallel_steps": 0,
+        "multi_step": 188
+      },
+      "path": "data/raw/public/glaive_v2.jsonl",
+      "sha256": "8f87285b616125a71a1888411c34d716a2db8f0f16133fa712ebdc55357892fe",
+      "tokens": {
+        "samples": 800,
+        "min": 187,
+        "median": 407,
+        "mean": 438,
+        "p95": 726,
+        "max": 2209,
+        "over_context": 0,
+        "context_tokens": 3072
+      },
+      "seconds": 49.8
+    },
+    "hermes": {
+      "repo": "NousResearch/hermes-function-calling-v1",
+      "revision": "dae3e1d28cfbcf4b915c04ea1e072030529b4bda",
+      "license": "apache-2.0",
+      "gated": false,
+      "last_modified": "2026-01-03T13:32:47+00:00",
+      "files": {
+        "func-calling.json": 20554130,
+        "glaive-function-calling-5k.json": 20416419
+      },
+      "notice_files": [],
+      "plan_count": 700,
+      "seed": 42,
+      "configs": [
+        "func_calling",
+        "glaive_func_calling"
+      ],
+      "excluded_configs": {
+        "func_calling_singleturn": "every one of its 1,893 prompts also opens a func_calling conversation (measured 2026-10-09), so it adds only prefixes",
+        "json_mode_agentic": "structured output without tools",
+        "json_mode_singleturn": "structured output without tools"
+      },
+      "per_file": [
+        {
+          "file": "func-calling.json",
+          "config": "func_calling",
+          "rows": 1893,
+          "converted": 1665,
+          "dropped": {
+            "tool results do not answer the calls one to one": 157,
+            "call names a tool not in the list": 61,
+            "tool result without a call": 10
+          }
+        },
+        {
+          "file": "glaive-function-calling-5k.json",
+          "config": "glaive_func_calling",
+          "rows": 5209,
+          "converted": 5206,
+          "dropped": {
+            "call names a tool not in the list": 3
+          }
+        }
+      ],
+      "rows": 7102,
+      "converted": 6871,
+      "dropped": {
+        "tool results do not answer the calls one to one": 157,
+        "call names a tool not in the list": 64,
+        "tool result without a call": 10
+      },
+      "pool": {
+        "samples": 6871,
+        "no_call": 865,
+        "no_call_share": 0.1259,
+        "parallel_steps": 584,
+        "multi_step": 2337
+      },
+      "draw": {
+        "no_call_share": null,
+        "candidates": 6871,
+        "excluded_for_length": 699,
+        "fit": 6172,
+        "no_call": 105,
+        "with_call": 595
+      },
+      "written": {
+        "samples": 700,
+        "no_call": 105,
+        "no_call_share": 0.15,
+        "parallel_steps": 68,
+        "multi_step": 248
+      },
+      "path": "data/raw/public/hermes.jsonl",
+      "sha256": "e5d9fbfc5a1602cd30255d74e4a6e583000725c4807ca81d142fcd76fbb56ecc",
+      "tokens": {
+        "samples": 700,
+        "min": 290,
+        "median": 574,
+        "mean": 761,
+        "p95": 1918,
+        "max": 3066,
+        "over_context": 0,
+        "context_tokens": 3072
+      },
+      "seconds": 5.2
+    },
+    "glaive_zh": {
+      "repo": "llamafactory/glaive_toolcall_zh",
+      "revision": "12cc99d1f129825c475d7df04a169b6d7468a518",
+      "license": "apache-2.0",
+      "gated": false,
+      "last_modified": "2024-06-07T18:45:04+00:00",
+      "files": {
+        "glaive_toolcall_zh_1k.json": 2378465
+      },
+      "notice_files": [],
+      "plan_count": 500,
+      "seed": 42,
+      "configs": [],
+      "excluded_configs": {},
+      "per_file": [
+        {
+          "file": "glaive_toolcall_zh_1k.json",
+          "config": null,
+          "rows": 1000,
+          "converted": 997,
+          "dropped": {
+            "tool result without a call": 3
+          }
+        }
+      ],
+      "rows": 1000,
+      "converted": 997,
+      "dropped": {
+        "tool result without a call": 3
+      },
+      "pool": {
+        "samples": 997,
+        "no_call": 485,
+        "no_call_share": 0.4865,
+        "parallel_steps": 0,
+        "multi_step": 177
+      },
+      "draw": {
+        "no_call_share": 0.1,
+        "candidates": 997,
+        "excluded_for_length": 0,
+        "fit": 997,
+        "no_call": 50,
+        "with_call": 450
+      },
+      "written": {
+        "samples": 500,
+        "no_call": 50,
+        "no_call_share": 0.1,
+        "parallel_steps": 0,
+        "multi_step": 157
+      },
+      "path": "data/raw/public/glaive_zh.jsonl",
+      "sha256": "10e4f5938a08de10bbdbaaec9c5509ffb0cee828242cf869b3b0bbdafb3bbadd",
+      "tokens": {
+        "samples": 500,
+        "min": 194,
+        "median": 388,
+        "mean": 434,
+        "p95": 719,
+        "max": 1738,
+        "over_context": 0,
+        "context_tokens": 3072
+      },
+      "seconds": 1.0
+    },
+    "deepexi": {
+      "repo": "Deepexi/function-calling-small",
+      "revision": "8fba7ee941523e7da69f4ff882b52e5566d24288",
+      "license": "cc-by-4.0",
+      "gated": false,
+      "last_modified": "2023-09-13T12:03:16+00:00",
+      "files": {
+        "function-calling-small_aliyun_openapi_V2.csv": 111809738
+      },
+      "notice_files": [],
+      "plan_count": 500,
+      "seed": 42,
+      "configs": [],
+      "excluded_configs": {},
+      "per_file": [
+        {
+          "file": "function-calling-small_aliyun_openapi_V2.csv",
+          "config": null,
+          "rows": 24608,
+          "converted": 23961,
+          "dropped": {
+            "tool call unparseable": 416,
+            "call names a tool not in the list": 191,
+            "arguments are not one JSON object": 40
+          }
+        }
+      ],
+      "rows": 24608,
+      "converted": 23961,
+      "dropped": {
+        "tool call unparseable": 416,
+        "call names a tool not in the list": 191,
+        "arguments are not one JSON object": 40
+      },
+      "pool": {
+        "samples": 23961,
+        "no_call": 0,
+        "no_call_share": 0.0,
+        "parallel_steps": 0,
+        "multi_step": 0
+      },
+      "draw": {
+        "no_call_share": null,
+        "candidates": 23961,
+        "excluded_for_length": 802,
+        "fit": 23159,
+        "no_call": 0,
+        "with_call": 500
+      },
+      "written": {
+        "samples": 500,
+        "no_call": 0,
+        "no_call_share": 0.0,
+        "parallel_steps": 0,
+        "multi_step": 0
+      },
+      "path": "data/raw/public/deepexi.jsonl",
+      "sha256": "9e9b078062a6f91554adaca9ba18cd7cada420a211d5ddc3ccce5622ae094f57",
+      "tokens": {
+        "samples": 500,
+        "min": 333,
+        "median": 946,
+        "mean": 1088,
+        "p95": 2328,
+        "max": 3021,
+        "over_context": 0,
+        "context_tokens": 3072
+      },
+      "seconds": 18.7
+    }
+  },
+  "hf_cache": {
+    "size_bytes": 489312039,
+    "size_gb": 0.489,
+    "datasets_bytes": {
+      "Deepexi/function-calling-small": 111812001,
+      "NousResearch/hermes-function-calling-v1": 66774246,
+      "Team-ACE/ToolACE": 37156608,
+      "glaiveai/glaive-function-calling-v2": 271190171,
+      "llamafactory/glaive_toolcall_zh": 2379013
+    }
+  }
+}

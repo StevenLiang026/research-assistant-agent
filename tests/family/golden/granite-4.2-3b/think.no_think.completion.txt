@@ -1,0 +1,9 @@
+
+<tool_call>
+<function=get_paper>
+<parameter=arxiv_id>
+2609.04321
+</parameter>
+</function>
+</tool_call>
+<|im_end|>

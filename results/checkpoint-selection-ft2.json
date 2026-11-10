@@ -1,0 +1,151 @@
+{
+  "run": "runs/train/ft2",
+  "system": "ft",
+  "lora_scale": 1.0,
+  "rule": "The checkpoint with the highest single-step success rate on the development set (successes / n, compared exactly); a tie goes to the later step (the M3 plan, default 1). The chosen checkpoint's development score is optimistically biased: it was chosen on that set.",
+  "items": "data/eval/dev.jsonl",
+  "items_sha256": "030586e55fb230e0b4d68038c5580d311fbeb80dad6ce474a9b57cb0db524763",
+  "base_model": "models/Qwen3-1.7B-Q8_0.gguf",
+  "server_args": [
+    "-m",
+    "models/Qwen3-1.7B-Q8_0.gguf",
+    "-ngl",
+    "99",
+    "-c",
+    "8192",
+    "--jinja",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "8080",
+    "--cache-ram",
+    "0",
+    "--lora",
+    "<checkpoint gguf>",
+    "--lora-init-without-apply",
+    "-np",
+    "1"
+  ],
+  "server_slots": 1,
+  "git_commit": "8f34dbf4788460963bb48d823aaa4fef11b569ac",
+  "git_dirty": true,
+  "checkpoints": [
+    {
+      "step": 274,
+      "gguf": "runs/train/ft2/gguf/checkpoint-274-f16.gguf",
+      "sha256": "4040ac121a984ee4fedb7cdf7f6505ee6d6cf6a578452a1168bfbe1d138a1a5e",
+      "n": 150,
+      "successes": 100,
+      "rate": 0.6666666666666666,
+      "statuses": {
+        "ok": 150
+      },
+      "server_build": "b11349-fb4b2737a",
+      "records": "runs/eval/select-ft2/checkpoint-274.jsonl"
+    },
+    {
+      "step": 548,
+      "gguf": "runs/train/ft2/gguf/checkpoint-548-f16.gguf",
+      "sha256": "6c05059cb5b092ca0e1dbac001cf1a0b20991df7089e6613c2bcce147f5d1e74",
+      "n": 150,
+      "successes": 102,
+      "rate": 0.68,
+      "statuses": {
+        "ok": 150
+      },
+      "server_build": "b11349-fb4b2737a",
+      "records": "runs/eval/select-ft2/checkpoint-548.jsonl"
+    },
+    {
+      "step": 822,
+      "gguf": "runs/train/ft2/gguf/checkpoint-822-f16.gguf",
+      "sha256": "ccebdb43c928785059e35c41975461b771fa9195b53f0743b72cb7d6bb278acc",
+      "n": 150,
+      "successes": 111,
+      "rate": 0.74,
+      "statuses": {
+        "ok": 150
+      },
+      "server_build": "b11349-fb4b2737a",
+      "records": "runs/eval/select-ft2/checkpoint-822.jsonl"
+    },
+    {
+      "step": 1096,
+      "gguf": "runs/train/ft2/gguf/checkpoint-1096-f16.gguf",
+      "sha256": "06fb3914e0f2d211ee6ae1925a5c73311b4e83bcab261361f3aaa9fb5a421352",
+      "n": 150,
+      "successes": 115,
+      "rate": 0.7666666666666667,
+      "statuses": {
+        "ok": 150
+      },
+      "server_build": "b11349-fb4b2737a",
+      "records": "runs/eval/select-ft2/checkpoint-1096.jsonl"
+    },
+    {
+      "step": 1370,
+      "gguf": "runs/train/ft2/gguf/checkpoint-1370-f16.gguf",
+      "sha256": "7840ede9f0d3068d5ce4efa949d9615ba81229fa9cd86d0c9d4b986095346ef6",
+      "n": 150,
+      "successes": 115,
+      "rate": 0.7666666666666667,
+      "statuses": {
+        "ok": 150
+      },
+      "server_build": "b11349-fb4b2737a",
+      "records": "runs/eval/select-ft2/checkpoint-1370.jsonl"
+    },
+    {
+      "step": 1644,
+      "gguf": "runs/train/ft2/gguf/checkpoint-1644-f16.gguf",
+      "sha256": "1d5a7155873edfbd4dd45ace44266d4cbf02468bd72f9851af154a200bbd95f7",
+      "n": 150,
+      "successes": 119,
+      "rate": 0.7933333333333333,
+      "statuses": {
+        "ok": 150
+      },
+      "server_build": "b11349-fb4b2737a",
+      "records": "runs/eval/select-ft2/checkpoint-1644.jsonl"
+    },
+    {
+      "step": 1918,
+      "gguf": "runs/train/ft2/gguf/checkpoint-1918-f16.gguf",
+      "sha256": "c5ddb5e05dd0156438fd6085896ce9b1a1ac3f339ce5f9c820599836549c2580",
+      "n": 150,
+      "successes": 117,
+      "rate": 0.78,
+      "statuses": {
+        "ok": 150
+      },
+      "server_build": "b11349-fb4b2737a",
+      "records": "runs/eval/select-ft2/checkpoint-1918.jsonl"
+    },
+    {
+      "step": 2192,
+      "gguf": "runs/train/ft2/gguf/checkpoint-2192-f16.gguf",
+      "sha256": "51544efc949befc1fa4b14ca2496821d2d2aaee56c64689ad886dbfc0d18a8ef",
+      "n": 150,
+      "successes": 117,
+      "rate": 0.78,
+      "statuses": {
+        "ok": 150
+      },
+      "server_build": "b11349-fb4b2737a",
+      "records": "runs/eval/select-ft2/checkpoint-2192.jsonl"
+    }
+  ],
+  "final_adapter": {
+    "gguf": "runs/train/ft2/gguf/adapter-f16.gguf",
+    "sha256": "c7f45b41419e6535494c6f4e00c5bb8dd1c65f3741102d7644550c317678ee8a",
+    "alias_of_step": 2192
+  },
+  "chosen": {
+    "step": 1644,
+    "gguf": "runs/train/ft2/gguf/checkpoint-1644-f16.gguf",
+    "sha256": "1d5a7155873edfbd4dd45ace44266d4cbf02468bd72f9851af154a200bbd95f7",
+    "n": 150,
+    "successes": 119,
+    "rate": 0.7933333333333333
+  }
+}

@@ -1,0 +1,3 @@
+<tool_call>
+{"name": "ask_clarification", "arguments": {"question": "你指的是哪一篇论文?请给出 arXiv 编号或标题。", "missing": ["paper_id"]}}
+</tool_call><|im_end|>

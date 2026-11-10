@@ -1,0 +1,38 @@
+{
+  "unit": "RMB per 1M tokens",
+  "basis": "list price: the peak-hour price; a model without a cache-hit price has its cache hits charged at the cache-miss price (deepseek-flash, as in every report from M3 to M6). A ledger given off_peak books off-peak calls at factor times this (research_agent.llm.budget)",
+  "source": "DeepSeek price page (api-docs.deepseek.com/zh-cn/quick_start/pricing): deepseek-flash as recorded for spike S8 on 2026-10-02 and unchanged on 2026-10-19; deepseek-v4-pro and the peak hours read on 2026-10-19",
+  "off_peak": {
+    "factor": 0.5,
+    "utc_offset_hours": 8,
+    "peak_weekdays": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "peak_windows": [
+      [
+        "09:00",
+        "12:00"
+      ],
+      [
+        "14:00",
+        "18:00"
+      ]
+    ],
+    "note": "Beijing time, Monday is 0; Chinese public holidays are off-peak at DeepSeek but count as peak here (an upper bound)"
+  },
+  "models": {
+    "deepseek-flash": {
+      "input_cache_miss": 2.0,
+      "output": 8.0
+    },
+    "deepseek-v4-pro": {
+      "input_cache_miss": 9.0,
+      "input_cache_hit": 0.3,
+      "output": 27.0
+    }
+  }
+}

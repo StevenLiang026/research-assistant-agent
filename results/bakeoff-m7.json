@@ -1,0 +1,335 @@
+{
+  "config": "configs/bakeoff-m7.json",
+  "config_sha256": "bb1e83b521ae14cb4dfa9e6e54d78d4015f471eb4322a72b190aa3c862d36f16",
+  "preregistration": "docs/m7-底座对比预登记.md",
+  "preregistration_sha256": "ceb0fa3c11b9016dd9c7173e7ce459dd7dbc3fa4e5f82f5998f71270cd5d78c6",
+  "rule": {
+    "tie": 3,
+    "hybrid_margin": 5,
+    "ft3_hours": 60.0,
+    "extend_step": 548,
+    "smoke_steps": [
+      "S0",
+      "S1",
+      "S2",
+      "S3",
+      "S4",
+      "S5",
+      "S6"
+    ]
+  },
+  "candidates": {
+    "c0": {
+      "status": "reference",
+      "candidate": "c0",
+      "name": "Qwen3-4B",
+      "model": "Qwen/Qwen3-4B",
+      "thinking": "hybrid",
+      "mode": "no_think",
+      "P": 107,
+      "handwritten": 32,
+      "eligible": true,
+      "reasons": [],
+      "missing": [],
+      "tokens_per_epoch": 15548908,
+      "tokens_per_s_median_100_to_stop": 445.5,
+      "ft3_hours_estimate": 28.1,
+      "ft3_hours_unrounded": 28.115621149769293,
+      "no_think_greedy": null,
+      "extension": null,
+      "score": "runs/m7/g2-dev-ft3pilot.score.json",
+      "source": "runs/m7/g2.json",
+      "train": "runs/train/ft3-pilot",
+      "files": {
+        "runs/m7/g2-dev-ft3pilot.score.json": "18a0e4021b0c3b94d3b83a1014721dcf0227d6d3f4b7fa48dd3a68ea84185161",
+        "runs/m7/g2.json": "ffc370f433db5f4c54726fbcff55dfce546642d0110650a2d40c557c4a562803",
+        "runs/train/ft3-pilot/manifest.json": "65e9fd6fe0b62d8f78413b6d658db2442977eee3a7fbaaf716e4e6a4b05703c8",
+        "runs/train/ft3-pilot/log.jsonl": "465ddfecc9e1f285b3f8aa9d323d26e958aecd677b177ef4292bdb83afbbe61e"
+      },
+      "drafted": 75,
+      "by_type": {
+        "call": "47/60",
+        "clarify": "5/20",
+        "next_step": "10/15",
+        "no_call": "22/25",
+        "parallel": "7/10",
+        "recover": "16/20"
+      }
+    },
+    "c1": {
+      "candidate": "c1",
+      "status": "scored",
+      "P": 102,
+      "eligible": true,
+      "reasons": [],
+      "missing": [],
+      "thinking": "none",
+      "mode": "no_think",
+      "handwritten": 31,
+      "ft3_hours_estimate": 32.6,
+      "ft3_hours_unrounded": 32.59873783587509,
+      "no_think_greedy": null,
+      "extension": null,
+      "name": "Qwen3-4B-Instruct-2507",
+      "smoke": {
+        "S0": "exempt",
+        "S1": "exempt",
+        "S2": "exempt",
+        "S3": "exempt",
+        "S4": "exempt",
+        "S5": "missing (recorded only)",
+        "S6": "missing (recorded only)"
+      },
+      "gate": "runs/bakeoff/m7/c1/gate.json",
+      "gate_sha256": "899cf9f517c295536ccf7318d6eee46ae7af01a1ea308103380856689ce4564e"
+    },
+    "c2": {
+      "candidate": "c2",
+      "status": "scored",
+      "P": 111.33333333333333,
+      "eligible": true,
+      "reasons": [],
+      "missing": [],
+      "thinking": "only",
+      "mode": "think",
+      "handwritten": 39,
+      "ft3_hours_estimate": 31.8,
+      "ft3_hours_unrounded": 31.83878364347357,
+      "no_think_greedy": null,
+      "extension": {
+        "stop_step": 548,
+        "P": 115.66666666666667,
+        "handwritten": 37.333333333333336,
+        "no_think_greedy": null,
+        "primary": [
+          "think-s0",
+          "think-s1",
+          "think-s2"
+        ],
+        "variants": {
+          "think-s0": {
+            "successes": 113,
+            "n": 150,
+            "handwritten": 36,
+            "drafted": 77,
+            "by_type": {
+              "call": "42/60",
+              "clarify": "10/20",
+              "next_step": "11/15",
+              "no_call": "25/25",
+              "parallel": "7/10",
+              "recover": "18/20"
+            }
+          },
+          "think-s1": {
+            "successes": 120,
+            "n": 150,
+            "handwritten": 40,
+            "drafted": 80,
+            "by_type": {
+              "call": "46/60",
+              "clarify": "11/20",
+              "next_step": "11/15",
+              "no_call": "25/25",
+              "parallel": "8/10",
+              "recover": "19/20"
+            }
+          },
+          "think-s2": {
+            "successes": 114,
+            "n": 150,
+            "handwritten": 36,
+            "drafted": 78,
+            "by_type": {
+              "call": "40/60",
+              "clarify": "11/20",
+              "next_step": "13/15",
+              "no_call": "24/25",
+              "parallel": "8/10",
+              "recover": "18/20"
+            }
+          },
+          "think-greedy": {
+            "successes": 119,
+            "n": 150,
+            "handwritten": 38,
+            "drafted": 81,
+            "by_type": {
+              "call": "48/60",
+              "clarify": "8/20",
+              "next_step": "13/15",
+              "no_call": "25/25",
+              "parallel": "8/10",
+              "recover": "17/20"
+            }
+          }
+        }
+      },
+      "name": "Qwen3-4B-Thinking-2507",
+      "smoke": {
+        "S0": "passed",
+        "S1": "passed",
+        "S2": "passed",
+        "S3": "passed",
+        "S4": "passed",
+        "S5": "passed",
+        "S6": "failed (recorded only)"
+      },
+      "gate": "runs/bakeoff/m7/c2/gate.json",
+      "gate_sha256": "55755f5d511e4567905f33b3555b5edc531ce8362874e2745f010c0b251e25df"
+    },
+    "c3": {
+      "candidate": "c3",
+      "status": "scored",
+      "P": 109.33333333333333,
+      "eligible": true,
+      "reasons": [],
+      "missing": [],
+      "thinking": "hybrid",
+      "mode": "think",
+      "handwritten": 36.666666666666664,
+      "ft3_hours_estimate": 40.4,
+      "ft3_hours_unrounded": 40.41300902969084,
+      "no_think_greedy": 114,
+      "extension": null,
+      "name": "Qwen3.5-4B",
+      "smoke": {
+        "S0": "passed",
+        "S1": "passed",
+        "S2": "passed",
+        "S3": "passed",
+        "S4": "passed",
+        "S5": "passed",
+        "S6": "failed (recorded only)"
+      },
+      "gate": "runs/bakeoff/m7/c3/gate.json",
+      "gate_sha256": "1adc20f0f477b395073dc1e635e7721e9abc4b1a126b48c5ebd78c1830957b8b"
+    },
+    "c4": {
+      "candidate": "c4",
+      "status": "scored",
+      "P": 106.33333333333333,
+      "eligible": true,
+      "reasons": [],
+      "missing": [],
+      "thinking": "only",
+      "mode": "think",
+      "handwritten": 33.666666666666664,
+      "ft3_hours_estimate": 36.4,
+      "ft3_hours_unrounded": 36.37877791950113,
+      "no_think_greedy": null,
+      "extension": null,
+      "name": "Nanbeige4-3B-Thinking-2511",
+      "smoke": {
+        "S0": "passed",
+        "S1": "passed",
+        "S2": "passed",
+        "S3": "passed",
+        "S4": "passed",
+        "S5": "passed",
+        "S6": "failed (recorded only)"
+      },
+      "gate": "runs/bakeoff/m7/c4/gate.json",
+      "gate_sha256": "a47d6cada5c00a18bd1487f3a24943aae079966925184b64d0cc465a57b1c334"
+    },
+    "c5": {
+      "candidate": "c5",
+      "status": "scored",
+      "P": 115.33333333333333,
+      "eligible": true,
+      "reasons": [],
+      "missing": [],
+      "thinking": "only",
+      "mode": "think",
+      "handwritten": 36,
+      "ft3_hours_estimate": 27.7,
+      "ft3_hours_unrounded": 27.662558654055232,
+      "no_think_greedy": null,
+      "extension": null,
+      "name": "Nanbeige4.1-3B",
+      "smoke": {
+        "S0": "passed",
+        "S1": "passed",
+        "S2": "passed",
+        "S3": "passed",
+        "S4": "passed",
+        "S5": "passed",
+        "S6": "failed (recorded only)"
+      },
+      "gate": "runs/bakeoff/m7/c5/gate.json",
+      "gate_sha256": "022cac9590660e1707a8af1d64741e0145d8d181db31d7cc2c5319c7ff79fc68"
+    },
+    "c6": {
+      "status": "skipped",
+      "candidate": "c6",
+      "name": "MiniCPM5-2B",
+      "thinking": "hybrid",
+      "reason": "cut line 2 (docs/m7-计划.md 砍线): wave 4 more than a day behind on 2026-10-26",
+      "gate": "runs/bakeoff/m7/c6/gate.json"
+    },
+    "c7": {
+      "status": "skipped",
+      "candidate": "c7",
+      "name": "Spark-X2.5-4B",
+      "thinking": "hybrid",
+      "reason": "cut line 2 (docs/m7-计划.md 砍线): wave 4 more than a day behind on 2026-10-26",
+      "gate": "runs/bakeoff/m7/c7/gate.json"
+    },
+    "c8": {
+      "candidate": "c8",
+      "status": "scored",
+      "P": 105.66666666666667,
+      "eligible": true,
+      "reasons": [],
+      "missing": [],
+      "thinking": "hybrid",
+      "mode": "think",
+      "handwritten": 35,
+      "ft3_hours_estimate": 42.7,
+      "ft3_hours_unrounded": 42.7099788510101,
+      "no_think_greedy": 104,
+      "extension": null,
+      "name": "granite-4.2-3b",
+      "smoke": {
+        "S0": "passed",
+        "S1": "passed",
+        "S2": "passed",
+        "S3": "passed",
+        "S4": "passed",
+        "S5": "passed",
+        "S6": "failed (recorded only)"
+      },
+      "gate": "runs/bakeoff/m7/c8/gate.json",
+      "gate_sha256": "e0c7f824e3ed2ac59e760aad8be62171d2312760268b23617dab0650f09d2902"
+    },
+    "c9": {
+      "status": "skipped",
+      "candidate": "c9",
+      "name": "LFM2.5-2.6B",
+      "thinking": "only",
+      "reason": "cut line 2 (docs/m7-计划.md 砍线): wave 4 more than a day behind on 2026-10-26",
+      "gate": "runs/bakeoff/m7/c9/gate.json"
+    }
+  },
+  "decision": {
+    "status": "decided",
+    "winner": "c5",
+    "basis": "P",
+    "mode": "think",
+    "ranking": [
+      "c5",
+      "c2",
+      "c3",
+      "c0",
+      "c4",
+      "c8",
+      "c1"
+    ],
+    "extend": null,
+    "runner_up": "c2",
+    "margin": 4.0,
+    "note": null,
+    "waiting": []
+  },
+  "complete": true
+}

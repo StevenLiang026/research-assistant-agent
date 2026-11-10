@@ -1,0 +1,6 @@
+<|startoftext|><|im_start|>system
+List of tools: [{"type": "function", "function": {"name": "book_table", "description": "Book a table at a restaurant.", "parameters": {"type": "object", "properties": {"restaurant": {"type": "object", "properties": {"name": {"type": "string"}, "city": {"type": "string"}}}, "party": {"type": "object", "properties": {"adults": {"type": "integer"}, "children": {"type": "array", "items": {"type": "object", "properties": {"age": {"type": "integer"}}}}}}, "time": {"type": "string"}, "requests": {"type": "array", "items": {"type": "string"}}}, "required": ["restaurant", "party", "time"]}}}]<|im_end|>
+<|im_start|>user
+Book a table at Café de Flore in Paris for two adults and a five-year-old at 19:30, by the window, with a high chair.<|im_end|>
+<|im_start|>assistant
+<think></think>

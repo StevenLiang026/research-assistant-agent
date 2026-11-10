@@ -1,0 +1,72 @@
+[project]
+name = "research-assistant-agent"
+version = "0.1.0"
+description = "Research-assistant agent for weekly arXiv reading, with a LoRA-fine-tuned small model for function calling"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "openai>=1.0",
+    "jsonschema>=4.23",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+train = [
+    "torch==2.14.1",
+    "transformers>=4.57",
+    "peft>=0.17",
+    "trl>=1.14.1",
+    "datasets>=4.0",
+    "accelerate>=1.10",
+    "bitsandbytes>=0.50.2",
+]
+# Triton kernels for the linear-attention bases of the M7 bake-off (Qwen3.5's Gated DeltaNet; transformers falls
+# back to a much slower PyTorch implementation without them). Installed on 2026-10-20 into the project venv only.
+kernels = [
+    "triton-windows==3.8.0.post29",
+    "flash-linear-attention==0.5.2",
+]
+# llama.cpp's converter reads a SentencePiece tokenizer.model with it (the Nanbeige bases of the M7 bake-off).
+# Installed on 2026-10-26 into the project venv only.
+convert = [
+    "sentencepiece==0.2.2",
+]
+
+[dependency-groups]
+dev = [
+    "huggingface-hub>=1.33.0",
+    "pre-commit>=4.6.2",
+    "pytest>=8",
+    "ruff>=0.12",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu130" }
+
+[build-system]
+requires = ["uv_build>=0.8,<0.13"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "research_agent"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py313"
+# kept exactly as they ran: the M0 spike scripts (docs/m0-验证.md) and the evaluation review tooling
+# (tools/eval-review/README.md)
+extend-exclude = ["scripts/spikes", "tools/eval-review"]
+
+[tool.ruff.lint]
+extend-select = ["E501"]  # enforce line-length (ruff counts a CJK character as two columns)

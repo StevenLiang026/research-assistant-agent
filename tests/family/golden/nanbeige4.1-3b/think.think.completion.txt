@@ -1,0 +1,6 @@
+The search returned two cs.CL papers. The first one, on quantized KV cache compression, matches the request best, so I fetch its abstract.
+</think>
+
+<tool_call>
+{"name": "get_paper", "arguments": {"arxiv_id": "2609.04321"}}
+</tool_call><|im_end|>

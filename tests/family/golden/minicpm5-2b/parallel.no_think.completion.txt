@@ -1,0 +1,2 @@
+<function name="get_paper"><param name="arxiv_id">2609.01234</param></function>
+<function name="get_paper"><param name="arxiv_id">2609.05678</param></function><|im_end|>

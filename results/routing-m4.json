@@ -1,0 +1,3019 @@
+{
+  "rule": "Of the thresholds of the chosen signal (an item is routed when a hard trigger fires or its signal is below the threshold), the one with the smallest API share (routed items over all items) whose development success is at least B2's minus 0.02; ties go to the higher success, then the lower threshold (docs/plan.md, 置信度路由).",
+  "margin": 0.02,
+  "rule_met": true,
+  "signal": "min_decision_prob",
+  "threshold": 0.689404839052033,
+  "dev_sha256": "030586e55fb230e0b4d68038c5580d311fbeb80dad6ce474a9b57cb0db524763",
+  "adapter_sha256": "91f76d98b9c96c2f0da67f2634cb512e409937185d1fceab37614f74520c09f0",
+  "cloud_model": "deepseek-flash",
+  "local_system": "ft",
+  "cloud_system": "b2",
+  "dev_set": "data/eval/dev.jsonl",
+  "inputs": {
+    "ft_records": {
+      "path": "runs/m4/dev-ft-signals.jsonl",
+      "sha256": "49079cff8e2655038bbd79980f5252042018ffdbcf887773d25a6866806b4582"
+    },
+    "ft_scores": {
+      "path": "runs/eval/scores/dev-ft-signals.json",
+      "sha256": "a4a3a8d5b20e149f4f1076b70426a3e6e96bbf2ba0b92cd939333a98e2bd5d2c"
+    },
+    "ft_manifest": {
+      "path": "runs/m4/dev-ft-signals.manifest.json",
+      "sha256": "f504d71bb7f0e5bfdf5feefcd64a526cb6b1ba2a7f6445f46b9bbc99ef34a7c8"
+    },
+    "ft_timing": {
+      "path": "runs/m4/dev-ft-signals.timing.json",
+      "sha256": "c0d4499a130bd6611fe68fb479c660b7e215c866abcc7a95f76eeadf6879fb7b"
+    },
+    "b2_records": {
+      "path": "runs/eval/dev-b2-m3.jsonl",
+      "sha256": "5141f7e149455631cfad5b86e307e4e4cce6c1d2b2095ac9c3024b30e8e2290a"
+    },
+    "b2_scores": {
+      "path": "runs/eval/scores/dev-b2-m3.json",
+      "sha256": "1b8c1eaec6f12f0d327bc23bf01d8bfa8b41886694fb2c37b114f4ca55d24812"
+    },
+    "b2_manifest": {
+      "path": "runs/eval/dev-b2-m3.manifest.json",
+      "sha256": "88a6ef96d7a5e8ad3fdfd1153f743d2a2c0e92255257f493295a309eaec314b5"
+    },
+    "b2_timing": {
+      "path": "runs/eval/dev-b2-m3.timing.json",
+      "sha256": "61095d871846c30583266df11d04252251a43ec3103b22a9db119e0b36b50d5a"
+    }
+  },
+  "n": 150,
+  "ft_success": 0.66,
+  "b2_success": 0.9,
+  "auroc": {
+    "min_decision_prob": 0.6735987324222619,
+    "mean_logprob": 0.49356308179837594
+  },
+  "signal_order": [
+    "min_decision_prob",
+    "mean_logprob"
+  ],
+  "chosen_point": {
+    "label": "threshold",
+    "threshold": 0.689404839052033,
+    "routed": 94,
+    "api_share": 0.6266666666666667,
+    "successes": 132,
+    "success": 0.88,
+    "cost_per_100_rmb": 0.322808,
+    "random_success": 0.8104
+  },
+  "curves": {
+    "routing": [
+      {
+        "label": "route_nothing",
+        "threshold": null,
+        "routed": 0,
+        "api_share": 0.0,
+        "successes": 99,
+        "success": 0.66,
+        "cost_per_100_rmb": 0.0,
+        "random_success": 0.66
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.0818520288643013,
+        "routed": 2,
+        "api_share": 0.013333333333333334,
+        "successes": 100,
+        "success": 0.6666666666666666,
+        "cost_per_100_rmb": 0.004645333333333333,
+        "random_success": 0.6632
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.12834912802835474,
+        "routed": 3,
+        "api_share": 0.02,
+        "successes": 100,
+        "success": 0.6666666666666666,
+        "cost_per_100_rmb": 0.006939999999999999,
+        "random_success": 0.6648000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.1404153613512204,
+        "routed": 4,
+        "api_share": 0.02666666666666667,
+        "successes": 101,
+        "success": 0.6733333333333333,
+        "cost_per_100_rmb": 0.010914666666666668,
+        "random_success": 0.6664000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.17321445122492513,
+        "routed": 5,
+        "api_share": 0.03333333333333333,
+        "successes": 102,
+        "success": 0.68,
+        "cost_per_100_rmb": 0.014717333333333332,
+        "random_success": 0.668
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.1771819365650283,
+        "routed": 6,
+        "api_share": 0.04,
+        "successes": 103,
+        "success": 0.6866666666666666,
+        "cost_per_100_rmb": 0.018096,
+        "random_success": 0.6696000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.20149185581878523,
+        "routed": 7,
+        "api_share": 0.04666666666666667,
+        "successes": 104,
+        "success": 0.6933333333333334,
+        "cost_per_100_rmb": 0.02348,
+        "random_success": 0.6712000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.20660810832146725,
+        "routed": 8,
+        "api_share": 0.05333333333333334,
+        "successes": 104,
+        "success": 0.6933333333333334,
+        "cost_per_100_rmb": 0.033924,
+        "random_success": 0.6728000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.2093884412752525,
+        "routed": 9,
+        "api_share": 0.06,
+        "successes": 104,
+        "success": 0.6933333333333334,
+        "cost_per_100_rmb": 0.03658666666666666,
+        "random_success": 0.6744
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.22229738137180705,
+        "routed": 10,
+        "api_share": 0.06666666666666667,
+        "successes": 104,
+        "success": 0.6933333333333334,
+        "cost_per_100_rmb": 0.04310933333333333,
+        "random_success": 0.6759999999999999
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.2297034065166308,
+        "routed": 11,
+        "api_share": 0.07333333333333333,
+        "successes": 105,
+        "success": 0.7,
+        "cost_per_100_rmb": 0.048285333333333326,
+        "random_success": 0.6776
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.24475002143223348,
+        "routed": 12,
+        "api_share": 0.08,
+        "successes": 106,
+        "success": 0.7066666666666667,
+        "cost_per_100_rmb": 0.068796,
+        "random_success": 0.6792
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.26374775075951434,
+        "routed": 13,
+        "api_share": 0.08666666666666667,
+        "successes": 106,
+        "success": 0.7066666666666667,
+        "cost_per_100_rmb": 0.073948,
+        "random_success": 0.6808
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.2685672334004592,
+        "routed": 14,
+        "api_share": 0.09333333333333334,
+        "successes": 106,
+        "success": 0.7066666666666667,
+        "cost_per_100_rmb": 0.08018,
+        "random_success": 0.6824
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.2718801558510831,
+        "routed": 15,
+        "api_share": 0.1,
+        "successes": 107,
+        "success": 0.7133333333333334,
+        "cost_per_100_rmb": 0.08571199999999998,
+        "random_success": 0.684
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.2745369836164826,
+        "routed": 16,
+        "api_share": 0.10666666666666667,
+        "successes": 107,
+        "success": 0.7133333333333334,
+        "cost_per_100_rmb": 0.091036,
+        "random_success": 0.6856
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.2793775162152408,
+        "routed": 17,
+        "api_share": 0.11333333333333333,
+        "successes": 107,
+        "success": 0.7133333333333334,
+        "cost_per_100_rmb": 0.094172,
+        "random_success": 0.6872
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.2884238554144582,
+        "routed": 18,
+        "api_share": 0.12,
+        "successes": 107,
+        "success": 0.7133333333333334,
+        "cost_per_100_rmb": 0.09813066666666667,
+        "random_success": 0.6888
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.2927582493087154,
+        "routed": 19,
+        "api_share": 0.12666666666666668,
+        "successes": 108,
+        "success": 0.72,
+        "cost_per_100_rmb": 0.10266666666666667,
+        "random_success": 0.6904
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.2933179085078536,
+        "routed": 20,
+        "api_share": 0.13333333333333333,
+        "successes": 108,
+        "success": 0.72,
+        "cost_per_100_rmb": 0.11118533333333334,
+        "random_success": 0.6920000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.3293466027596636,
+        "routed": 21,
+        "api_share": 0.14,
+        "successes": 109,
+        "success": 0.7266666666666667,
+        "cost_per_100_rmb": 0.11523066666666668,
+        "random_success": 0.6936
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.3465638071463846,
+        "routed": 22,
+        "api_share": 0.14666666666666667,
+        "successes": 110,
+        "success": 0.7333333333333333,
+        "cost_per_100_rmb": 0.11765733333333335,
+        "random_success": 0.6952
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.3468079740161311,
+        "routed": 23,
+        "api_share": 0.15333333333333332,
+        "successes": 110,
+        "success": 0.7333333333333333,
+        "cost_per_100_rmb": 0.12082933333333332,
+        "random_success": 0.6968000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.3578564696334752,
+        "routed": 24,
+        "api_share": 0.16,
+        "successes": 110,
+        "success": 0.7333333333333333,
+        "cost_per_100_rmb": 0.123708,
+        "random_success": 0.6984
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.3706451732573274,
+        "routed": 25,
+        "api_share": 0.16666666666666666,
+        "successes": 110,
+        "success": 0.7333333333333333,
+        "cost_per_100_rmb": 0.12713333333333335,
+        "random_success": 0.7000000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.3955548342199129,
+        "routed": 26,
+        "api_share": 0.17333333333333334,
+        "successes": 111,
+        "success": 0.74,
+        "cost_per_100_rmb": 0.13003066666666666,
+        "random_success": 0.7016
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.39621197270889685,
+        "routed": 26,
+        "api_share": 0.17333333333333334,
+        "successes": 111,
+        "success": 0.74,
+        "cost_per_100_rmb": 0.13003066666666666,
+        "random_success": 0.7016
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.40059872395728385,
+        "routed": 27,
+        "api_share": 0.18,
+        "successes": 111,
+        "success": 0.74,
+        "cost_per_100_rmb": 0.1340613333333333,
+        "random_success": 0.7032
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.40272524726571407,
+        "routed": 28,
+        "api_share": 0.18666666666666668,
+        "successes": 111,
+        "success": 0.74,
+        "cost_per_100_rmb": 0.13974133333333333,
+        "random_success": 0.7048000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.40434101647211823,
+        "routed": 29,
+        "api_share": 0.19333333333333333,
+        "successes": 112,
+        "success": 0.7466666666666667,
+        "cost_per_100_rmb": 0.141956,
+        "random_success": 0.7063999999999999
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.40561178542056603,
+        "routed": 30,
+        "api_share": 0.2,
+        "successes": 112,
+        "success": 0.7466666666666667,
+        "cost_per_100_rmb": 0.14458933333333332,
+        "random_success": 0.7080000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.4057898833002786,
+        "routed": 31,
+        "api_share": 0.20666666666666667,
+        "successes": 113,
+        "success": 0.7533333333333333,
+        "cost_per_100_rmb": 0.14683466666666667,
+        "random_success": 0.7096
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.41977906853701524,
+        "routed": 32,
+        "api_share": 0.21333333333333335,
+        "successes": 114,
+        "success": 0.76,
+        "cost_per_100_rmb": 0.14911733333333332,
+        "random_success": 0.7112
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.4238972163336905,
+        "routed": 33,
+        "api_share": 0.22,
+        "successes": 114,
+        "success": 0.76,
+        "cost_per_100_rmb": 0.15152933333333332,
+        "random_success": 0.7128000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.43614292165814,
+        "routed": 34,
+        "api_share": 0.22666666666666666,
+        "successes": 114,
+        "success": 0.76,
+        "cost_per_100_rmb": 0.15768666666666667,
+        "random_success": 0.7143999999999999
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.44105618341004926,
+        "routed": 35,
+        "api_share": 0.23333333333333334,
+        "successes": 114,
+        "success": 0.76,
+        "cost_per_100_rmb": 0.16036799999999998,
+        "random_success": 0.716
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.4480152127575754,
+        "routed": 36,
+        "api_share": 0.24,
+        "successes": 115,
+        "success": 0.7666666666666667,
+        "cost_per_100_rmb": 0.16244266666666665,
+        "random_success": 0.7176
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.44863233466834496,
+        "routed": 37,
+        "api_share": 0.24666666666666667,
+        "successes": 116,
+        "success": 0.7733333333333333,
+        "cost_per_100_rmb": 0.16500533333333334,
+        "random_success": 0.7192
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.45408446884858794,
+        "routed": 38,
+        "api_share": 0.25333333333333335,
+        "successes": 116,
+        "success": 0.7733333333333333,
+        "cost_per_100_rmb": 0.167148,
+        "random_success": 0.7208
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.4654819330620433,
+        "routed": 39,
+        "api_share": 0.26,
+        "successes": 116,
+        "success": 0.7733333333333333,
+        "cost_per_100_rmb": 0.1704733333333333,
+        "random_success": 0.7224
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.4723552344699011,
+        "routed": 40,
+        "api_share": 0.26666666666666666,
+        "successes": 117,
+        "success": 0.78,
+        "cost_per_100_rmb": 0.17392133333333334,
+        "random_success": 0.724
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.4724496180033477,
+        "routed": 41,
+        "api_share": 0.2733333333333333,
+        "successes": 117,
+        "success": 0.78,
+        "cost_per_100_rmb": 0.17730666666666664,
+        "random_success": 0.7256
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.481591713755076,
+        "routed": 42,
+        "api_share": 0.28,
+        "successes": 117,
+        "success": 0.78,
+        "cost_per_100_rmb": 0.18269600000000003,
+        "random_success": 0.7272000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.486033171831003,
+        "routed": 43,
+        "api_share": 0.2866666666666667,
+        "successes": 117,
+        "success": 0.78,
+        "cost_per_100_rmb": 0.18497333333333332,
+        "random_success": 0.7288000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.4881066657409881,
+        "routed": 44,
+        "api_share": 0.29333333333333333,
+        "successes": 118,
+        "success": 0.7866666666666666,
+        "cost_per_100_rmb": 0.18980133333333335,
+        "random_success": 0.7304
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.4961587672360448,
+        "routed": 45,
+        "api_share": 0.3,
+        "successes": 118,
+        "success": 0.7866666666666666,
+        "cost_per_100_rmb": 0.19447866666666666,
+        "random_success": 0.732
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5013930189548785,
+        "routed": 46,
+        "api_share": 0.30666666666666664,
+        "successes": 118,
+        "success": 0.7866666666666666,
+        "cost_per_100_rmb": 0.196932,
+        "random_success": 0.7336
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5054075761163155,
+        "routed": 47,
+        "api_share": 0.31333333333333335,
+        "successes": 118,
+        "success": 0.7866666666666666,
+        "cost_per_100_rmb": 0.20108133333333333,
+        "random_success": 0.7352000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5054775002401535,
+        "routed": 48,
+        "api_share": 0.32,
+        "successes": 118,
+        "success": 0.7866666666666666,
+        "cost_per_100_rmb": 0.20392533333333332,
+        "random_success": 0.7368
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5122221758223573,
+        "routed": 49,
+        "api_share": 0.32666666666666666,
+        "successes": 119,
+        "success": 0.7933333333333333,
+        "cost_per_100_rmb": 0.20616933333333332,
+        "random_success": 0.7384
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5146947399299897,
+        "routed": 50,
+        "api_share": 0.3333333333333333,
+        "successes": 119,
+        "success": 0.7933333333333333,
+        "cost_per_100_rmb": 0.20863733333333334,
+        "random_success": 0.74
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5191058552230231,
+        "routed": 51,
+        "api_share": 0.34,
+        "successes": 119,
+        "success": 0.7933333333333333,
+        "cost_per_100_rmb": 0.210808,
+        "random_success": 0.7416
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5192338744200033,
+        "routed": 52,
+        "api_share": 0.3466666666666667,
+        "successes": 119,
+        "success": 0.7933333333333333,
+        "cost_per_100_rmb": 0.21264133333333335,
+        "random_success": 0.7432000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5261372344885111,
+        "routed": 53,
+        "api_share": 0.35333333333333333,
+        "successes": 119,
+        "success": 0.7933333333333333,
+        "cost_per_100_rmb": 0.21503466666666668,
+        "random_success": 0.7448000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5269584777125081,
+        "routed": 54,
+        "api_share": 0.36,
+        "successes": 119,
+        "success": 0.7933333333333333,
+        "cost_per_100_rmb": 0.21744533333333332,
+        "random_success": 0.7464000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5283619147938912,
+        "routed": 55,
+        "api_share": 0.36666666666666664,
+        "successes": 119,
+        "success": 0.7933333333333333,
+        "cost_per_100_rmb": 0.2204386666666667,
+        "random_success": 0.748
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.532480961733318,
+        "routed": 56,
+        "api_share": 0.37333333333333335,
+        "successes": 120,
+        "success": 0.8,
+        "cost_per_100_rmb": 0.22350133333333333,
+        "random_success": 0.7496
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5382097337270157,
+        "routed": 56,
+        "api_share": 0.37333333333333335,
+        "successes": 120,
+        "success": 0.8,
+        "cost_per_100_rmb": 0.22350133333333333,
+        "random_success": 0.7496
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5455046254680963,
+        "routed": 57,
+        "api_share": 0.38,
+        "successes": 120,
+        "success": 0.8,
+        "cost_per_100_rmb": 0.22578933333333334,
+        "random_success": 0.7512000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.549775370464346,
+        "routed": 58,
+        "api_share": 0.38666666666666666,
+        "successes": 121,
+        "success": 0.8066666666666666,
+        "cost_per_100_rmb": 0.2279586666666667,
+        "random_success": 0.7527999999999999
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5534555845245778,
+        "routed": 59,
+        "api_share": 0.3933333333333333,
+        "successes": 121,
+        "success": 0.8066666666666666,
+        "cost_per_100_rmb": 0.23023866666666667,
+        "random_success": 0.7544
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5549805638199288,
+        "routed": 60,
+        "api_share": 0.4,
+        "successes": 121,
+        "success": 0.8066666666666666,
+        "cost_per_100_rmb": 0.23258933333333331,
+        "random_success": 0.756
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5611668325935514,
+        "routed": 61,
+        "api_share": 0.4066666666666667,
+        "successes": 121,
+        "success": 0.8066666666666666,
+        "cost_per_100_rmb": 0.23496399999999998,
+        "random_success": 0.7575999999999999
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5662408403309229,
+        "routed": 62,
+        "api_share": 0.41333333333333333,
+        "successes": 121,
+        "success": 0.8066666666666666,
+        "cost_per_100_rmb": 0.23702933333333334,
+        "random_success": 0.7592000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5807886259148686,
+        "routed": 63,
+        "api_share": 0.42,
+        "successes": 122,
+        "success": 0.8133333333333334,
+        "cost_per_100_rmb": 0.2390786666666667,
+        "random_success": 0.7608000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5813367441110654,
+        "routed": 64,
+        "api_share": 0.4266666666666667,
+        "successes": 122,
+        "success": 0.8133333333333334,
+        "cost_per_100_rmb": 0.24140799999999998,
+        "random_success": 0.7624
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5830467203887664,
+        "routed": 65,
+        "api_share": 0.43333333333333335,
+        "successes": 122,
+        "success": 0.8133333333333334,
+        "cost_per_100_rmb": 0.24383866666666662,
+        "random_success": 0.764
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5842669669416723,
+        "routed": 66,
+        "api_share": 0.44,
+        "successes": 122,
+        "success": 0.8133333333333334,
+        "cost_per_100_rmb": 0.249416,
+        "random_success": 0.7656000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5847769232519274,
+        "routed": 67,
+        "api_share": 0.44666666666666666,
+        "successes": 122,
+        "success": 0.8133333333333334,
+        "cost_per_100_rmb": 0.2518533333333333,
+        "random_success": 0.7672000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5854615704916601,
+        "routed": 68,
+        "api_share": 0.4533333333333333,
+        "successes": 122,
+        "success": 0.8133333333333334,
+        "cost_per_100_rmb": 0.25429599999999997,
+        "random_success": 0.7687999999999999
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5890871271686883,
+        "routed": 69,
+        "api_share": 0.46,
+        "successes": 122,
+        "success": 0.8133333333333334,
+        "cost_per_100_rmb": 0.25636,
+        "random_success": 0.7704000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5921547399258212,
+        "routed": 70,
+        "api_share": 0.4666666666666667,
+        "successes": 123,
+        "success": 0.82,
+        "cost_per_100_rmb": 0.2583066666666667,
+        "random_success": 0.772
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.593413395647559,
+        "routed": 71,
+        "api_share": 0.47333333333333333,
+        "successes": 124,
+        "success": 0.8266666666666667,
+        "cost_per_100_rmb": 0.26032666666666665,
+        "random_success": 0.7736
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.593925458539689,
+        "routed": 72,
+        "api_share": 0.48,
+        "successes": 125,
+        "success": 0.8333333333333334,
+        "cost_per_100_rmb": 0.26215466666666665,
+        "random_success": 0.7752
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5945930307284115,
+        "routed": 73,
+        "api_share": 0.4866666666666667,
+        "successes": 125,
+        "success": 0.8333333333333334,
+        "cost_per_100_rmb": 0.265004,
+        "random_success": 0.7768
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5983723879734243,
+        "routed": 74,
+        "api_share": 0.49333333333333335,
+        "successes": 125,
+        "success": 0.8333333333333334,
+        "cost_per_100_rmb": 0.2675693333333333,
+        "random_success": 0.7784
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5986872925903939,
+        "routed": 75,
+        "api_share": 0.5,
+        "successes": 126,
+        "success": 0.84,
+        "cost_per_100_rmb": 0.27357200000000004,
+        "random_success": 0.78
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6003501421423565,
+        "routed": 76,
+        "api_share": 0.5066666666666667,
+        "successes": 126,
+        "success": 0.84,
+        "cost_per_100_rmb": 0.2769026666666667,
+        "random_success": 0.7816000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6143380965670295,
+        "routed": 77,
+        "api_share": 0.5133333333333333,
+        "successes": 126,
+        "success": 0.84,
+        "cost_per_100_rmb": 0.2794346666666667,
+        "random_success": 0.7832
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6233238001697321,
+        "routed": 78,
+        "api_share": 0.52,
+        "successes": 126,
+        "success": 0.84,
+        "cost_per_100_rmb": 0.28198133333333336,
+        "random_success": 0.7848
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6248740572225412,
+        "routed": 79,
+        "api_share": 0.5266666666666666,
+        "successes": 125,
+        "success": 0.8333333333333334,
+        "cost_per_100_rmb": 0.28425999999999996,
+        "random_success": 0.7864
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6290769505681192,
+        "routed": 80,
+        "api_share": 0.5333333333333333,
+        "successes": 126,
+        "success": 0.84,
+        "cost_per_100_rmb": 0.2877333333333333,
+        "random_success": 0.788
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.629173866207446,
+        "routed": 81,
+        "api_share": 0.54,
+        "successes": 127,
+        "success": 0.8466666666666667,
+        "cost_per_100_rmb": 0.28959866666666667,
+        "random_success": 0.7896000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6384477061345363,
+        "routed": 82,
+        "api_share": 0.5466666666666666,
+        "successes": 127,
+        "success": 0.8466666666666667,
+        "cost_per_100_rmb": 0.29308666666666666,
+        "random_success": 0.7912
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6427349997995255,
+        "routed": 83,
+        "api_share": 0.5533333333333333,
+        "successes": 127,
+        "success": 0.8466666666666667,
+        "cost_per_100_rmb": 0.29545333333333335,
+        "random_success": 0.7928
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.645643658264385,
+        "routed": 84,
+        "api_share": 0.56,
+        "successes": 127,
+        "success": 0.8466666666666667,
+        "cost_per_100_rmb": 0.297688,
+        "random_success": 0.7944000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6540594690442355,
+        "routed": 85,
+        "api_share": 0.5666666666666667,
+        "successes": 127,
+        "success": 0.8466666666666667,
+        "cost_per_100_rmb": 0.29966400000000004,
+        "random_success": 0.796
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6589768512916417,
+        "routed": 86,
+        "api_share": 0.5733333333333334,
+        "successes": 128,
+        "success": 0.8533333333333334,
+        "cost_per_100_rmb": 0.30196666666666666,
+        "random_success": 0.7976000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6622076691623883,
+        "routed": 87,
+        "api_share": 0.58,
+        "successes": 128,
+        "success": 0.8533333333333334,
+        "cost_per_100_rmb": 0.30600133333333335,
+        "random_success": 0.7992000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6718028213173238,
+        "routed": 88,
+        "api_share": 0.5866666666666667,
+        "successes": 128,
+        "success": 0.8533333333333334,
+        "cost_per_100_rmb": 0.30852133333333337,
+        "random_success": 0.8008
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6779469292677544,
+        "routed": 89,
+        "api_share": 0.5933333333333334,
+        "successes": 129,
+        "success": 0.86,
+        "cost_per_100_rmb": 0.31109733333333334,
+        "random_success": 0.8024
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.678430309774324,
+        "routed": 90,
+        "api_share": 0.6,
+        "successes": 129,
+        "success": 0.86,
+        "cost_per_100_rmb": 0.3132026666666667,
+        "random_success": 0.804
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6808495462940005,
+        "routed": 91,
+        "api_share": 0.6066666666666667,
+        "successes": 130,
+        "success": 0.8666666666666667,
+        "cost_per_100_rmb": 0.31685199999999997,
+        "random_success": 0.8056000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6860798506619028,
+        "routed": 92,
+        "api_share": 0.6133333333333333,
+        "successes": 131,
+        "success": 0.8733333333333333,
+        "cost_per_100_rmb": 0.318804,
+        "random_success": 0.8071999999999999
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6866798371530979,
+        "routed": 93,
+        "api_share": 0.62,
+        "successes": 131,
+        "success": 0.8733333333333333,
+        "cost_per_100_rmb": 0.32077066666666665,
+        "random_success": 0.8088000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.689404839052033,
+        "routed": 94,
+        "api_share": 0.6266666666666667,
+        "successes": 132,
+        "success": 0.88,
+        "cost_per_100_rmb": 0.322808,
+        "random_success": 0.8104
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7010074887035902,
+        "routed": 95,
+        "api_share": 0.6333333333333333,
+        "successes": 131,
+        "success": 0.8733333333333333,
+        "cost_per_100_rmb": 0.32595999999999997,
+        "random_success": 0.8119999999999999
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7053229772878807,
+        "routed": 96,
+        "api_share": 0.64,
+        "successes": 131,
+        "success": 0.8733333333333333,
+        "cost_per_100_rmb": 0.32863333333333333,
+        "random_success": 0.8136000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7118050457769762,
+        "routed": 97,
+        "api_share": 0.6466666666666666,
+        "successes": 131,
+        "success": 0.8733333333333333,
+        "cost_per_100_rmb": 0.330912,
+        "random_success": 0.8152
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7157732854831094,
+        "routed": 98,
+        "api_share": 0.6533333333333333,
+        "successes": 132,
+        "success": 0.88,
+        "cost_per_100_rmb": 0.332848,
+        "random_success": 0.8168
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7166208689742385,
+        "routed": 99,
+        "api_share": 0.66,
+        "successes": 133,
+        "success": 0.8866666666666667,
+        "cost_per_100_rmb": 0.33505199999999996,
+        "random_success": 0.8184
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7193158336117371,
+        "routed": 100,
+        "api_share": 0.6666666666666666,
+        "successes": 133,
+        "success": 0.8866666666666667,
+        "cost_per_100_rmb": 0.338136,
+        "random_success": 0.8200000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.720756595158228,
+        "routed": 101,
+        "api_share": 0.6733333333333333,
+        "successes": 133,
+        "success": 0.8866666666666667,
+        "cost_per_100_rmb": 0.3420266666666667,
+        "random_success": 0.8216
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7328274862266903,
+        "routed": 102,
+        "api_share": 0.68,
+        "successes": 133,
+        "success": 0.8866666666666667,
+        "cost_per_100_rmb": 0.34416800000000003,
+        "random_success": 0.8232
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.737005542248277,
+        "routed": 103,
+        "api_share": 0.6866666666666666,
+        "successes": 133,
+        "success": 0.8866666666666667,
+        "cost_per_100_rmb": 0.34654133333333337,
+        "random_success": 0.8248
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7382910348101943,
+        "routed": 104,
+        "api_share": 0.6933333333333334,
+        "successes": 134,
+        "success": 0.8933333333333333,
+        "cost_per_100_rmb": 0.34854266666666667,
+        "random_success": 0.8264
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7386357229047411,
+        "routed": 105,
+        "api_share": 0.7,
+        "successes": 134,
+        "success": 0.8933333333333333,
+        "cost_per_100_rmb": 0.351524,
+        "random_success": 0.8280000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7399304537940224,
+        "routed": 106,
+        "api_share": 0.7066666666666667,
+        "successes": 134,
+        "success": 0.8933333333333333,
+        "cost_per_100_rmb": 0.35403999999999997,
+        "random_success": 0.8296
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7404349468428381,
+        "routed": 107,
+        "api_share": 0.7133333333333334,
+        "successes": 134,
+        "success": 0.8933333333333333,
+        "cost_per_100_rmb": 0.3563066666666667,
+        "random_success": 0.8311999999999999
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7415295784878725,
+        "routed": 108,
+        "api_share": 0.72,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.3582626666666667,
+        "random_success": 0.8328
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7443774234264204,
+        "routed": 109,
+        "api_share": 0.7266666666666667,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.36060400000000004,
+        "random_success": 0.8344
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.751771509477458,
+        "routed": 110,
+        "api_share": 0.7333333333333333,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.3631533333333334,
+        "random_success": 0.836
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7623501981301608,
+        "routed": 111,
+        "api_share": 0.74,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.3661506666666667,
+        "random_success": 0.8376
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7679265772566912,
+        "routed": 112,
+        "api_share": 0.7466666666666667,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.36839199999999994,
+        "random_success": 0.8392000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7696056332572092,
+        "routed": 113,
+        "api_share": 0.7533333333333333,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.37056,
+        "random_success": 0.8408
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.770464011056763,
+        "routed": 114,
+        "api_share": 0.76,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.37364400000000003,
+        "random_success": 0.8424
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7748006692481779,
+        "routed": 115,
+        "api_share": 0.7666666666666667,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.37576533333333334,
+        "random_success": 0.8440000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7791313530288858,
+        "routed": 116,
+        "api_share": 0.7733333333333333,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.37781333333333333,
+        "random_success": 0.8455999999999999
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7829117121337063,
+        "routed": 117,
+        "api_share": 0.78,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.38012666666666667,
+        "random_success": 0.8472000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7842569986420668,
+        "routed": 118,
+        "api_share": 0.7866666666666666,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.3823906666666667,
+        "random_success": 0.8488
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7885273069238268,
+        "routed": 119,
+        "api_share": 0.7933333333333333,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.3848306666666667,
+        "random_success": 0.8503999999999999
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7918145678309991,
+        "routed": 120,
+        "api_share": 0.8,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.3887973333333334,
+        "random_success": 0.8520000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7927428516944138,
+        "routed": 121,
+        "api_share": 0.8066666666666666,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.3911306666666667,
+        "random_success": 0.8536
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8001406225474439,
+        "routed": 122,
+        "api_share": 0.8133333333333334,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.39350799999999997,
+        "random_success": 0.8552
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8014497195912071,
+        "routed": 123,
+        "api_share": 0.82,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.39641466666666664,
+        "random_success": 0.8568
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8029572919703596,
+        "routed": 124,
+        "api_share": 0.8266666666666667,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.39976266666666666,
+        "random_success": 0.8584
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8029574116203289,
+        "routed": 125,
+        "api_share": 0.8333333333333334,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.40199999999999997,
+        "random_success": 0.86
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8033852622757293,
+        "routed": 126,
+        "api_share": 0.84,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.40436266666666665,
+        "random_success": 0.8616
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8101507438353343,
+        "routed": 127,
+        "api_share": 0.8466666666666667,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.40705066666666667,
+        "random_success": 0.8632
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8125138857613766,
+        "routed": 128,
+        "api_share": 0.8533333333333334,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.4092386666666667,
+        "random_success": 0.8648
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8171456475824461,
+        "routed": 129,
+        "api_share": 0.86,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.411832,
+        "random_success": 0.8664000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8241508632218729,
+        "routed": 130,
+        "api_share": 0.8666666666666667,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.41599200000000003,
+        "random_success": 0.868
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8258666418567785,
+        "routed": 131,
+        "api_share": 0.8733333333333333,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.4187906666666667,
+        "random_success": 0.8696
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8281272602786042,
+        "routed": 132,
+        "api_share": 0.88,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.420916,
+        "random_success": 0.8712000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8307739436265225,
+        "routed": 133,
+        "api_share": 0.8866666666666667,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.4234266666666667,
+        "random_success": 0.8728
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8312824384438953,
+        "routed": 134,
+        "api_share": 0.8933333333333333,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.4266546666666667,
+        "random_success": 0.8744000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8336521370805859,
+        "routed": 135,
+        "api_share": 0.9,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.4294333333333334,
+        "random_success": 0.876
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.835391642278424,
+        "routed": 136,
+        "api_share": 0.9066666666666666,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.4313973333333333,
+        "random_success": 0.8775999999999999
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8421652905683138,
+        "routed": 137,
+        "api_share": 0.9133333333333333,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.43366000000000005,
+        "random_success": 0.8792000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.84522289088984,
+        "routed": 138,
+        "api_share": 0.92,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.43655999999999995,
+        "random_success": 0.8808
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8506750450368572,
+        "routed": 139,
+        "api_share": 0.9266666666666666,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.4387893333333333,
+        "random_success": 0.8824
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8611066303274506,
+        "routed": 140,
+        "api_share": 0.9333333333333333,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.44079866666666667,
+        "random_success": 0.8840000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.867822172670897,
+        "routed": 141,
+        "api_share": 0.94,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.443128,
+        "random_success": 0.8856
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8713451621717689,
+        "routed": 142,
+        "api_share": 0.9466666666666667,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.4454213333333333,
+        "random_success": 0.8872
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8751475832477744,
+        "routed": 143,
+        "api_share": 0.9533333333333334,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.44768399999999997,
+        "random_success": 0.8888
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8757090617517966,
+        "routed": 144,
+        "api_share": 0.96,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.44976,
+        "random_success": 0.8904
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8960682138780511,
+        "routed": 145,
+        "api_share": 0.9666666666666667,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.45198266666666664,
+        "random_success": 0.892
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.9015094036001878,
+        "routed": 146,
+        "api_share": 0.9733333333333334,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.4544613333333333,
+        "random_success": 0.8936000000000001
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.9064303048941477,
+        "routed": 147,
+        "api_share": 0.98,
+        "successes": 136,
+        "success": 0.9066666666666666,
+        "cost_per_100_rmb": 0.45644666666666667,
+        "random_success": 0.8952
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.9124320137707175,
+        "routed": 148,
+        "api_share": 0.9866666666666667,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.45840666666666674,
+        "random_success": 0.8968
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.9358916902410648,
+        "routed": 149,
+        "api_share": 0.9933333333333333,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.4605626666666667,
+        "random_success": 0.8984000000000001
+      },
+      {
+        "label": "route_everything",
+        "threshold": null,
+        "routed": 150,
+        "api_share": 1.0,
+        "successes": 135,
+        "success": 0.9,
+        "cost_per_100_rmb": 0.46299599999999996,
+        "random_success": 0.9
+      }
+    ],
+    "oracle": [
+      {
+        "routed": 0,
+        "api_share": 0.0,
+        "successes": 99,
+        "success": 0.66
+      },
+      {
+        "routed": 1,
+        "api_share": 0.006666666666666667,
+        "successes": 100,
+        "success": 0.6666666666666666
+      },
+      {
+        "routed": 2,
+        "api_share": 0.013333333333333334,
+        "successes": 101,
+        "success": 0.6733333333333333
+      },
+      {
+        "routed": 3,
+        "api_share": 0.02,
+        "successes": 102,
+        "success": 0.68
+      },
+      {
+        "routed": 4,
+        "api_share": 0.02666666666666667,
+        "successes": 103,
+        "success": 0.6866666666666666
+      },
+      {
+        "routed": 5,
+        "api_share": 0.03333333333333333,
+        "successes": 104,
+        "success": 0.6933333333333334
+      },
+      {
+        "routed": 6,
+        "api_share": 0.04,
+        "successes": 105,
+        "success": 0.7
+      },
+      {
+        "routed": 7,
+        "api_share": 0.04666666666666667,
+        "successes": 106,
+        "success": 0.7066666666666667
+      },
+      {
+        "routed": 8,
+        "api_share": 0.05333333333333334,
+        "successes": 107,
+        "success": 0.7133333333333334
+      },
+      {
+        "routed": 9,
+        "api_share": 0.06,
+        "successes": 108,
+        "success": 0.72
+      },
+      {
+        "routed": 10,
+        "api_share": 0.06666666666666667,
+        "successes": 109,
+        "success": 0.7266666666666667
+      },
+      {
+        "routed": 11,
+        "api_share": 0.07333333333333333,
+        "successes": 110,
+        "success": 0.7333333333333333
+      },
+      {
+        "routed": 12,
+        "api_share": 0.08,
+        "successes": 111,
+        "success": 0.74
+      },
+      {
+        "routed": 13,
+        "api_share": 0.08666666666666667,
+        "successes": 112,
+        "success": 0.7466666666666667
+      },
+      {
+        "routed": 14,
+        "api_share": 0.09333333333333334,
+        "successes": 113,
+        "success": 0.7533333333333333
+      },
+      {
+        "routed": 15,
+        "api_share": 0.1,
+        "successes": 114,
+        "success": 0.76
+      },
+      {
+        "routed": 16,
+        "api_share": 0.10666666666666667,
+        "successes": 115,
+        "success": 0.7666666666666667
+      },
+      {
+        "routed": 17,
+        "api_share": 0.11333333333333333,
+        "successes": 116,
+        "success": 0.7733333333333333
+      },
+      {
+        "routed": 18,
+        "api_share": 0.12,
+        "successes": 117,
+        "success": 0.78
+      },
+      {
+        "routed": 19,
+        "api_share": 0.12666666666666668,
+        "successes": 118,
+        "success": 0.7866666666666666
+      },
+      {
+        "routed": 20,
+        "api_share": 0.13333333333333333,
+        "successes": 119,
+        "success": 0.7933333333333333
+      },
+      {
+        "routed": 21,
+        "api_share": 0.14,
+        "successes": 120,
+        "success": 0.8
+      },
+      {
+        "routed": 22,
+        "api_share": 0.14666666666666667,
+        "successes": 121,
+        "success": 0.8066666666666666
+      },
+      {
+        "routed": 23,
+        "api_share": 0.15333333333333332,
+        "successes": 122,
+        "success": 0.8133333333333334
+      },
+      {
+        "routed": 24,
+        "api_share": 0.16,
+        "successes": 123,
+        "success": 0.82
+      },
+      {
+        "routed": 25,
+        "api_share": 0.16666666666666666,
+        "successes": 124,
+        "success": 0.8266666666666667
+      },
+      {
+        "routed": 26,
+        "api_share": 0.17333333333333334,
+        "successes": 125,
+        "success": 0.8333333333333334
+      },
+      {
+        "routed": 27,
+        "api_share": 0.18,
+        "successes": 126,
+        "success": 0.84
+      },
+      {
+        "routed": 28,
+        "api_share": 0.18666666666666668,
+        "successes": 127,
+        "success": 0.8466666666666667
+      },
+      {
+        "routed": 29,
+        "api_share": 0.19333333333333333,
+        "successes": 128,
+        "success": 0.8533333333333334
+      },
+      {
+        "routed": 30,
+        "api_share": 0.2,
+        "successes": 129,
+        "success": 0.86
+      },
+      {
+        "routed": 31,
+        "api_share": 0.20666666666666667,
+        "successes": 130,
+        "success": 0.8666666666666667
+      },
+      {
+        "routed": 32,
+        "api_share": 0.21333333333333335,
+        "successes": 131,
+        "success": 0.8733333333333333
+      },
+      {
+        "routed": 33,
+        "api_share": 0.22,
+        "successes": 132,
+        "success": 0.88
+      },
+      {
+        "routed": 34,
+        "api_share": 0.22666666666666666,
+        "successes": 133,
+        "success": 0.8866666666666667
+      },
+      {
+        "routed": 35,
+        "api_share": 0.23333333333333334,
+        "successes": 134,
+        "success": 0.8933333333333333
+      },
+      {
+        "routed": 36,
+        "api_share": 0.24,
+        "successes": 135,
+        "success": 0.9
+      },
+      {
+        "routed": 37,
+        "api_share": 0.24666666666666667,
+        "successes": 136,
+        "success": 0.9066666666666666
+      },
+      {
+        "routed": 38,
+        "api_share": 0.25333333333333335,
+        "successes": 137,
+        "success": 0.9133333333333333
+      },
+      {
+        "routed": 39,
+        "api_share": 0.26,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 40,
+        "api_share": 0.26666666666666666,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 41,
+        "api_share": 0.2733333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 42,
+        "api_share": 0.28,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 43,
+        "api_share": 0.2866666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 44,
+        "api_share": 0.29333333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 45,
+        "api_share": 0.3,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 46,
+        "api_share": 0.30666666666666664,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 47,
+        "api_share": 0.31333333333333335,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 48,
+        "api_share": 0.32,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 49,
+        "api_share": 0.32666666666666666,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 50,
+        "api_share": 0.3333333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 51,
+        "api_share": 0.34,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 52,
+        "api_share": 0.3466666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 53,
+        "api_share": 0.35333333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 54,
+        "api_share": 0.36,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 55,
+        "api_share": 0.36666666666666664,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 56,
+        "api_share": 0.37333333333333335,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 57,
+        "api_share": 0.38,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 58,
+        "api_share": 0.38666666666666666,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 59,
+        "api_share": 0.3933333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 60,
+        "api_share": 0.4,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 61,
+        "api_share": 0.4066666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 62,
+        "api_share": 0.41333333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 63,
+        "api_share": 0.42,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 64,
+        "api_share": 0.4266666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 65,
+        "api_share": 0.43333333333333335,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 66,
+        "api_share": 0.44,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 67,
+        "api_share": 0.44666666666666666,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 68,
+        "api_share": 0.4533333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 69,
+        "api_share": 0.46,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 70,
+        "api_share": 0.4666666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 71,
+        "api_share": 0.47333333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 72,
+        "api_share": 0.48,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 73,
+        "api_share": 0.4866666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 74,
+        "api_share": 0.49333333333333335,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 75,
+        "api_share": 0.5,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 76,
+        "api_share": 0.5066666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 77,
+        "api_share": 0.5133333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 78,
+        "api_share": 0.52,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 79,
+        "api_share": 0.5266666666666666,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 80,
+        "api_share": 0.5333333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 81,
+        "api_share": 0.54,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 82,
+        "api_share": 0.5466666666666666,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 83,
+        "api_share": 0.5533333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 84,
+        "api_share": 0.56,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 85,
+        "api_share": 0.5666666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 86,
+        "api_share": 0.5733333333333334,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 87,
+        "api_share": 0.58,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 88,
+        "api_share": 0.5866666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 89,
+        "api_share": 0.5933333333333334,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 90,
+        "api_share": 0.6,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 91,
+        "api_share": 0.6066666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 92,
+        "api_share": 0.6133333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 93,
+        "api_share": 0.62,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 94,
+        "api_share": 0.6266666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 95,
+        "api_share": 0.6333333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 96,
+        "api_share": 0.64,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 97,
+        "api_share": 0.6466666666666666,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 98,
+        "api_share": 0.6533333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 99,
+        "api_share": 0.66,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 100,
+        "api_share": 0.6666666666666666,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 101,
+        "api_share": 0.6733333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 102,
+        "api_share": 0.68,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 103,
+        "api_share": 0.6866666666666666,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 104,
+        "api_share": 0.6933333333333334,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 105,
+        "api_share": 0.7,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 106,
+        "api_share": 0.7066666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 107,
+        "api_share": 0.7133333333333334,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 108,
+        "api_share": 0.72,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 109,
+        "api_share": 0.7266666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 110,
+        "api_share": 0.7333333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 111,
+        "api_share": 0.74,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 112,
+        "api_share": 0.7466666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 113,
+        "api_share": 0.7533333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 114,
+        "api_share": 0.76,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 115,
+        "api_share": 0.7666666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 116,
+        "api_share": 0.7733333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 117,
+        "api_share": 0.78,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 118,
+        "api_share": 0.7866666666666666,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 119,
+        "api_share": 0.7933333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 120,
+        "api_share": 0.8,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 121,
+        "api_share": 0.8066666666666666,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 122,
+        "api_share": 0.8133333333333334,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 123,
+        "api_share": 0.82,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 124,
+        "api_share": 0.8266666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 125,
+        "api_share": 0.8333333333333334,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 126,
+        "api_share": 0.84,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 127,
+        "api_share": 0.8466666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 128,
+        "api_share": 0.8533333333333334,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 129,
+        "api_share": 0.86,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 130,
+        "api_share": 0.8666666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 131,
+        "api_share": 0.8733333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 132,
+        "api_share": 0.88,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 133,
+        "api_share": 0.8866666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 134,
+        "api_share": 0.8933333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 135,
+        "api_share": 0.9,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 136,
+        "api_share": 0.9066666666666666,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 137,
+        "api_share": 0.9133333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 138,
+        "api_share": 0.92,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 139,
+        "api_share": 0.9266666666666666,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 140,
+        "api_share": 0.9333333333333333,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 141,
+        "api_share": 0.94,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 142,
+        "api_share": 0.9466666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 143,
+        "api_share": 0.9533333333333334,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 144,
+        "api_share": 0.96,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 145,
+        "api_share": 0.9666666666666667,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 146,
+        "api_share": 0.9733333333333334,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 147,
+        "api_share": 0.98,
+        "successes": 138,
+        "success": 0.92
+      },
+      {
+        "routed": 148,
+        "api_share": 0.9866666666666667,
+        "successes": 137,
+        "success": 0.9133333333333333
+      },
+      {
+        "routed": 149,
+        "api_share": 0.9933333333333333,
+        "successes": 136,
+        "success": 0.9066666666666666
+      },
+      {
+        "routed": 150,
+        "api_share": 1.0,
+        "successes": 135,
+        "success": 0.9
+      }
+    ]
+  },
+  "handwritten": {
+    "n": 47,
+    "ft_success": 0.5531914893617021,
+    "b2_success": 0.6808510638297872,
+    "scan": [
+      {
+        "label": "route_nothing",
+        "threshold": null,
+        "routed": 0,
+        "api_share": 0.0,
+        "successes": 26,
+        "success": 0.5531914893617021,
+        "cost_per_100_rmb": 0.0,
+        "random_success": 0.5531914893617021
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.20660810832146725,
+        "routed": 2,
+        "api_share": 0.0425531914893617,
+        "successes": 27,
+        "success": 0.574468085106383,
+        "cost_per_100_rmb": 0.014825531914893617,
+        "random_success": 0.558623811679493
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.3293466027596636,
+        "routed": 3,
+        "api_share": 0.06382978723404255,
+        "successes": 27,
+        "success": 0.574468085106383,
+        "cost_per_100_rmb": 0.02332340425531915,
+        "random_success": 0.5613399728383884
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.3955548342199129,
+        "routed": 4,
+        "api_share": 0.0851063829787234,
+        "successes": 28,
+        "success": 0.5957446808510638,
+        "cost_per_100_rmb": 0.031068085106382978,
+        "random_success": 0.5640561339972839
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.40434101647211823,
+        "routed": 4,
+        "api_share": 0.0851063829787234,
+        "successes": 28,
+        "success": 0.5957446808510638,
+        "cost_per_100_rmb": 0.031068085106382978,
+        "random_success": 0.5640561339972839
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.40561178542056603,
+        "routed": 5,
+        "api_share": 0.10638297872340426,
+        "successes": 28,
+        "success": 0.5957446808510638,
+        "cost_per_100_rmb": 0.03947234042553192,
+        "random_success": 0.5667722951561793
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.4057898833002786,
+        "routed": 6,
+        "api_share": 0.1276595744680851,
+        "successes": 29,
+        "success": 0.6170212765957447,
+        "cost_per_100_rmb": 0.04663829787234043,
+        "random_success": 0.5694884563150747
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.41977906853701524,
+        "routed": 7,
+        "api_share": 0.14893617021276595,
+        "successes": 30,
+        "success": 0.6382978723404256,
+        "cost_per_100_rmb": 0.05392340425531914,
+        "random_success": 0.5722046174739701
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.44863233466834496,
+        "routed": 8,
+        "api_share": 0.1702127659574468,
+        "successes": 30,
+        "success": 0.6382978723404256,
+        "cost_per_100_rmb": 0.061621276595744685,
+        "random_success": 0.5749207786328655
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.45408446884858794,
+        "routed": 9,
+        "api_share": 0.19148936170212766,
+        "successes": 30,
+        "success": 0.6382978723404256,
+        "cost_per_100_rmb": 0.06845957446808512,
+        "random_success": 0.577636939791761
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.4723552344699011,
+        "routed": 10,
+        "api_share": 0.2127659574468085,
+        "successes": 30,
+        "success": 0.6382978723404256,
+        "cost_per_100_rmb": 0.07907234042553192,
+        "random_success": 0.5803531009506564
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.481591713755076,
+        "routed": 11,
+        "api_share": 0.23404255319148937,
+        "successes": 30,
+        "success": 0.6382978723404256,
+        "cost_per_100_rmb": 0.08987659574468085,
+        "random_success": 0.5830692621095519
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.4881066657409881,
+        "routed": 12,
+        "api_share": 0.2553191489361702,
+        "successes": 30,
+        "success": 0.6382978723404256,
+        "cost_per_100_rmb": 0.09714468085106384,
+        "random_success": 0.5857854232684473
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.4961587672360448,
+        "routed": 13,
+        "api_share": 0.2765957446808511,
+        "successes": 30,
+        "success": 0.6382978723404256,
+        "cost_per_100_rmb": 0.11207234042553192,
+        "random_success": 0.5885015844273427
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5054775002401535,
+        "routed": 14,
+        "api_share": 0.2978723404255319,
+        "successes": 30,
+        "success": 0.6382978723404256,
+        "cost_per_100_rmb": 0.11990212765957446,
+        "random_success": 0.5912177455862382
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5122221758223573,
+        "routed": 15,
+        "api_share": 0.3191489361702128,
+        "successes": 31,
+        "success": 0.6595744680851063,
+        "cost_per_100_rmb": 0.12706382978723404,
+        "random_success": 0.5939339067451336
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5191058552230231,
+        "routed": 16,
+        "api_share": 0.3404255319148936,
+        "successes": 31,
+        "success": 0.6595744680851063,
+        "cost_per_100_rmb": 0.1349404255319149,
+        "random_success": 0.596650067904029
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5192338744200033,
+        "routed": 17,
+        "api_share": 0.3617021276595745,
+        "successes": 31,
+        "success": 0.6595744680851063,
+        "cost_per_100_rmb": 0.1407914893617021,
+        "random_success": 0.5993662290629245
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.532480961733318,
+        "routed": 18,
+        "api_share": 0.3829787234042553,
+        "successes": 31,
+        "success": 0.6595744680851063,
+        "cost_per_100_rmb": 0.14842978723404257,
+        "random_success": 0.6020823902218199
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5549805638199288,
+        "routed": 18,
+        "api_share": 0.3829787234042553,
+        "successes": 31,
+        "success": 0.6595744680851063,
+        "cost_per_100_rmb": 0.14842978723404257,
+        "random_success": 0.6020823902218199
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5807886259148686,
+        "routed": 19,
+        "api_share": 0.40425531914893614,
+        "successes": 31,
+        "success": 0.6595744680851063,
+        "cost_per_100_rmb": 0.15600851063829788,
+        "random_success": 0.6047985513807153
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5890871271686883,
+        "routed": 20,
+        "api_share": 0.425531914893617,
+        "successes": 31,
+        "success": 0.6595744680851063,
+        "cost_per_100_rmb": 0.16344255319148937,
+        "random_success": 0.6075147125396108
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.593413395647559,
+        "routed": 21,
+        "api_share": 0.44680851063829785,
+        "successes": 32,
+        "success": 0.6808510638297872,
+        "cost_per_100_rmb": 0.1696553191489362,
+        "random_success": 0.6102308736985061
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5945930307284115,
+        "routed": 22,
+        "api_share": 0.46808510638297873,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.17548936170212764,
+        "random_success": 0.6129470348574015
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.5986872925903939,
+        "routed": 23,
+        "api_share": 0.48936170212765956,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.18367659574468084,
+        "random_success": 0.615663196016297
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6143380965670295,
+        "routed": 24,
+        "api_share": 0.5106382978723404,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.1943063829787234,
+        "random_success": 0.6183793571751923
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6233238001697321,
+        "routed": 25,
+        "api_share": 0.5319148936170213,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.2024340425531915,
+        "random_success": 0.6210955183340878
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6290769505681192,
+        "routed": 26,
+        "api_share": 0.5531914893617021,
+        "successes": 32,
+        "success": 0.6808510638297872,
+        "cost_per_100_rmb": 0.2097063829787234,
+        "random_success": 0.6238116794929832
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.629173866207446,
+        "routed": 27,
+        "api_share": 0.574468085106383,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.21565957446808512,
+        "random_success": 0.6265278406518786
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.645643658264385,
+        "routed": 28,
+        "api_share": 0.5957446808510638,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.22679148936170213,
+        "random_success": 0.6292440018107741
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6540594690442355,
+        "routed": 29,
+        "api_share": 0.6170212765957447,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.23309787234042553,
+        "random_success": 0.6319601629696695
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.6860798506619028,
+        "routed": 30,
+        "api_share": 0.6382978723404256,
+        "successes": 34,
+        "success": 0.723404255319149,
+        "cost_per_100_rmb": 0.2404468085106383,
+        "random_success": 0.634676324128565
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.689404839052033,
+        "routed": 31,
+        "api_share": 0.6595744680851063,
+        "successes": 34,
+        "success": 0.723404255319149,
+        "cost_per_100_rmb": 0.24672340425531916,
+        "random_success": 0.6373924852874604
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7010074887035902,
+        "routed": 32,
+        "api_share": 0.6808510638297872,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.2567829787234042,
+        "random_success": 0.6401086464463558
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7193158336117371,
+        "routed": 33,
+        "api_share": 0.7021276595744681,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.2653148936170213,
+        "random_success": 0.6428248076052512
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7382910348101943,
+        "routed": 34,
+        "api_share": 0.723404255319149,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.27773191489361704,
+        "random_success": 0.6455409687641467
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.7918145678309991,
+        "routed": 35,
+        "api_share": 0.7446808510638298,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.2872468085106383,
+        "random_success": 0.6482571299230421
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8001406225474439,
+        "routed": 36,
+        "api_share": 0.7659574468085106,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.29469361702127655,
+        "random_success": 0.6509732910819376
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8101507438353343,
+        "routed": 37,
+        "api_share": 0.7872340425531915,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.3039702127659574,
+        "random_success": 0.653689452240833
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8241508632218729,
+        "routed": 38,
+        "api_share": 0.8085106382978723,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.31095319148936174,
+        "random_success": 0.6564056133997284
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8258666418567785,
+        "routed": 39,
+        "api_share": 0.8297872340425532,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.31988510638297873,
+        "random_success": 0.6591217745586239
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8281272602786042,
+        "routed": 40,
+        "api_share": 0.851063829787234,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.326668085106383,
+        "random_success": 0.6618379357175193
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8611066303274506,
+        "routed": 41,
+        "api_share": 0.8723404255319149,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.3346808510638298,
+        "random_success": 0.6645540968764146
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.867822172670897,
+        "routed": 42,
+        "api_share": 0.8936170212765957,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.34211489361702124,
+        "random_success": 0.6672702580353101
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.8757090617517966,
+        "routed": 43,
+        "api_share": 0.9148936170212766,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.3494340425531915,
+        "random_success": 0.6699864191942054
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.9015094036001878,
+        "routed": 44,
+        "api_share": 0.9361702127659575,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.356527659574468,
+        "random_success": 0.6727025803531009
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.9064303048941477,
+        "routed": 45,
+        "api_share": 0.9574468085106383,
+        "successes": 33,
+        "success": 0.7021276595744681,
+        "cost_per_100_rmb": 0.3628638297872341,
+        "random_success": 0.6754187415119963
+      },
+      {
+        "label": "threshold",
+        "threshold": 0.9358916902410648,
+        "routed": 46,
+        "api_share": 0.9787234042553191,
+        "successes": 32,
+        "success": 0.6808510638297872,
+        "cost_per_100_rmb": 0.36911914893617026,
+        "random_success": 0.6781349026708917
+      },
+      {
+        "label": "route_everything",
+        "threshold": null,
+        "routed": 47,
+        "api_share": 1.0,
+        "successes": 32,
+        "success": 0.6808510638297872,
+        "cost_per_100_rmb": 0.37688510638297873,
+        "random_success": 0.6808510638297872
+      }
+    ],
+    "at_threshold": {
+      "label": "threshold",
+      "threshold": 0.689404839052033,
+      "routed": 31,
+      "api_share": 0.6595744680851063,
+      "successes": 34,
+      "success": 0.723404255319149,
+      "cost_per_100_rmb": 0.24672340425531916,
+      "random_success": 0.6373924852874604
+    }
+  },
+  "latency_ms": {
+    "local_per_call": {
+      "n": 150,
+      "p50_ms": 855.05,
+      "p95_ms": 3499.975000000001
+    },
+    "cloud_per_paid_call": {
+      "n": 10,
+      "p50_ms": 741.5,
+      "p95_ms": 901.6899999999999
+    }
+  }
+}

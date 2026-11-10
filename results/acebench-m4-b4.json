@@ -1,0 +1,614 @@
+{
+  "benchmark": "ACEBench 56dd66c with the local patches of third_party_patches/acebench.diff, through llama-server in non-thinking mode",
+  "smoke": false,
+  "languages": [
+    "zh",
+    "en"
+  ],
+  "groups": {
+    "normal": [
+      "normal_single_turn_single_function",
+      "normal_single_turn_parallel_function",
+      "normal_multi_turn_user_adjust",
+      "normal_multi_turn_user_switch",
+      "normal_similar_api",
+      "normal_preference",
+      "normal_atom_bool",
+      "normal_atom_enum",
+      "normal_atom_number",
+      "normal_atom_list",
+      "normal_atom_object_deep",
+      "normal_atom_object_short"
+    ],
+    "special": [
+      "special_incomplete",
+      "special_error_param",
+      "special_irrelevant"
+    ]
+  },
+  "generation": {
+    "temperature": 0,
+    "top_p": 1,
+    "max_tokens": 1200,
+    "num_threads": 1
+  },
+  "aggregate_rule": "Per system and language, the unweighted mean of the per-category accuracies (correct / n) over the categories run, each category counting once whatever its n, which is recorded beside it; per group the same over the group's categories; over both languages the same over every (language, category) pair. correct and n are the score file's correct_count and total_count: for normal_multi_turn_* they count single answers, while ACEBench's own accuracy there (acebench_accuracy) counts a turn right only when all its answers are. ACEBench's own Summary is not used: it weights normal, special and agent and counts the agent categories, not run, as 0.",
+  "format_rule": "Per category: n answers; tool_call, the answers holding <tool_call> (the fine-tuned model's trained format); acebench_format, the answers whose first outermost [...] parses as a Python list of calls, as ACEBench's parser takes them ([ApiName(key='value')]). An answer may be counted in both or in neither; special categories ask for text.",
+  "base_model": "models/Qwen3-1.7B-Q8_0.gguf",
+  "acebench": {
+    "clone": "runs/third_party/ACEBench",
+    "commit": "56dd66cf6439b0d9655ee1b353e4cd745c6f664e",
+    "patch": {
+      "file": "third_party_patches/acebench.diff",
+      "sha256": "216eb0a321a12fad74e757b6ffd84ec0d84a176bb253b242cd4e50f86e1c4c98"
+    },
+    "data": {
+      "files": 68,
+      "identical_to": "56dd66cf6439b0d9655ee1b353e4cd745c6f664e",
+      "check": "every file under data_all/ has the git blob name of the upstream commit's, computed from its bytes; none missing, none added"
+    },
+    "python": ".venv-acebench/Scripts/python.exe",
+    "openai": "1.64.0"
+  },
+  "environment": {
+    "LOCAL_OPENAI_BASE_URL": "http://127.0.0.1:8080/v1",
+    "LOCAL_OPENAI_API_KEY": "EMPTY",
+    "PYTHONUTF8": "1",
+    "TQDM_DISABLE": "1"
+  },
+  "drop_env": {
+    "patterns": 1,
+    "variables_dropped": 4
+  },
+  "git_commit": "e4a9fe3f0eddfa60353f90c9d7059f8cdc9acfd1",
+  "git_dirty": true,
+  "systems": {
+    "b4": {
+      "acebench_model": "local-qwen3-1.7b-lora",
+      "server_command": [
+        "llama-server",
+        "-m",
+        "models/Qwen3-1.7B-Q8_0.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "8192",
+        "--jinja",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8080",
+        "--cache-ram",
+        "0",
+        "--lora",
+        "runs/train/b4/gguf/checkpoint-417-f16.gguf",
+        "--lora-init-without-apply",
+        "-np",
+        "1",
+        "--no-cache-prompt",
+        "--chat-template-kwargs",
+        "{\"enable_thinking\":false}"
+      ],
+      "server_build": "b11349-fb4b2737a",
+      "adapter": {
+        "gguf": "runs/train/b4/gguf/checkpoint-417-f16.gguf",
+        "sha256": "b0b9a19b52e27eb6a3fca1a38d3c1769637c0bb007ec4000d97edbba5ead8283",
+        "selection": "results/checkpoint-selection-b4.json"
+      },
+      "raw": "runs/acebench/m4/b4",
+      "aggregate": {
+        "categories": 30,
+        "n": 1940,
+        "accuracy": 0.36178909253414826
+      },
+      "languages": {
+        "zh": {
+          "generate": [
+            ".venv-acebench/Scripts/python.exe",
+            "generate.py",
+            "--model",
+            "local-qwen3-1.7b-lora",
+            "--category",
+            "normal",
+            "special",
+            "--language",
+            "zh",
+            "--temperature",
+            "0",
+            "--top-p",
+            "1",
+            "--max-tokens",
+            "1200",
+            "--num-threads",
+            "1"
+          ],
+          "evaluate": [
+            ".venv-acebench/Scripts/python.exe",
+            "eval_main.py",
+            "--language",
+            "zh",
+            "--model",
+            "local-qwen3-1.7b-lora",
+            "--category",
+            "normal",
+            "special"
+          ],
+          "categories": {
+            "normal_single_turn_single_function": {
+              "n": 100,
+              "correct": 23,
+              "accuracy": 0.23
+            },
+            "normal_single_turn_parallel_function": {
+              "n": 100,
+              "correct": 11,
+              "accuracy": 0.11
+            },
+            "normal_multi_turn_user_adjust": {
+              "n": 116,
+              "correct": 47,
+              "accuracy": 0.4051724137931034,
+              "acebench_accuracy": 0.08,
+              "acebench_process_accuracy": 0.41
+            },
+            "normal_multi_turn_user_switch": {
+              "n": 101,
+              "correct": 25,
+              "accuracy": 0.24752475247524752,
+              "acebench_accuracy": 0.06,
+              "acebench_process_accuracy": 0.243
+            },
+            "normal_similar_api": {
+              "n": 50,
+              "correct": 29,
+              "accuracy": 0.58
+            },
+            "normal_preference": {
+              "n": 50,
+              "correct": 18,
+              "accuracy": 0.36
+            },
+            "normal_atom_bool": {
+              "n": 50,
+              "correct": 27,
+              "accuracy": 0.54
+            },
+            "normal_atom_enum": {
+              "n": 50,
+              "correct": 28,
+              "accuracy": 0.56
+            },
+            "normal_atom_number": {
+              "n": 50,
+              "correct": 33,
+              "accuracy": 0.66
+            },
+            "normal_atom_list": {
+              "n": 50,
+              "correct": 20,
+              "accuracy": 0.4
+            },
+            "normal_atom_object_deep": {
+              "n": 50,
+              "correct": 27,
+              "accuracy": 0.54
+            },
+            "normal_atom_object_short": {
+              "n": 50,
+              "correct": 22,
+              "accuracy": 0.44
+            },
+            "special_incomplete": {
+              "n": 50,
+              "correct": 15,
+              "accuracy": 0.3
+            },
+            "special_error_param": {
+              "n": 50,
+              "correct": 0,
+              "accuracy": 0.0
+            },
+            "special_irrelevant": {
+              "n": 50,
+              "correct": 0,
+              "accuracy": 0.0
+            }
+          },
+          "aggregate": {
+            "categories": 15,
+            "n": 967,
+            "accuracy": 0.3581798110845567
+          },
+          "groups": {
+            "normal": {
+              "categories": 12,
+              "n": 817,
+              "accuracy": 0.4227247638556959
+            },
+            "special": {
+              "categories": 3,
+              "n": 150,
+              "accuracy": 0.1
+            }
+          },
+          "format": {
+            "normal_single_turn_single_function": {
+              "n": 100,
+              "tool_call": 0,
+              "acebench_format": 47
+            },
+            "normal_single_turn_parallel_function": {
+              "n": 100,
+              "tool_call": 0,
+              "acebench_format": 40
+            },
+            "normal_multi_turn_user_adjust": {
+              "n": 116,
+              "tool_call": 0,
+              "acebench_format": 83
+            },
+            "normal_multi_turn_user_switch": {
+              "n": 101,
+              "tool_call": 0,
+              "acebench_format": 62
+            },
+            "normal_similar_api": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 40
+            },
+            "normal_preference": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 43
+            },
+            "normal_atom_bool": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 41
+            },
+            "normal_atom_enum": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 43
+            },
+            "normal_atom_number": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 45
+            },
+            "normal_atom_list": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 37
+            },
+            "normal_atom_object_deep": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 35
+            },
+            "normal_atom_object_short": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 32
+            },
+            "special_incomplete": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 5
+            },
+            "special_error_param": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 12
+            },
+            "special_irrelevant": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 3
+            }
+          },
+          "inference_errors": {
+            "normal_single_turn_single_function": 0,
+            "normal_single_turn_parallel_function": 0,
+            "normal_multi_turn_user_adjust": 0,
+            "normal_multi_turn_user_switch": 0,
+            "normal_similar_api": 0,
+            "normal_preference": 0,
+            "normal_atom_bool": 0,
+            "normal_atom_enum": 0,
+            "normal_atom_number": 0,
+            "normal_atom_list": 0,
+            "normal_atom_object_deep": 0,
+            "normal_atom_object_short": 0,
+            "special_incomplete": 0,
+            "special_error_param": 0,
+            "special_irrelevant": 0
+          },
+          "acebench_summary": {
+            "Model": "local-qwen3-1.7b-lora",
+            "bool": 0.54,
+            "enum": 0.56,
+            "number": 0.66,
+            "list": 0.4,
+            "object_short": 0.54,
+            "object_deep": 0.44,
+            "atom": 0.523,
+            "single_turn_singal_function": 0.23,
+            "single_turn_parallel_function": 0.11,
+            "single_turn": 0.17,
+            "multiple_turn_switch": 0.06,
+            "multiple_turn_adjust": 0.08,
+            "multiple_turn": 0.07,
+            "similar_api": 0.58,
+            "profile": 0.36,
+            "normal_summary": 0.38,
+            "incomplete": 0.3,
+            "error": 0,
+            "irrelevant": 0,
+            "special_summary": 0.1,
+            "agent_multi_turn": 0,
+            "agent_multi_turn_process": 0,
+            "agent_multi_step": 0,
+            "agent_multi_step_process": 0,
+            "agent_summary": 0,
+            "Summary": 0.246
+          }
+        },
+        "en": {
+          "generate": [
+            ".venv-acebench/Scripts/python.exe",
+            "generate.py",
+            "--model",
+            "local-qwen3-1.7b-lora",
+            "--category",
+            "normal",
+            "special",
+            "--language",
+            "en",
+            "--temperature",
+            "0",
+            "--top-p",
+            "1",
+            "--max-tokens",
+            "1200",
+            "--num-threads",
+            "1"
+          ],
+          "evaluate": [
+            ".venv-acebench/Scripts/python.exe",
+            "eval_main.py",
+            "--language",
+            "en",
+            "--model",
+            "local-qwen3-1.7b-lora",
+            "--category",
+            "normal",
+            "special"
+          ],
+          "categories": {
+            "normal_single_turn_single_function": {
+              "n": 100,
+              "correct": 36,
+              "accuracy": 0.36
+            },
+            "normal_single_turn_parallel_function": {
+              "n": 100,
+              "correct": 13,
+              "accuracy": 0.13
+            },
+            "normal_multi_turn_user_adjust": {
+              "n": 123,
+              "correct": 69,
+              "accuracy": 0.5609756097560976,
+              "acebench_accuracy": 0.26,
+              "acebench_process_accuracy": 0.543
+            },
+            "normal_multi_turn_user_switch": {
+              "n": 100,
+              "correct": 39,
+              "accuracy": 0.39,
+              "acebench_accuracy": 0.18,
+              "acebench_process_accuracy": 0.39
+            },
+            "normal_similar_api": {
+              "n": 50,
+              "correct": 28,
+              "accuracy": 0.56
+            },
+            "normal_preference": {
+              "n": 50,
+              "correct": 21,
+              "accuracy": 0.42
+            },
+            "normal_atom_bool": {
+              "n": 50,
+              "correct": 23,
+              "accuracy": 0.46
+            },
+            "normal_atom_enum": {
+              "n": 50,
+              "correct": 31,
+              "accuracy": 0.62
+            },
+            "normal_atom_number": {
+              "n": 50,
+              "correct": 31,
+              "accuracy": 0.62
+            },
+            "normal_atom_list": {
+              "n": 50,
+              "correct": 33,
+              "accuracy": 0.66
+            },
+            "normal_atom_object_deep": {
+              "n": 50,
+              "correct": 16,
+              "accuracy": 0.32
+            },
+            "normal_atom_object_short": {
+              "n": 50,
+              "correct": 12,
+              "accuracy": 0.24
+            },
+            "special_incomplete": {
+              "n": 50,
+              "correct": 4,
+              "accuracy": 0.08
+            },
+            "special_error_param": {
+              "n": 50,
+              "correct": 0,
+              "accuracy": 0.0
+            },
+            "special_irrelevant": {
+              "n": 50,
+              "correct": 3,
+              "accuracy": 0.06
+            }
+          },
+          "aggregate": {
+            "categories": 15,
+            "n": 973,
+            "accuracy": 0.3653983739837398
+          },
+          "groups": {
+            "normal": {
+              "categories": 12,
+              "n": 823,
+              "accuracy": 0.4450813008130081
+            },
+            "special": {
+              "categories": 3,
+              "n": 150,
+              "accuracy": 0.04666666666666667
+            }
+          },
+          "format": {
+            "normal_single_turn_single_function": {
+              "n": 100,
+              "tool_call": 0,
+              "acebench_format": 63
+            },
+            "normal_single_turn_parallel_function": {
+              "n": 100,
+              "tool_call": 0,
+              "acebench_format": 51
+            },
+            "normal_multi_turn_user_adjust": {
+              "n": 123,
+              "tool_call": 0,
+              "acebench_format": 101
+            },
+            "normal_multi_turn_user_switch": {
+              "n": 100,
+              "tool_call": 0,
+              "acebench_format": 79
+            },
+            "normal_similar_api": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 44
+            },
+            "normal_preference": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 50
+            },
+            "normal_atom_bool": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 46
+            },
+            "normal_atom_enum": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 47
+            },
+            "normal_atom_number": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 45
+            },
+            "normal_atom_list": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 48
+            },
+            "normal_atom_object_deep": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 25
+            },
+            "normal_atom_object_short": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 28
+            },
+            "special_incomplete": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 8
+            },
+            "special_error_param": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 14
+            },
+            "special_irrelevant": {
+              "n": 50,
+              "tool_call": 0,
+              "acebench_format": 8
+            }
+          },
+          "inference_errors": {
+            "normal_single_turn_single_function": 0,
+            "normal_single_turn_parallel_function": 0,
+            "normal_multi_turn_user_adjust": 0,
+            "normal_multi_turn_user_switch": 0,
+            "normal_similar_api": 0,
+            "normal_preference": 0,
+            "normal_atom_bool": 0,
+            "normal_atom_enum": 0,
+            "normal_atom_number": 0,
+            "normal_atom_list": 0,
+            "normal_atom_object_deep": 0,
+            "normal_atom_object_short": 0,
+            "special_incomplete": 0,
+            "special_error_param": 0,
+            "special_irrelevant": 0
+          },
+          "acebench_summary": {
+            "Model": "local-qwen3-1.7b-lora",
+            "bool": 0.46,
+            "enum": 0.62,
+            "number": 0.62,
+            "list": 0.66,
+            "object_short": 0.32,
+            "object_deep": 0.24,
+            "atom": 0.487,
+            "single_turn_singal_function": 0.36,
+            "single_turn_parallel_function": 0.13,
+            "single_turn": 0.245,
+            "multiple_turn_switch": 0.18,
+            "multiple_turn_adjust": 0.26,
+            "multiple_turn": 0.22,
+            "similar_api": 0.56,
+            "profile": 0.42,
+            "normal_summary": 0.403,
+            "incomplete": 0.08,
+            "error": 0,
+            "irrelevant": 0.06,
+            "special_summary": 0.047,
+            "agent_multi_turn": 0,
+            "agent_multi_turn_process": 0,
+            "agent_multi_step": 0,
+            "agent_multi_step_process": 0,
+            "agent_summary": 0,
+            "Summary": 0.246
+          }
+        }
+      }
+    }
+  }
+}

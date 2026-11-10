@@ -1,0 +1,1 @@
+<function name="book_table"><param name="restaurant">{'name': 'Café de Flore', 'city': 'Paris'}</param><param name="party">{'adults': 2, 'children': [{'age': 5}]}</param><param name="time">19:30</param><param name="requests">['window seat', 'high chair']</param></function><|im_end|>

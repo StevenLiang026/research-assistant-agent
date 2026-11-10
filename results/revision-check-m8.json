@@ -1,0 +1,106 @@
+{
+  "about": "M8's data-revision check on FT5's last checkpoint (docs/m8-计划.md WP3, 数据修订), made once and mechanically by scripts/check_m8_revision.py with the triggers written before FT5 had a score: any trigger fired, the data are revised once and FT5 is trained again.",
+  "rules": {
+    "R1": "FT5's strict special rate on dev set A (data/eval/special-dev-a.jsonl) < 3/5: the incorrect, missing and irrelevant items of both languages pooled, the priority items left out (special.strict / special.n of the records scored again by research_agent.eval.special_dev), compared exactly.",
+    "R2": "FT5's false refusals on dev set A's valid items (valid.false_refusals of the records scored again) minus FT3 step 1635's >= 3.",
+    "R3": "FT3 step 1635's successes on data/eval/dev.jsonl with seed 0 minus FT5's >= 8, every record with the runtime rules applied offline and scored by the normalized scorer, as scripts/decide_m8.py counts a selection run."
+  },
+  "step": 441,
+  "baseline_step": 1635,
+  "inputs": {
+    "selection": {
+      "path": "runs/m8/queue/selection-ft5-last-s0.json",
+      "sha256": "8697442428b4534cfe72bddb3c7f76c988b6822db6f584631782a1b1bbdfb2a7"
+    },
+    "baseline": {
+      "path": "results/checkpoint-selection-ft3.json",
+      "sha256": "6938a9accb4e73d9a5f771e784633947b7c0679d3fe73257fcf8cd269975a174"
+    },
+    "run_result": {
+      "path": "runs/train/ft5/result.json",
+      "sha256": "5b1f77627072540da7f8bff02801b24b88fea3c2966c228be887abc1c4070cd2"
+    },
+    "dev_ft3_records": {
+      "path": "runs/eval/select-ft3/dev/checkpoint-1635.s0.jsonl",
+      "sha256": "0497a6bbca19277be16eff85de9e2413fc91e848967efe0199365ffe63f9228c"
+    },
+    "dev_ft3_manifest": {
+      "path": "runs/eval/select-ft3/dev/checkpoint-1635.s0.manifest.json",
+      "sha256": "20af9164b95b2cc51a515b89e4598c3e4e9c2d8bf8648b400ccad55674464ece"
+    },
+    "dev_ft5_records": {
+      "path": "runs/eval/select-ft5/dev/checkpoint-441.s0.jsonl",
+      "sha256": "6fb5eae026d728cb35d3b0971aea34131f750c2a98ef98c11de5cfc95db9c5d7"
+    },
+    "dev_ft5_manifest": {
+      "path": "runs/eval/select-ft5/dev/checkpoint-441.s0.manifest.json",
+      "sha256": "83cb19abcddf0a33460eac14d11424303d940f5d914905a7854233aa8cbd1363"
+    },
+    "dev_a_ft3_records": {
+      "path": "runs/m8/special-dev/a-ft3.jsonl",
+      "sha256": "8944bca32302e097c848c7114a9b8cc7dd2628faa6ef0ca01bf395b6c2f7a6c0"
+    },
+    "dev_a_ft3_manifest": {
+      "path": "runs/m8/special-dev/a-ft3.manifest.json",
+      "sha256": "58dafdbf0e2a72c6c1c708d3dea3af613d93729e3dee1e2290d60881fd1fa964"
+    },
+    "dev_a_ft3_summary": {
+      "path": "runs/m8/special-dev/a-ft3.summary.json",
+      "sha256": "c8a7769062ccc6987e1cd9dd53ffb90e5c3290b4459ac0c70b1bd165fc11e5de"
+    },
+    "dev_a_ft5_records": {
+      "path": "runs/m8/special-dev/a-ft5-441.jsonl",
+      "sha256": "dbde2052b8d54e9cd0d294de977296c2ec6a2008e93fc6a50c8614a6e5207410"
+    },
+    "dev_a_ft5_manifest": {
+      "path": "runs/m8/special-dev/a-ft5-441.manifest.json",
+      "sha256": "601b886d4309be6f5955a1a52804fe9e6479e8c7a7168cb25308f306e1cd5836"
+    },
+    "dev_a_ft5_summary": {
+      "path": "runs/m8/special-dev/a-ft5-441.summary.json",
+      "sha256": "1d55c1648e86c68e11f63120048b695594a31c5ec79aea7a0eb80c1038b02371"
+    }
+  },
+  "dev_set_a": {
+    "path": "data/eval/special-dev-a.jsonl",
+    "sha256": "ff167c2f9a8c0ace44c8e6bb1c4f962b2a9d5d25c65cd7ae255a02151de433e3"
+  },
+  "ft3": {
+    "gguf": "runs/train/ft3/gguf/checkpoint-1635-f16.gguf",
+    "gguf_sha256": "0665d4c2ce29112c246e5c0a50f451224d670813f23ec66f08a424380a6d7237",
+    "dev_s0": 126,
+    "special_n": 90,
+    "special_strict": 26,
+    "valid_n": 38,
+    "false_refusals": 1
+  },
+  "ft5": {
+    "gguf": "runs/train/ft5/gguf/checkpoint-441-f16.gguf",
+    "gguf_sha256": "bfbef9b8bc5c1915c4509ffe30cfe5f810e98bc9675bbb59754063427ac45b31",
+    "dev_s0": 127,
+    "special_n": 90,
+    "special_strict": 34,
+    "valid_n": 38,
+    "false_refusals": 1
+  },
+  "triggers": {
+    "R1": {
+      "value": "17/45",
+      "value_float": 0.37777777777777777,
+      "threshold": "3/5",
+      "threshold_float": 0.6,
+      "fired": true
+    },
+    "R2": {
+      "value": 0,
+      "threshold": 3,
+      "fired": false
+    },
+    "R3": {
+      "value": -1,
+      "threshold": 8,
+      "fired": false
+    }
+  },
+  "triggered": true
+}
