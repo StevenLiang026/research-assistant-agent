@@ -6,6 +6,7 @@ same key are refused with nothing written, and the same files give the same byte
 
 from __future__ import annotations
 
+import copy
 import importlib.util
 import json
 import sys
@@ -423,6 +424,80 @@ def m8_decision(*, go: bool = False) -> dict:
             "reason": "the first to pass, MG met" if go else "no checkpoint passes PG1-PG4"}
 
 
+# ---- M9: the counts of the inference wrappers, a development run's lengths, the lengths summary -----------
+
+# A voted and ruled system's turns (runner records, or the attempts of end-to-end transcripts) as agent.vote
+# and agent.rules leave them: a unanimous vote; a 3-2 vote whose chosen class is not the greedy answer's, with
+# a failed candidate, and transient_retry changing the answer; a vote no sample voted on (two failed
+# candidates, given as their number) whose answer both rules changed; and a turn with neither (a harness
+# error).
+VOTED_TURNS = [
+    {"votes": {"k": 5, "mode": "final", "counts": {"a": 5}, "chosen": "a", "greedy": "a", "errors": []},
+     "rules": []},
+    {"votes": {"k": 5, "mode": "final", "counts": {"a": 3, "b": 2}, "chosen": "a", "greedy": "b",
+               "errors": [{"error_type": "HarnessError"}]},
+     "rules": [{"rule": "transient_retry", "before": {}, "after": {}}]},
+    {"votes": {"k": 5, "mode": "final", "counts": {}, "chosen": None, "greedy": "c", "errors": 2},
+     "rules": [{"rule": "id_repair", "before": {}, "after": {}},
+               {"rule": "transient_retry", "before": {}, "after": {}}]},
+    {"status": "harness_error"},
+]
+# What scripts/run_test.py's wrapper_counts makes of VOTED_TURNS (a test below checks it against the writer),
+# and of two end-to-end attempts no sample voted on, unruled: no agreement and no rules block.
+WRAPPER_BLOCKS = {"votes": {"steps": 3, "unanimous": 1, "agreement": 0.8, "chosen_not_greedy": 1,
+                            "no_sample_voted": 1, "candidate_errors": 3},
+                  "rules": {"steps": 3, "fired": {"transient_retry": 2, "id_repair": 1}}}
+UNVOTED_ATTEMPTS = [{"votes": {"k": 5, "mode": "final", "counts": {}, "chosen": None, "greedy": None,
+                               "errors": []}}] * 2
+E2E_WRAPPER_BLOCKS = {"votes": {"steps": 2, "unanimous": 0, "agreement": None, "chosen_not_greedy": 0,
+                                "no_sample_voted": 2, "candidate_errors": 0}}
+
+
+def m7_final() -> dict:
+    """test-m7-final.json: a voted and ruled system's single-step file with its wrapper counts (a copy of
+    them: the cases that break a file change it)."""
+    return {**single_step({"r1-s1", "hw-dev-001"}, subsets=True), **copy.deepcopy(WRAPPER_BLOCKS)}
+
+
+def m7_e2e_final() -> dict:
+    """test-m7-e2e-final.json: its end-to-end file, counted over its transcripts' attempts."""
+    return {**m5_e2e(routing=False), "system": "final", **copy.deepcopy(E2E_WRAPPER_BLOCKS)}
+
+
+FAILED_CANDIDATES = {"HarnessError": 2, "ReadTimeout": 1}  # a voted run's summary: failed candidates by type
+
+
+def dev_e2e_final(*, over: int | None = 1, failed: dict | None = FAILED_CANDIDATES) -> dict:
+    """dev-e2e-final.json, run_e2e's report of a voted local system: its manifest counts the local steps over
+    the training length (over None: run without the context check), its summary the failed vote candidates by
+    error type (failed None: a run without --votes, no such key); its two tasks made 3 and 5 local calls."""
+    tasks = [task("e2e-dev-01", "lookup_paper", "en", True), task("e2e-dev-02", "chit_chat", "zh", False)]
+    tasks[1]["local_calls"] = 5
+    summary = summarize_tasks(tasks)
+    if failed is not None:
+        summary["candidate_errors"] = dict(failed)
+    return {"manifest": {"system": "final", "training_length": 5120, "steps_over_training_length": over},
+            "summary": summary, "tasks": tasks}
+
+
+def thinking(n: int, forced: int, *values: float | None) -> dict:
+    """A part's block of a lengths file: n turns, the five token figures (THINKING_TOKENS' order), forced."""
+    return {"n": n, **dict(zip(report.THINKING_TOKENS, values, strict=True)), "forced": forced}
+
+
+def lengths_file() -> dict:
+    """results/lengths-m7.json as scripts/thinking_lengths.py writes it, the parts the report reads and a few
+    others: final's thinking on its single-step records and end-to-end attempts with its steps over 5,120
+    tokens, and FT2's steps over 4,096 (it keeps no thinking record)."""
+    return {"milestone": "M7", "inputs": {"final": {"sha256": "6" * 64, "files": 31}},
+            "systems": {"final": {"single_step": thinking(300, 12, 812.4, 1279.95, 1280, 41.0, 97.4),
+                                  "e2e": thinking(1200, 30, 640.0, 1280, 1280, 52.4, 180.6),
+                                  "e2e_length": {"training_length": 5120, "calls": 412, "over": 3,
+                                                 "max": 6011}},
+                        "ft2": {"e2e_length": {"training_length": 4096, "calls": 380, "over": 0,
+                                               "max": 3998}}}}
+
+
 def results(root: Path, files: dict[str, object]) -> Path:
     """root/results with the given files, JSON as the writers write it (or the text of a str)."""
     folder = root / "results"
@@ -453,7 +528,9 @@ def every_kind() -> dict[str, object]:
             "test-m6-ft2.json": single_step({"r1-s1", "r2-s1", "hw-dev-001"}, subsets=True),
             "test-m6-ft2r.json": m6_single_step(), "test-m6-e2e-ft2r.json": m6_e2e(),
             "test-m6-comparisons.json": m6_comparisons(), "test-m6-resources.json": m6_resources(),
-            "decision-m8.json": m8_decision()}
+            "decision-m8.json": m8_decision(),
+            "test-m7-final.json": m7_final(), "test-m7-e2e-final.json": m7_e2e_final(),
+            "dev-e2e-final.json": dev_e2e_final(), "lengths-m7.json": lengths_file()}
 
 
 # the access logs (data/eval) and the per-item results the report is built from (results/dev-*.json and
@@ -620,6 +697,14 @@ EXPECTED = {
     "decision.m8.decision": "NO-GO", "decision.m8.ft3.sum": "475", "decision.m8.b0.lenient_rate": "68.7%",
     "decision.m8.ft5-232.rank": "1", "decision.m8.ft5-232.strict_rate": "50.7%",
     "decision.m8.ft5-116.pg4": "no",
+    # M9: the inference wrappers' counts, a development run's lengths, the lengths summary
+    "eval.test-m7-final.votes.steps": "3", "eval.test-m7-final.votes.agreement": "80.0%",
+    "eval.test-m7-final.rules.fired.transient_retry": "2", "eval.test-m7-final.success": "66.7%",
+    "e2e.test-m7-final.votes.no_sample_voted": "2", "e2e.test-m7-final.n": "2",
+    "e2e.dev-final.training_length": "5120", "e2e.dev-final.steps_over_training_length": "1",
+    "e2e.dev-final.local_calls": "8", "e2e.dev-final.candidate_errors": "3",
+    "lengths.m7.final.single_step.reasoning_p50": "812", "lengths.m7.final.e2e_length.over": "3",
+    "lengths.m7.ft2.e2e_length.training_length": "4096",
 }
 
 
@@ -1079,3 +1164,152 @@ def test_a_decision_that_is_not_of_its_shape_is_refused(tmp_path, data):
     results(tmp_path, {"decision-m8.json": data})
     with pytest.raises(report.ReportError, match="results/decision-m8.json is not a checkpoint decision"):
         report.build(tmp_path)
+
+
+# ---- M9: the inference wrappers' counts, a development run's lengths, the lengths summary (docs/m9-计划.md,
+# WP4) ------------------------------------------------------------------------------------------------------
+
+
+def test_the_wrapper_blocks_of_the_fixtures_are_what_the_test_runner_writes():
+    run_test = load_script("run_test")
+    assert run_test.wrapper_counts(VOTED_TURNS) == WRAPPER_BLOCKS
+    assert run_test.wrapper_counts(UNVOTED_ATTEMPTS) == E2E_WRAPPER_BLOCKS
+    assert run_test.wrapper_counts([{"status": "ok"}]) == {}  # neither voted nor ruled: no block
+
+
+def test_a_voted_and_ruled_systems_test_files_give_their_votes_and_rules_and_no_other_file_does(tmp_path):
+    """The single-step file counts over its records, the end-to-end file over its transcripts' attempts; a
+    vote no sample voted on has no agreement, and an unruled run no rules block, so neither key is given."""
+    results(tmp_path, every_kind())
+    numbers, _ = report.build(tmp_path)
+    at, e2e = "eval.test-m7-final", "e2e.test-m7-final"
+    assert {key: value for key, value in numbers.items() if ".votes." in key or ".rules." in key} == {
+        f"{at}.votes.steps": "3", f"{at}.votes.unanimous": "1", f"{at}.votes.agreement": "80.0%",
+        f"{at}.votes.chosen_not_greedy": "1", f"{at}.votes.no_sample_voted": "1",
+        f"{at}.votes.candidate_errors": "3", f"{at}.rules.steps": "3",
+        f"{at}.rules.fired.transient_retry": "2", f"{at}.rules.fired.id_repair": "1",
+        f"{e2e}.votes.steps": "2", f"{e2e}.votes.unanimous": "0", f"{e2e}.votes.chosen_not_greedy": "0",
+        f"{e2e}.votes.no_sample_voted": "2", f"{e2e}.votes.candidate_errors": "0"}
+    assert report.wrapper_numbers({"summary": {}}, "eval.test-m7-ft2") == {}
+
+
+def test_a_development_runs_report_gives_its_steps_over_the_training_length_and_failed_candidates(tmp_path):
+    """Only a manifest that counted the steps (a count, 0 included) gives training_length, the count and the
+    local calls; a run without the context check (null) and a report from before M7 give none of them, and
+    only a voted run's summary gives its failed candidates, in all and per error type."""
+    before_m7 = {"manifest": {"system": "ft"}, "tasks": [],
+                 "summary": summarize_tasks([task("e2e-dev-01", "lookup_paper", "en", True)])}
+    results(tmp_path, {"dev-e2e-final.json": dev_e2e_final(),
+                       "dev-e2e-final0.json": dev_e2e_final(over=0, failed={}),
+                       "dev-e2e-final-nocheck.json": dev_e2e_final(over=None, failed=None),
+                       "dev-e2e-ft.json": before_m7})
+    numbers, _ = report.build(tmp_path)
+    extras = ("training_length", "steps_over_training_length", "local_calls", "candidate_errors")
+
+    def extra(name: str) -> dict[str, str]:
+        return {key: value for key, value in numbers.items()
+                if key.startswith(f"e2e.{name}.") and key.split(".", 2)[2].startswith(extras)}
+
+    assert extra("dev-final") == {
+        "e2e.dev-final.training_length": "5120", "e2e.dev-final.steps_over_training_length": "1",
+        "e2e.dev-final.local_calls": "8", "e2e.dev-final.candidate_errors": "3",
+        "e2e.dev-final.candidate_errors.HarnessError": "2", "e2e.dev-final.candidate_errors.ReadTimeout": "1"}
+    assert extra("dev-final0") == {
+        "e2e.dev-final0.training_length": "5120", "e2e.dev-final0.steps_over_training_length": "0",
+        "e2e.dev-final0.local_calls": "8", "e2e.dev-final0.candidate_errors": "0"}
+    assert extra("dev-final-nocheck") == {} and extra("dev-ft") == {}
+    assert (numbers["e2e.dev-final.n"], numbers["e2e.dev-final.success"]) == ("2", "50.0%")
+    assert (numbers["e2e.dev-final-nocheck.n"], numbers["e2e.dev-ft.n"]) == ("2", "1")  # their summaries'
+
+
+def test_a_lengths_summary_gives_each_systems_thinking_lengths_and_steps_over_the_training_length(tmp_path):
+    """Per system the parts it has (FT2 keeps no thinking record), percentiles and maxima over no turn and the
+    rate of no turn left out, the longest of no call too; the file's other fields are not read."""
+    data = lengths_file()
+    data["systems"]["finalg"] = {"single_step": thinking(0, 0, None, None, None, None, None), "e2e": None,
+                                 "e2e_length": {"training_length": 5120, "calls": 0, "over": 0, "max": None}}
+    results(tmp_path, {"lengths-m7.json": data})
+    numbers, sources = report.build(tmp_path)
+    assert [p.as_posix() for p in sources] == ["results/lengths-m7.json"]
+    final, ft2, finalg = "lengths.m7.final", "lengths.m7.ft2", "lengths.m7.finalg"
+    assert numbers == {
+        f"{final}.single_step.n": "300", f"{final}.single_step.reasoning_p50": "812",
+        f"{final}.single_step.reasoning_p95": "1280", f"{final}.single_step.reasoning_max": "1280",
+        f"{final}.single_step.answer_p50": "41", f"{final}.single_step.answer_p95": "97",
+        f"{final}.single_step.forced": "12", f"{final}.single_step.forced_rate": "4.0%",
+        f"{final}.e2e.n": "1200", f"{final}.e2e.reasoning_p50": "640", f"{final}.e2e.reasoning_p95": "1280",
+        f"{final}.e2e.reasoning_max": "1280", f"{final}.e2e.answer_p50": "52",
+        f"{final}.e2e.answer_p95": "181", f"{final}.e2e.forced": "30", f"{final}.e2e.forced_rate": "2.5%",
+        f"{final}.e2e_length.training_length": "5120", f"{final}.e2e_length.calls": "412",
+        f"{final}.e2e_length.over": "3", f"{final}.e2e_length.max": "6011",
+        f"{ft2}.e2e_length.training_length": "4096", f"{ft2}.e2e_length.calls": "380",
+        f"{ft2}.e2e_length.over": "0", f"{ft2}.e2e_length.max": "3998",
+        f"{finalg}.single_step.n": "0", f"{finalg}.single_step.forced": "0",
+        f"{finalg}.e2e_length.training_length": "5120", f"{finalg}.e2e_length.calls": "0",
+        f"{finalg}.e2e_length.over": "0"}
+
+
+def test_lengths_summaries_are_registered_by_milestone_and_take_no_other_kinds_file():
+    assert report.kind_of("lengths-m7.json").key == report.kind_of("lengths-m12.json").key == "lengths"
+    for name in ("lengths-final.json", "lengths-m7-final.json", "lengths.json", "lengths-m7.jsonl"):
+        assert report.kind_of(name) is None
+    assert report.kind_of("dev-lengths-m7.json").key == "dev"  # a development summary's name, as before
+    assert [kind.key for kind in report.REGISTRY].count("lengths") == 1
+
+
+def m9_broken(make, change) -> dict:
+    data = make()
+    change(data)
+    return data
+
+
+@pytest.mark.parametrize("name, data, what", [
+    ("test-m7-final.json", m9_broken(m7_final, lambda d: d["votes"].update(steps=3.0)),
+     "a single-step summary"),
+    ("test-m7-final.json", m9_broken(m7_final, lambda d: d["votes"].update(unanimous=True)),
+     "a single-step summary"),
+    ("test-m7-final.json", m9_broken(m7_final, lambda d: d["votes"].pop("no_sample_voted")),
+     "a single-step summary"),
+    ("test-m7-final.json", m9_broken(m7_final, lambda d: d["votes"].update(agreement="0.8")),
+     "a single-step summary"),
+    ("test-m7-final.json", m9_broken(m7_final, lambda d: d["votes"].update(agreement=1.2)),
+     "a single-step summary"),
+    ("test-m7-final.json", m9_broken(m7_final, lambda d: d["rules"]["fired"].update(id_repair="1")),
+     "a single-step summary"),
+    ("test-m7-final.json", m9_broken(m7_final, lambda d: d["rules"].update(fired=[2, 1])),
+     "a single-step summary"),
+    ("test-m7-e2e-final.json", m9_broken(m7_e2e_final, lambda d: d["votes"].update(candidate_errors=None)),
+     "an end-to-end summary"),
+    ("dev-e2e-final.json", m9_broken(dev_e2e_final, lambda d: d["manifest"].update(
+        steps_over_training_length="1")), "an end-to-end summary"),
+    ("dev-e2e-final.json", m9_broken(dev_e2e_final, lambda d: d["manifest"].pop("training_length")),
+     "an end-to-end summary"),
+    ("dev-e2e-final.json", m9_broken(dev_e2e_final, lambda d: d["tasks"][0].update(local_calls=None)),
+     "an end-to-end summary"),
+    ("dev-e2e-final.json", m9_broken(dev_e2e_final, lambda d: d["summary"].update(
+        candidate_errors={"HarnessError": 1.0})), "an end-to-end summary"),
+    ("dev-e2e-final.json", m9_broken(dev_e2e_final, lambda d: d["summary"].update(candidate_errors=[1])),
+     "an end-to-end summary"),
+    ("lengths-m7.json", {"systems": {"final": {"e2e": None}}}, "a lengths summary"),
+    ("lengths-m7.json", {"systems": [lengths_file()["systems"]["final"]]}, "a lengths summary"),
+    ("lengths-m7.json", m9_broken(lengths_file, lambda d: d["systems"]["final"]["single_step"].update(
+        forced=301)), "a lengths summary"),
+    ("lengths-m7.json", m9_broken(lengths_file, lambda d: d["systems"]["ft2"]["e2e_length"].update(over=381)),
+     "a lengths summary"),
+    ("lengths-m7.json", m9_broken(lengths_file, lambda d: d["systems"]["final"]["e2e"].update(n=1200.0)),
+     "a lengths summary"),
+    ("lengths-m7.json", m9_broken(lengths_file, lambda d: d["systems"]["final"]["e2e"].update(
+        reasoning_p50="640")), "a lengths summary"),
+    ("lengths-m7.json", m9_broken(lengths_file, lambda d: d["systems"]["final"]["e2e"].pop("answer_p95")),
+     "a lengths summary"),
+    ("lengths-m7.json", m9_broken(lengths_file, lambda d: d["systems"]["ft2"]["e2e_length"].update(max=True)),
+     "a lengths summary"),
+], ids=["float-steps", "bool-unanimous", "no-undecided-count", "text-agreement", "agreement-above-one",
+        "text-fired", "fired-list", "null-candidate-errors", "text-over", "no-training-length",
+        "null-local-calls", "float-candidate-error", "candidate-error-list", "no-block", "systems-list",
+        "forced-above-n", "over-above-calls", "float-n", "text-percentile", "no-answer-p95", "bool-max"])
+def test_an_m9_result_that_is_not_of_its_shape_is_refused_naming_it(tmp_path, name, data, what):
+    results(tmp_path, {name: data})
+    with pytest.raises(report.ReportError) as caught:
+        report.build(tmp_path)
+    assert f"results/{name} is not {what}" in str(caught.value)

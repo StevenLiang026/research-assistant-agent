@@ -307,6 +307,44 @@ def test_imported_entries_seed_a_store_and_are_found_by_search(tmp_path):
                              "tags": ["imported"]}]
 
 
+def test_a_store_opened_again_on_its_folder_finds_its_notes_and_numbers_the_next_one_on(tmp_path):
+    first = NoteStore(tmp_path)
+    first.write(paper("2609.00001", "Speculative decoding"), {}, ["Drafts are verified."], "2026-10-01",
+                ["cs.CL"])
+    again = NoteStore(tmp_path)  # another process on the same folder: nothing is created anew or lost
+    assert [h["note_id"] for h in again.search("verified", ["cs.CL"], 3)] == ["2609.00001-1"]
+    assert again.list() == first.list() and [r["note_id"] for r in again.list()] == ["2609.00001-1"]
+    written = again.write(paper("2609.00001", "Speculative decoding"), {}, [], TODAY)
+    assert written["note_id"] == "2609.00001-2"
+    assert sorted(p.name for p in tmp_path.glob("*.md")) == ["2609.00001-1.md", "2609.00001-2.md"]
+    assert [r["note_id"] for r in NoteStore(tmp_path).list()] == ["2609.00001-2", "2609.00001-1"]
+
+
+def test_skip_existing_imports_a_file_once_and_the_default_imports_every_entry_again(tmp_path):
+    other = paper("2609.00002", "Mixture of experts")
+    owner_file = (render_note(PAPER, {"arxiv_id": PAPER["arxiv_id"]}, EVIDENCE, "2026-10-01") + "\n"
+                  + render_note(other, {"arxiv_id": "2609.00002"}, [], "2026-10-02"))
+    entries = import_entries(owner_file)
+    store = NoteStore(tmp_path)
+    loaded = store.load_entries(entries + entries[:1], tags=["imported"], skip_existing=True)
+    assert [r["note_id"] for r in loaded] == ["2609.01234-1", "2609.00002-1"]  # a repeat in one call too
+    assert store.load_entries(entries, tags=["imported"], skip_existing=True) == []  # imported again: nothing
+    respaced = {**entries[0], "title": " Speculative  Decoding\twith Draft Trees "}  # the title, collapsed
+    assert store.load_entries([respaced], skip_existing=True) == []
+    # the same paper on another day or under another title is another entry
+    later, renamed = {**entries[0], "today": "2026-10-08"}, {**entries[0], "title": "Draft trees, revisited"}
+    assert [r["note_id"] for r in store.load_entries([later, renamed], skip_existing=True)] == [
+        "2609.01234-2", "2609.01234-3"]
+    # a note the write_note tool wrote counts as held when its paper, day and title are the entry's
+    store.write(paper("2609.00003", "Tree attention"), {}, [], "2026-10-09")
+    held = {**entries[1], "arxiv_id": "2609.00003", "title": "Tree attention", "today": "2026-10-09"}
+    assert store.load_entries([held], skip_existing=True) == []
+    assert sorted(p.name for p in tmp_path.glob("*.md")) == [
+        "2609.00002-1.md", "2609.00003-1.md", "2609.01234-1.md", "2609.01234-2.md", "2609.01234-3.md"]
+    # the default is unchanged: every entry is written, again
+    assert [r["note_id"] for r in store.load_entries(entries)] == ["2609.01234-4", "2609.00002-2"]
+
+
 def test_the_store_refuses_a_sqlite_without_fts5(tmp_path, monkeypatch):
     assert notes.fts5_available() is True
     monkeypatch.setattr(notes, "fts5_available", lambda: False)

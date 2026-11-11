@@ -4,11 +4,14 @@ build_search_url(args, today) -> str
     The arXiv API query (API_URL) for one search_arxiv call whose schema defaults are already applied. The
     same args always give the same string, character for character, because the recorder and the replay
     match requests on net.fetch.canonical_url of it.
-parse_atom(xml) -> list[dict] | None
+parse_atom(xml, *, lenient=False) -> list[dict] | None
     One dict per <entry> of an Atom feed with exactly the six schemas.PAPER_KEYS: arxiv_id bare (no
     "arXiv:" prefix, no version), title, authors (names in feed order), published (YYYY-MM-DD), abstract,
     categories (the <category term> values in feed order). [] for a feed without entries; None when the
     text is not an Atom feed or an entry has no parseable id (the adapters map None to UPSTREAM_ERROR).
+    With lenient (the live tools, M9) an entry that is no new-style paper is skipped instead: an error
+    entry, an empty entry and an entry whose id is not a new-style id (see parse_atom); None is then left
+    for text that is not an Atom feed.
 extract_section(html, section, max_chars) -> str | None
     The plain text of one section of an arXiv HTML (LaTeXML) page, at most max_chars characters; None when
     the page has no top-level ltx sections or none matches the requested section.
@@ -103,6 +106,11 @@ def _encode(text: str) -> str:
 ATOM = "{http://www.w3.org/2005/Atom}"
 _ID = re.compile(r"(?:arxiv\.org/abs/)?(?:arXiv:)?(\d{4}\.\d{4,5})(?:v\d+)?\s*$")
 _WS = re.compile(r"\s+")
+# How the arXiv API writes an error into a feed (a malformed id in id_list, for one): an entry whose <id> is
+# under ERROR_ID_PART and whose <title> is ERROR_TITLE, the message in its <summary>. Only parse_atom's
+# lenient mode looks for it.
+ERROR_ID_PART = "arxiv.org/api/errors"
+ERROR_TITLE = "Error"
 
 
 def _text(element: ET.Element | None) -> str:
@@ -110,11 +118,17 @@ def _text(element: ET.Element | None) -> str:
     return _WS.sub(" ", element.text or "").strip() if element is not None else ""
 
 
-def parse_atom(xml: str) -> list[dict] | None:
+def parse_atom(xml: str, *, lenient: bool = False) -> list[dict] | None:
     """The papers of an arXiv API Atom feed, in feed order (see the module docstring for the contract).
 
     The id is read from <id> (http://arxiv.org/abs/2401.01234v2 -> 2401.01234), published is the first 10
     characters of <published>, the abstract is <summary>; text fields have their whitespace collapsed.
+
+    lenient (the live tools, M9; the default keeps the contract above) skips, instead of failing the whole
+    feed, the entries a live feed may hold that are no new-style paper: an error entry (an <id> containing
+    ERROR_ID_PART or the title ERROR_TITLE), an empty entry (neither a title nor a summary, whatever its id)
+    and an entry whose id is not a new-style one (an old-style id such as cs/0112017, or none at all). A
+    feed of such entries alone gives []; None only for text that is not an Atom feed.
     """
     try:
         root = ET.fromstring(xml)
@@ -124,15 +138,21 @@ def parse_atom(xml: str) -> list[dict] | None:
         return None
     papers = []
     for entry in root.findall(ATOM + "entry"):
-        match = _ID.search(_text(entry.find(ATOM + "id")))
+        entry_id = _text(entry.find(ATOM + "id"))
+        title, abstract = _text(entry.find(ATOM + "title")), _text(entry.find(ATOM + "summary"))
+        if lenient and (ERROR_ID_PART in entry_id or title == ERROR_TITLE or not (title or abstract)):
+            continue
+        match = _ID.search(entry_id)
         if match is None:
+            if lenient:
+                continue
             return None
         papers.append({
             "arxiv_id": match.group(1),
-            "title": _text(entry.find(ATOM + "title")),
+            "title": title,
             "authors": [_text(author.find(ATOM + "name")) for author in entry.findall(ATOM + "author")],
             "published": _text(entry.find(ATOM + "published"))[:10],
-            "abstract": _text(entry.find(ATOM + "summary")),
+            "abstract": abstract,
             "categories": [category.get("term", "") for category in entry.findall(ATOM + "category")],
         })
     return papers

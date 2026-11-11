@@ -65,8 +65,9 @@ pythonpath = ["tests"]
 line-length = 110
 target-version = "py313"
 # kept exactly as they ran: the M0 spike scripts (docs/m0-验证.md) and the evaluation review tooling
-# (tools/eval-review/README.md)
-extend-exclude = ["scripts/spikes", "tools/eval-review"]
+# (tools/eval-review/README.md); tools/publish_raa is the tooling that exports the public copy (its replacement
+# rules are long literal lines, and its own tests run before every export)
+extend-exclude = ["scripts/spikes", "tools/eval-review", "tools/publish_raa"]
 
 [tool.ruff.lint]
 extend-select = ["E501"]  # enforce line-length (ruff counts a CJK character as two columns)

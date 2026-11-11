@@ -155,6 +155,71 @@ def test_parse_atom_gives_none_when_an_entry_has_no_parseable_id() -> None:
     assert parse_atom(feed(ENTRY_ONE.replace("2601.01234v2", "not-an-id"))) is None
 
 
+# What a live feed may hold besides new-style papers (M9, the lenient mode): a paper with an old-style id, the
+# entry the arXiv API writes for an error (its id here ends in a well-formed id, so only the error rule skips
+# it) and an empty entry, neither a title nor a summary.
+OLD_STYLE_ENTRY = """<entry>
+  <id>http://arxiv.org/abs/cs/0112017v1</id>
+  <title>An Old-Style Paper</title>
+  <summary>Ids before 2007 name their archive.</summary>
+  <author><name>Charles Babbage</name></author>
+  <category term="cs.LO"/>
+</entry>"""
+ERROR_ENTRY = """<entry>
+  <id>http://arxiv.org/api/errors#incorrect_id_format_for_2510.99999</id>
+  <title>Error</title>
+  <summary>incorrect id format for 2510.99999</summary>
+  <author><name>arXiv api core</name></author>
+</entry>"""
+EMPTY_ENTRY = """<entry>
+  <id>http://arxiv.org/abs/2510.99999v1</id>
+  <title></title>
+  <summary> </summary>
+</entry>"""
+
+
+def test_lenient_parse_atom_skips_old_style_error_and_empty_entries_and_keeps_the_papers_in_order() -> None:
+    text = feed(OLD_STYLE_ENTRY, ENTRY_ONE, ERROR_ENTRY, EMPTY_ENTRY, ENTRY_TWO)
+    papers = parse_atom(text, lenient=True)
+    assert papers == parse_atom(feed(ENTRY_ONE, ENTRY_TWO))
+    assert [paper["arxiv_id"] for paper in papers] == ["2601.01234", "2512.09876"]
+    assert parse_atom(text) is None  # the default is unchanged: the old-style id fails the whole feed
+    assert parse_atom(text, lenient=False) is None
+
+
+@pytest.mark.parametrize("entry", [
+    OLD_STYLE_ENTRY,
+    ENTRY_TWO.replace("2512.09876v11", "hep-th/9901001v2"),
+    ENTRY_TWO.replace("<id>http://arxiv.org/abs/2512.09876v11</id>", ""),
+    ERROR_ENTRY,
+    ERROR_ENTRY.replace("<title>Error</title>", "<title>Unknown id</title>"),
+    ENTRY_TWO.replace("<title>Tool Use</title>", "<title>Error</title>"),
+    EMPTY_ENTRY,
+    EMPTY_ENTRY.replace("<id>http://arxiv.org/abs/2510.99999v1</id>", ""),
+    "<entry/>",
+], ids=["old-style", "old-style-archive", "no-id", "error", "error-by-id", "error-by-title", "empty",
+        "empty-without-id", "bare"])
+def test_lenient_parse_atom_gives_an_empty_list_for_a_feed_of_entries_that_are_no_new_style_paper(
+        entry: str) -> None:
+    assert parse_atom(feed(entry), lenient=True) == []
+    assert parse_atom(feed(entry, ENTRY_ONE), lenient=True) == parse_atom(feed(ENTRY_ONE))
+
+
+def test_lenient_parse_atom_keeps_an_entry_with_a_title_or_a_summary() -> None:
+    no_summary = ENTRY_TWO.replace("<summary>Agents call tools.</summary>", "")
+    no_title = ENTRY_TWO.replace("<title>Tool Use</title>", "")
+    papers = parse_atom(feed(no_summary, no_title), lenient=True)
+    assert [(paper["title"], paper["abstract"]) for paper in papers] == [("Tool Use", ""),
+                                                                          ("", "Agents call tools.")]
+    assert parse_atom(feed(no_summary, no_title)) == papers  # what both modes read alike
+
+
+@pytest.mark.parametrize("text", ["", "not xml at all", "<html><body>Rate exceeded</body></html>",
+                                  '<feed xmlns="http://example.com/other"></feed>', feed(ENTRY_ONE)[:-20]])
+def test_lenient_parse_atom_still_gives_none_for_text_that_is_not_an_atom_feed(text: str) -> None:
+    assert parse_atom(text, lenient=True) is None
+
+
 # ---------------------------------------------------------------------------------------------------------
 # extract_section
 # ---------------------------------------------------------------------------------------------------------

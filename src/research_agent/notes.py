@@ -39,7 +39,9 @@ Chinese term matches as a phrase of characters; Latin words match as words. A qu
 content terms (STOPWORDS dropped, CJK runs split at CJK_PARTICLES); scores are the negated bm25 rank,
 unrounded, higher better. The arxiv_id must be canonical (normalize_arxiv_id's fixed point), else ValueError
 before anything is written; the database rows are committed before the file appears. load_entries seeds a
-store from import_entries' entries (the owner's existing notes). Nothing depends on the clock: note ids,
+store from import_entries' entries (the owner's existing notes); with skip_existing it leaves out an entry the
+store already holds (the same arxiv_id, created date and title), so importing a file again adds only its new
+entries. Nothing depends on the clock: note ids,
 file names and the created date come from the writes and the today passed in, so the same sequence of writes
 gives the same store. The constructor raises RuntimeError when sqlite3 lacks FTS5.
 
@@ -388,18 +390,37 @@ class NoteStore:
         return self._add(arxiv_id, paper.get("title", ""), render_note(paper, args, evidence, today), today,
                          tags)
 
-    def load_entries(self, entries: list[dict], tags: list[str] | None = None) -> list[dict]:
+    def load_entries(self, entries: list[dict], tags: list[str] | None = None, *,
+                     skip_existing: bool = False) -> list[dict]:
         """Seed the store with import_entries' entries (the owner's notes file): each entry with an arXiv id
         becomes a note titled and dated (created) as the entry, its file the entry rendered by render_entry,
         its tags the entry's "tags" list (when it has one) plus tags. Entries without an arXiv id (a report,
         a blog post) are skipped. The records of the notes written, in entry order; a non-canonical
-        arxiv_id is a ValueError raised before any entry is written."""
+        arxiv_id is a ValueError raised before any entry is written.
+
+        With skip_existing, an entry is skipped too when the store already holds a note of the same arxiv_id,
+        created date and title (whitespace collapsed, as the store keeps titles), one written earlier in the
+        same call included: importing the same file twice writes its notes once. The default writes every
+        entry, as before."""
         chosen = [entry for entry in entries if entry.get("arxiv_id")]
         for entry in chosen:
             _checked_id(entry["arxiv_id"])
-        return [self._add(entry["arxiv_id"], entry.get("title", ""), render_entry(entry),
-                          _one_line(entry.get("today")), [*(entry.get("tags") or []), *(tags or [])])
-                for entry in chosen]
+        written = []
+        for entry in chosen:
+            created = _one_line(entry.get("today"))
+            if skip_existing and self._holds(entry["arxiv_id"], created, entry.get("title", "")):
+                continue
+            written.append(self._add(entry["arxiv_id"], entry.get("title", ""), render_entry(entry), created,
+                                     [*(entry.get("tags") or []), *(tags or [])]))
+        return written
+
+    def _holds(self, arxiv_id: str, created: str, title: str) -> bool:
+        """Whether the store has a note of arxiv_id created on created whose title is title, whitespace
+        collapsed (load_entries' skip_existing)."""
+        with closing(self._connect()) as db:
+            row = db.execute("SELECT 1 FROM notes WHERE arxiv_id = ? AND created = ? AND title = ? LIMIT 1",
+                             (arxiv_id, created, _one_line(title))).fetchone()
+        return row is not None
 
     def _add(self, arxiv_id: str, title: str, markdown: str, created: str, tags: list[str] | None) -> dict:
         """Index the rendered entry markdown and write it out. The rows go in first, in a transaction; the

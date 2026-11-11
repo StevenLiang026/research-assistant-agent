@@ -1,0 +1,10 @@
+{"id": "S01", "batch": "A", "lang": "zh", "request": "帮我找最近一周关于 speculative decoding 的论文，挑 3 篇最相关的，附上编号。", "expect": {"tools": ["search_arxiv"]}}
+{"id": "S02", "batch": "A", "lang": "en", "request": "Find 3 papers on mixture of experts posted in the last two weeks, restricted to cs.LG.", "expect": {"tools": ["search_arxiv"]}}
+{"id": "S03", "batch": "A", "lang": "zh", "request": "2501.12948 是哪篇论文？想知道作者和提交日期。", "expect": {"tools": ["get_paper"]}}
+{"id": "S04", "batch": "A", "lang": "en", "request": "Open 2501.12948 and give me the gist of its introduction.", "expect": {"tools": ["fetch_fulltext"]}}
+{"id": "S05", "batch": "A", "lang": "zh", "request": "比较一下 2106.09685 和 2305.14314 在方法上的区别。", "expect": {"tools": ["get_paper", "fetch_fulltext"]}}
+{"id": "S06", "batch": "A", "lang": "zh", "request": "给 2402.03300 写一份笔记，用 scaffold 模式。", "expect": {"tools": ["write_note"], "notes": 1}}
+{"id": "S07", "batch": "B", "lang": "en", "request": "Have I written any notes about mathematical reasoning? Check my notes.", "expect": {"tools": ["search_notes"]}}
+{"id": "S08", "batch": "B", "lang": "zh", "request": "列出我最近写的笔记。", "expect": {"tools": ["list_notes"]}}
+{"id": "S09", "batch": "B", "lang": "zh", "request": "帮我找几篇论文。", "clarify_answer": "speculative decoding", "expect": {"tools": ["ask_clarification", "search_arxiv"]}}
+{"id": "S10", "batch": "B", "lang": "en", "request": "What paper is 2510.99999? I need its title.", "expect": {"tools": ["get_paper"], "status_of_lookup": "NOT_FOUND", "no_invented_title": true}}

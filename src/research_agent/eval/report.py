@@ -27,6 +27,7 @@ and nothing is written. A file no pattern names is not read: the test runner's c
     faults-<name>.json                scripts/fault_table.py            faults.<name>.<system>.<condition>.*
     acebench-<name>.json              scripts/run_acebench.py           acebench.<name>.<system>.*
     decision-m8.json                  scripts/decide_m8.py              decision.m8.*
+    lengths-<m>.json                  scripts/thinking_lengths.py       lengths.<m>.<system>.*
 
 <m> is a milestone in lower case (m3) and <system> a system name of letters and digits; a development run's
 end-to-end report is run_e2e's report.json kept under its name. In a key, a part taken from a file name or a
@@ -54,7 +55,8 @@ a benchmark's accuracies (BFCL's, ACEBench's) with two ("71.23%", as scripts/run
 scripts/run_acebench.py print them); a difference of two rates is in percentage points with its sign ("+12.3")
 and its interval "[+5.1, +19.4]", a non-inferiority margin in percentage points without a sign ("2.0"); a
 p-value has three decimals ("0.012"), "<0.001" below 0.001; an F1, a
-threshold and an AUROC three decimals ("0.689", "0.674"); milliseconds and MiB are whole numbers; watts,
+threshold and an AUROC three decimals ("0.689", "0.674"); milliseconds, MiB and tokens (their percentiles
+included) are whole numbers; watts,
 watt-hours and a mean step count have one decimal; RMB three decimals, fen per task two; counts are as they
 are; whether a rule was met is "yes" or "no", and a name is as it is. A number that does not apply (a rate
 over no item, a percentile over no value) is left out.
@@ -77,7 +79,19 @@ Keys per kind:
                     runner's file of a routed system also gives its "routing" block (Session.e2e_routing), all
                     counts: routing.{tasks, tasks_routed, local_calls, cloud_calls, local_steps, cloud_steps},
                     and routing.mode (sticky or stepwise) when the file names its e2e_routing (M6) (a
-                    development run's report is not read for one)
+                    development run's report is not read for one); a development run's report also gives,
+                    when its manifest counted the local steps longer than the training length (M7;
+                    scripts/run_e2e.py, StepLengths; a null count, a run without the context check, gives
+                    none of the three), training_length, steps_over_training_length and local_calls (the
+                    local model calls, summed over its task records), and when it voted (--votes), its failed
+                    vote candidates as candidate_errors (in all) and candidate_errors.<type> (each error
+                    type's), all counts
+    votes, rules    a test runner's file, single step or end to end, of a voted or ruled system (M7's final;
+                    scripts/run_test.py, wrapper_counts, descriptive) also gives its "votes" and "rules"
+                    blocks under eval.<name>.* and e2e.<name>.*: votes.{steps, unanimous, chosen_not_greedy,
+                    no_sample_voted, candidate_errors}, counts, and votes.agreement (the mean share of the
+                    samples in the chosen class) as a rate, left out when no sample voted; rules.steps and,
+                    per rule of the block (agent.rules.RULES), rules.fired.<rule>, the answers it changed
     comparisons     per comparison tested by McNemar (no "test" key, or "mcnemar"): n, success_a, success_b,
                     diff, ci (the paired bootstrap's), cluster_ci, clusters, a_only, b_only, p (McNemar's)
                     and p_holm, and with a non-inferiority bound noninferiority.{margin, paired_low,
@@ -145,6 +159,19 @@ Keys per kind:
                     no); ft3.step; for ft3 and every candidate the two-seed sums s0, s1, sum,
                     s0_without_rules, s1_without_rules and sum_without_rules; per candidate its rank (1: the
                     ranking's first)
+    lengths         the thinking lengths of a test session's systems and their steps over the training
+                    length (M7's preregistered description; scripts/thinking_lengths.py, aggregates only),
+                    from {"systems": {<system>: {"single_step": {...}, "e2e": {...}, "e2e_length": {...}}}},
+                    each block's fields named as its keys: for each of the two parts a system has, single_step
+                    (its single-step records) and e2e (every attempt of its end-to-end transcripts),
+                    <system>.<part>.{n (the turns with a thinking record), reasoning_p50, reasoning_p95,
+                    reasoning_max, answer_p50, answer_p95 (tokens; null over no turn, then left out), forced
+                    (the reasonings closed by force)} and <system>.<part>.forced_rate (forced over n, computed
+                    here; left out for n 0), and from its e2e_length block
+                    <system>.e2e_length.{training_length (in tokens), calls (the local calls measured), over
+                    (those longer than the training length), max (the longest, in tokens; null without a
+                    call, then left out)}, all counts; a system with none of the three blocks is refused, and
+                    so is a count larger than the turns or calls it is out of
 """
 
 from __future__ import annotations
@@ -301,13 +328,43 @@ def error_numbers(summary: dict, name: str) -> dict[str, str]:
     return numbers
 
 
+# A voted system's "votes" block (scripts/run_test.py, wrapper_counts): its counts; "agreement" is a rate.
+VOTE_COUNTS = ("steps", "unanimous", "chosen_not_greedy", "no_sample_voted", "candidate_errors")
+
+
+def wrapper_numbers(data: dict, prefix: str) -> dict[str, str]:
+    """The "votes" and "rules" blocks of a voted or ruled system's test runner file (scripts/run_test.py,
+    wrapper_counts: over its records, or over the attempts of its transcripts) under <prefix>.votes.* and
+    <prefix>.rules.* (module docstring); nothing for a file without them. TypeError for a count that is not a
+    whole number and an agreement that is not a number, ValueError for an agreement outside [0, 1]."""
+    numbers: dict[str, str] = {}
+    votes = data.get("votes")
+    if votes is not None:
+        numbers.update({f"{prefix}.votes.{key}": count_text(votes[key]) for key in VOTE_COUNTS})
+        agreement = votes["agreement"]
+        if agreement is not None:
+            if isinstance(agreement, bool) or not isinstance(agreement, int | float):
+                raise TypeError(f"votes.agreement {agreement!r} is not a number")
+            if not 0 <= agreement <= 1:
+                raise ValueError(f"votes.agreement {agreement!r} is not a share")
+            numbers[f"{prefix}.votes.agreement"] = percent(agreement)
+    rules = data.get("rules")
+    if rules is not None:
+        numbers[f"{prefix}.rules.steps"] = count_text(rules["steps"])
+        for rule, fired in rules["fired"].items():
+            _put(numbers, f"{prefix}.rules.fired.{label(rule)}", count_text(fired))
+    return numbers
+
+
 def run_test_single_step_numbers(data: dict, name: str) -> dict[str, str]:
     """A test runner's single-step file: single_step_numbers and its failures per error class (error_numbers),
-    those of its blocks under other scorers (scorer_blocks) too, and for a routed system its "routing" block
-    (scripts/run_test.py, Session.routing) under eval.<name>.routing.*."""
+    those of its blocks under other scorers (scorer_blocks) too, a voted or ruled system's votes and rules
+    (wrapper_numbers) under eval.<name>.*, and for a routed system its "routing" block (scripts/run_test.py,
+    Session.routing) under eval.<name>.routing.*."""
     numbers = {**single_step_numbers(data, name), **error_numbers(data["summary"], name)}
     for scored, block in scorer_blocks(data, name):
         numbers.update(error_numbers(block["summary"], scored))
+    numbers.update(wrapper_numbers(data, f"eval.{label(name)}"))
     routing = data.get("routing")
     if routing is None:
         return numbers
@@ -335,10 +392,12 @@ E2E_ROUTING = ("tasks", "tasks_routed", "local_calls", "cloud_calls", "local_ste
 
 
 def run_test_e2e_numbers(data: dict, name: str) -> dict[str, str]:
-    """A test runner's end-to-end file: e2e_numbers, and for a routed system its "routing" block
-    (scripts/run_test.py, Session.e2e_routing) under e2e.<name>.routing.*, with the file's e2e_routing as
-    routing.mode when it names one."""
+    """A test runner's end-to-end file: e2e_numbers, a voted or ruled system's votes and rules
+    (wrapper_numbers, counted over its transcripts' attempts) under e2e.<name>.*, and for a routed system its
+    "routing" block (scripts/run_test.py, Session.e2e_routing) under e2e.<name>.routing.*, with the file's
+    e2e_routing as routing.mode when it names one."""
     numbers = e2e_numbers(data, name)
+    numbers.update(wrapper_numbers(data, f"e2e.{label(name)}"))
     routing = data.get("routing")
     if routing is not None:
         numbers.update({f"e2e.{label(name)}.routing.{key}": str(routing[key]) for key in E2E_ROUTING})
@@ -366,6 +425,32 @@ def e2e_numbers(data: dict, name: str) -> dict[str, str]:
     if summary["steps_mean"] is not None:
         numbers[f"{prefix}.steps_mean"] = f"{summary['steps_mean']:.1f}"
     numbers[f"{prefix}.tool_errors"] = str(summary["tool_errors"])
+    return numbers
+
+
+def dev_e2e_numbers(data: dict, name: str) -> dict[str, str]:
+    """A development run's end-to-end report (scripts/run_e2e.py's report.json): e2e_numbers, and when its
+    manifest counted the local steps longer than the training length, training_length,
+    steps_over_training_length and local_calls (summed over the task records); when it voted, its failed vote
+    candidates in all and per error type (module docstring). TypeError for a count that is not a whole
+    number."""
+    numbers = e2e_numbers(data, name)
+    prefix = f"e2e.{label(name)}"
+    manifest = data.get("manifest") or {}
+    over = manifest.get("steps_over_training_length")
+    if over is not None:  # null: run without the context check, so nothing was measured
+        calls = [task["local_calls"] for task in data["tasks"]]
+        for count in calls:
+            count_text(count)
+        numbers.update({f"{prefix}.training_length": count_text(manifest["training_length"]),
+                        f"{prefix}.steps_over_training_length": count_text(over),
+                        f"{prefix}.local_calls": str(sum(calls))})
+    failed = data["summary"].get("candidate_errors")
+    if failed is not None:
+        by_type = {kind: count_text(count) for kind, count in failed.items()}
+        numbers[f"{prefix}.candidate_errors"] = str(sum(failed.values()))
+        for kind, count in by_type.items():
+            _put(numbers, f"{prefix}.candidate_errors.{label(kind)}", count)
     return numbers
 
 
@@ -776,6 +861,70 @@ def decision_numbers(data: dict, name: str) -> dict[str, str]:
     return numbers
 
 
+# A lengths file's blocks per system (scripts/thinking_lengths.py; module docstring): the turns with a
+# thinking record of its single-step records and of its end-to-end attempts, and its local calls measured end
+# to end.
+LENGTH_PARTS = ("single_step", "e2e")
+THINKING_TOKENS = ("reasoning_p50", "reasoning_p95", "reasoning_max", "answer_p50", "answer_p95")
+E2E_LENGTH = "e2e_length"
+
+
+def token_text(value: object) -> str:
+    """A number of tokens, or a percentile of them, as README quotes it: a whole number; TypeError for
+    anything but a number (true and false included)."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise TypeError(f"{value!r} is not a number of tokens")
+    return whole(value)
+
+
+def _out_of(count: object, total: object, what: str) -> None:
+    """ValueError when count is larger than total, the turns or calls it is out of; TypeError when either is
+    not a whole number (count_text)."""
+    count_text(count)
+    count_text(total)
+    if count > total:
+        raise ValueError(f"{what}: {count} is more than the {total} it is out of")
+
+
+def _thinking(prefix: str, block: dict) -> dict[str, str]:
+    """A part's thinking lengths: its turns, the token percentiles and maxima that apply, the reasonings
+    closed by force and their rate over the turns."""
+    n, forced = block["n"], block["forced"]
+    _out_of(forced, n, f"{prefix}.forced")
+    numbers = {f"{prefix}.n": str(n), f"{prefix}.forced": str(forced)}
+    for key in THINKING_TOKENS:
+        if block[key] is not None:
+            numbers[f"{prefix}.{key}"] = token_text(block[key])
+    if n:
+        numbers[f"{prefix}.forced_rate"] = percent(forced / n)
+    return numbers
+
+
+def lengths_numbers(data: dict, name: str) -> dict[str, str]:
+    """A test session's thinking lengths and steps over the training length (scripts/thinking_lengths.py)
+    under lengths.<name>.<system>.* (module docstring); ValueError for a system with none of the blocks and
+    for a count larger than the turns or calls it is out of."""
+    numbers: dict[str, str] = {}
+    for system, row in data["systems"].items():
+        prefix = f"lengths.{label(name)}.{label(system)}"
+        blocks = (*LENGTH_PARTS, E2E_LENGTH)
+        if all(row.get(block) is None for block in blocks):
+            raise ValueError(f"{system} has none of the blocks {', '.join(blocks)}")
+        for part in LENGTH_PARTS:
+            if row.get(part) is not None:
+                for key, value in _thinking(f"{prefix}.{part}", row[part]).items():
+                    _put(numbers, key, value)
+        length = row.get(E2E_LENGTH)
+        if length is not None:
+            at = f"{prefix}.{E2E_LENGTH}"
+            _out_of(length["over"], length["calls"], f"{at}.over")
+            for key in ("training_length", "calls", "over"):
+                _put(numbers, f"{at}.{key}", count_text(length[key]))
+            if length["max"] is not None:
+                _put(numbers, f"{at}.max", token_text(length["max"]))
+    return numbers
+
+
 @dataclass(frozen=True)
 class Kind:
     """A kind of registered result: what it is (for messages), the pattern of its file name, its numbers
@@ -795,7 +944,7 @@ def _test_name(match: re.Match) -> str:
 
 
 REGISTRY = (
-    Kind("dev-e2e", "an end-to-end summary", re.compile(r"dev-e2e-(.+)\.json"), e2e_numbers,
+    Kind("dev-e2e", "an end-to-end summary", re.compile(r"dev-e2e-(.+)\.json"), dev_e2e_numbers,
          lambda m: f"dev-{m.group(1)}"),
     Kind("dev", "a single-step summary", re.compile(r"(dev-.+)\.json"), single_step_numbers,
          lambda m: m.group(1), scored=True),
@@ -820,6 +969,8 @@ REGISTRY = (
     Kind("acebench", "an ACEBench result", re.compile(r"acebench-(.+)\.json"), acebench_numbers,
          lambda m: m.group(1)),
     Kind("decision", "a checkpoint decision", re.compile(r"decision-(m8)\.json"), decision_numbers,
+         lambda m: m.group(1)),
+    Kind("lengths", "a lengths summary", re.compile(r"lengths-(m\d+)\.json"), lengths_numbers,
          lambda m: m.group(1)),
 )
 
