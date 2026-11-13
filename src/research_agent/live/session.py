@@ -11,7 +11,15 @@ pack_follow_up(request, answer): the request as it was, then the answer, joined 
 with the ASCII colon of the training data's Chinese) when the request holds a CJK character, else by
 FOLLOW_UP_EN (" To clarify: "); the answer's whitespace is collapsed, so the message stays one line, the
 only kind the model was trained and evaluated on. An empty answer packs nothing (None). A request is
-continued at most MAX_FOLLOW_UPS times; after that the user restates it.
+continued at most MAX_FOLLOW_UPS times; after that the user restates it. Conversation carries this from one
+message to the next for a front end that takes messages one at a time (scripts/ask.py --interactive, and
+live.web.ChatState for --web):
+next(text) gives the message to send and its follow-up number (text itself and 0 when no clarification is
+pending, else the pending request packed with text as its answer, the follow-ups counted), or None when
+there is nothing to send (an empty text; an empty answer, which also leaves the pending request); after(turn)
+says what the next message is (AWAITS_ANSWER: the answer to the turn's clarification, whose request, packed
+already when it was a follow-up, is now pending; RESTATE: a clarification after MAX_FOLLOW_UPS follow-ups,
+the request left for the user to restate whole; None: nothing pending); drop() leaves a pending request.
 
 Progress (ASCII only, never the model's or a tool's text). The wrappers only look: they print and hand on what
 they were given and what came back, unchanged. ProgressModel prints one line per model request: the step (one
@@ -25,6 +33,24 @@ counts, ids, error codes and the note's path, the seconds and the rate-limit wai
 SafeOut: a line that cannot be printed (a closed console, a pipe whose reader went away: OSError, ValueError)
 ends that wrapper's printing and nothing else, so a vote never loses a candidate, nor a call its outcome, to
 the console.
+
+Progress events. Given a sink (events: Events, a callable taking one dict), ProgressModel and progress_tools
+also hand it one dict per happening, its "kind" one of EVENT_KINDS, made from the very values the line is
+made from: a wrapper reads its clock and the rate limits' wait as often with a sink as without one.
+ProgressModel sends step_start {step, attempt} before the request and, after it, step (step_event: what the
+line says, with the reasoning text of the turn and the arguments of its calls, which the line leaves out)
+or step_error {step, attempt, error: the exception's type name, seconds}. progress_tools sends tool_start
+{name} before a call and, after it, tool {name, summary: tool_summary's, error: the outcome's code or None,
+ids: the paper ids in the outcome's content (agent.executor's reading), in order without repeats, seconds,
+waited: the rate-limit wait} or tool_error {name, error: the exception's type name, seconds}. A start event
+goes out before the clock is read and the others after the line is printed, so the time a sink takes is in
+no step's or call's seconds. The arguments and the rules' changes an event holds are copies, so what a sink
+does to an event leaves the turn as it was.
+Each wrapper sends through SafeEvents: the first event its sink raises on (any Exception) ends that
+wrapper's events, silently, and the turn goes on; a KeyboardInterrupt goes on up. A step or tool event is made
+inside that guard too (SafeEvents.make), so a fault in making one (call arguments nested too deep to copy)
+ends the events in the same way, and the turn ends as it does without a sink. Without a sink (None, the
+default) nothing is sent and every line is as it was.
 
 Files of a run (SessionFiles), under the run's folder runs/live/<start stamp>/: session.json (written by
 scripts/ask.py: the identity and its check), server.log (the server's output, when the run started it),
@@ -42,6 +68,7 @@ LockBusy reports.
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import sys
@@ -69,8 +96,11 @@ SERVER_LOG = "server.log"
 INDEX_FILE = "index.jsonl"  # beside the run folders
 MAX_FOLLOW_UPS = 2
 FOLLOW_UP_ZH, FOLLOW_UP_EN = "补充:", " To clarify: "
+AWAITS_ANSWER, RESTATE = "answer", "restate"  # Conversation.after: what the next message is
+EVENT_KINDS = ("step_start", "step", "step_error", "tool_start", "tool", "tool_error")  # Progress events
 
 Out = Callable[[str], None]
+Events = Callable[[dict], None]  # a sink of progress events (module docstring: Progress events)
 
 
 def ascii_text(value: object) -> str:
@@ -88,6 +118,45 @@ def pack_follow_up(request: str, answer: str) -> str | None:
     if not answer:
         return None
     return request + (FOLLOW_UP_ZH if _CJK.search(request) else FOLLOW_UP_EN) + answer
+
+
+@dataclass
+class Conversation:
+    """A request's follow-ups from one message to the next (module docstring: A follow-up): pending is the
+    request whose clarification awaits its answer (the packed request after a follow-up), follow_ups the
+    follow-ups it has had; None and 0 while nothing is pending."""
+
+    pending: str | None = None
+    follow_ups: int = 0
+
+    def next(self, text: str) -> tuple[str, int] | None:
+        """The message to send for text and its follow-up number: text itself and 0 when nothing is pending,
+        else the pending request packed with text as the answer to its clarification (pack_follow_up), the
+        follow-ups counted; None when there is nothing to send: an empty text, or an empty answer, which
+        leaves the pending request (drop)."""
+        if self.pending is None:
+            return (text, 0) if text.strip() else None
+        packed = pack_follow_up(self.pending, text)
+        if packed is None:
+            self.drop()
+            return None
+        self.follow_ups += 1
+        return packed, self.follow_ups
+
+    def after(self, turn: LiveTurn) -> str | None:
+        """What the next message is once turn, the message next gave, has run: AWAITS_ANSWER when it ended in
+        a clarification with a follow-up left (its request is now pending), RESTATE when it did after
+        MAX_FOLLOW_UPS follow-ups (the request is left: the user restates it whole), None otherwise (nothing
+        is pending)."""
+        if turn.clarified and self.follow_ups < MAX_FOLLOW_UPS:
+            self.pending = turn.request
+            return AWAITS_ANSWER
+        self.drop()
+        return RESTATE if turn.clarified else None
+
+    def drop(self) -> None:
+        """Leave the pending request, if any: the next text is a request of its own."""
+        self.pending, self.follow_ups = None, 0
 
 
 # ---- the lock ---------------------------------------------------------------------------------------------
@@ -193,6 +262,34 @@ class SafeOut:
             self.broken = True
 
 
+class SafeEvents:
+    """events for a wrapper that only looks (module docstring: Progress events): the first event the sink
+    raises on, whatever the Exception (a fault of the sink's own as well as a closed stream), ends the
+    events, silently, and so does a fault in making one (make); events None sends nothing. A
+    KeyboardInterrupt is no fault of the sink: it goes on up."""
+
+    def __init__(self, events: Events | None) -> None:
+        self.events, self.broken = events, events is None
+
+    def __call__(self, event: dict) -> None:
+        if self.broken:
+            return
+        try:
+            self.events(event)
+        except Exception:  # noqa: BLE001  deliberate: a sink's fault never reaches the turn
+            self.broken = True
+
+    def make(self, build: Callable[[], dict]) -> None:
+        """Send the event build() makes, made only while the events go on and inside the guard: a fault in
+        making it (any Exception) ends the events as a fault of the sink does."""
+        if self.broken:
+            return
+        try:
+            self.events(build())
+        except Exception:  # noqa: BLE001  deliberate: making an event, as sending it, never fails the turn
+            self.broken = True
+
+
 def call_label(call: ToolCall) -> str:
     """A call's name, with the arxiv_id it names."""
     arxiv_id = (call.arguments or {}).get("arxiv_id")
@@ -221,11 +318,44 @@ def step_line(step: int, attempt: int, turn: AssistantTurn, seconds: float) -> s
     return ascii_text(" | ".join(parts))
 
 
-class ProgressModel:
-    """The wrapped model, with one progress line per request (module docstring: Progress)."""
+def step_event(step: int, attempt: int, turn: AssistantTurn, seconds: float) -> dict:
+    """ProgressModel's event for a turn (module docstring: Progress events), from the values step_line is
+    given: {"kind": "step", "step", "attempt", "seconds", "votes": {"k", "won": the samples in the chosen
+    class (None when no sample voted), "representative": the chosen sample's index or "greedy", "failed": the
+    candidates that failed} or None, "thinking": {"tokens": the reasoning tokens, "forced": closed by force}
+    or None, "reasoning": the turn's reasoning text (the representative candidate's; when a rule fired, it
+    argues for the answer before the change) or None, "rules": [{"rule", "before", "after"}], "calls": [{"id",
+    "name", "arguments": the parsed object, or the text as written when it does not parse}], "answer_chars":
+    the answer's length, None for a turn with calls}."""
+    votes = turn.votes
+    if isinstance(votes, dict):
+        chosen, counts = votes.get("chosen"), votes.get("counts") or {}
+        votes = {"k": votes.get("k"), "won": None if chosen is None else counts.get(chosen, 0),
+                 "representative": votes.get("representative"), "failed": len(votes.get("errors") or [])}
+    else:
+        votes = None
+    thinking = turn.thinking
+    if isinstance(thinking, dict):
+        thinking = {"tokens": thinking.get("reasoning_tokens"), "forced": bool(thinking.get("forced"))}
+    else:
+        thinking = None
+    return {"kind": "step", "step": step, "attempt": attempt, "seconds": seconds, "votes": votes,
+            "thinking": thinking, "reasoning": turn.reasoning,
+            "rules": [{"rule": change.get("rule"), "before": copy.deepcopy(change.get("before")),
+                       "after": copy.deepcopy(change.get("after"))} for change in turn.rules or []],
+            "calls": [{"id": call.id, "name": call.name,
+                       "arguments": call.arguments_json if call.arguments is None
+                       else copy.deepcopy(call.arguments)} for call in turn.tool_calls],
+            "answer_chars": None if turn.tool_calls else len(turn.content)}
 
-    def __init__(self, model: Model, out: Out, *, clock: Callable[[], float] = time.perf_counter) -> None:
-        self.model, self.out, self.clock = model, SafeOut(out), clock
+
+class ProgressModel:
+    """The wrapped model, with one progress line per request (module docstring: Progress) and, given a sink,
+    its events (Progress events)."""
+
+    def __init__(self, model: Model, out: Out, *, clock: Callable[[], float] = time.perf_counter,
+                 events: Events | None = None) -> None:
+        self.model, self.out, self.clock, self.events = model, SafeOut(out), clock, SafeEvents(events)
         self._step = self._attempt = 0
 
     @property
@@ -242,16 +372,21 @@ class ProgressModel:
     def next_turn(self, messages: list[dict], tools: list[dict]) -> AssistantTurn:
         history = current_history()
         step = 1 + sum(m.get("role") == "assistant" for m in (messages if history is None else history))
-        self._attempt = self._attempt + 1 if step == self._step else 1
+        self._attempt = attempt = self._attempt + 1 if step == self._step else 1
         self._step = step
+        self.events({"kind": "step_start", "step": step, "attempt": attempt})
         started = self.clock()
         try:
             turn = self.model.next_turn(messages, tools)
         except Exception as exc:
-            self.out(ascii_text(f"step {step}: the model raised {type(exc).__name__} after "
-                                f"{self.clock() - started:.1f} s"))
+            seconds = self.clock() - started
+            self.out(ascii_text(f"step {step}: the model raised {type(exc).__name__} after {seconds:.1f} s"))
+            self.events({"kind": "step_error", "step": step, "attempt": attempt, "error": type(exc).__name__,
+                         "seconds": seconds})
             raise
-        self.out(step_line(step, self._attempt, turn, self.clock() - started))
+        seconds = self.clock() - started
+        self.out(step_line(step, attempt, turn, seconds))
+        self.events.make(lambda: step_event(step, attempt, turn, seconds))
         return turn
 
     def __getattr__(self, name: str):
@@ -303,26 +438,43 @@ def tool_summary(name: str, outcome: object) -> str:
     return "done"
 
 
+def tool_event(name: str, outcome: object, summary: str, seconds: float, wait: float) -> dict:
+    """progress_tools' event for a call that returned (module docstring: Progress events): {"kind": "tool",
+    "name", "summary", "error": the outcome's code or None, "ids": the paper ids in its content, in order
+    without repeats, "seconds", "waited": the rate-limit wait}."""
+    done = isinstance(outcome, ToolOutcome)
+    return {"kind": "tool", "name": name, "summary": summary, "error": outcome.error if done else None,
+            "ids": list(dict.fromkeys(_paper_ids(outcome.content))) if done else [], "seconds": seconds,
+            "waited": wait}
+
+
 def progress_tools(tools: dict[str, ToolFn], out: Out, *, waited: Callable[[], float] | None = None,
-                   clock: Callable[[], float] = time.perf_counter) -> dict[str, ToolFn]:
-    """tools, each printing one line per call (module docstring: Progress); waited gives the seconds the rate
-    limits have slept so far."""
-    show = SafeOut(out)
+                   clock: Callable[[], float] = time.perf_counter,
+                   events: Events | None = None) -> dict[str, ToolFn]:
+    """tools, each printing one line per call (module docstring: Progress) and, given a sink, sending its
+    events (Progress events); waited gives the seconds the rate limits have slept so far."""
+    show, send = SafeOut(out), SafeEvents(events)
 
     def wrap(name: str, tool: ToolFn) -> ToolFn:
         def run(args: dict) -> ToolOutcome:
+            send({"kind": "tool_start", "name": name})
             before = waited() if waited is not None else 0.0
             started = clock()
             try:
                 outcome = tool(args)
             except Exception as exc:
-                show(ascii_text(f"  tool {name}: raised {type(exc).__name__}, {clock() - started:.1f} s"))
+                seconds = clock() - started
+                show(ascii_text(f"  tool {name}: raised {type(exc).__name__}, {seconds:.1f} s"))
+                send({"kind": "tool_error", "name": name, "error": type(exc).__name__, "seconds": seconds})
                 raise
-            line = f"  tool {name}: {tool_summary(name, outcome)}, {clock() - started:.1f} s"
+            summary = tool_summary(name, outcome)
+            seconds = clock() - started
+            line = f"  tool {name}: {summary}, {seconds:.1f} s"
             wait = (waited() - before) if waited is not None else 0.0
             if wait > 0:
                 line += f", {wait:.1f} s of it waiting for the rate limit"
             show(ascii_text(line))
+            send.make(lambda: tool_event(name, outcome, summary, seconds, wait))
             return outcome
 
         return run
@@ -354,10 +506,12 @@ class LiveTurn:
 
 def run_live_turn(text: str, *, built: Built, tools: dict[str, ToolFn], today: str, out: Out,
                   waited: Callable[[], float] | None = None,
-                  clock: Callable[[], float] = time.perf_counter) -> LiveTurn:
-    """One request through the loop as the evaluation runs it, with progress lines (module docstring)."""
-    executor = ToolExecutor(progress_tools(tools, out, waited=waited, clock=clock), check_call, today=today)
-    model = ProgressModel(built.model, out, clock=clock)
+                  clock: Callable[[], float] = time.perf_counter, events: Events | None = None) -> LiveTurn:
+    """One request through the loop as the evaluation runs it, with progress lines and, given a sink, the
+    events of both wrappers (module docstring)."""
+    executor = ToolExecutor(progress_tools(tools, out, waited=waited, clock=clock, events=events), check_call,
+                            today=today)
+    model = ProgressModel(built.model, out, clock=clock, events=events)
     started = clock()
     try:
         transcript = run_turn(text, model=model, executor=executor, decide=policy.decide, today=today,

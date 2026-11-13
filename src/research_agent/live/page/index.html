@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>科研助理</title>
+<link rel="stylesheet" href="/static/app.css">
+<script src="/static/app.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <h1>科研助理</h1>
+  <div id="system" class="system" aria-label="运行的系统"></div>
+  <div class="controls">
+    <span id="phase" class="phase">读取中</span>
+    <span id="link" class="link">连接中</span>
+    <button id="quit" type="button" class="quiet">结束运行</button>
+  </div>
+</header>
+<main class="layout">
+  <section class="chat" aria-label="对话">
+    <div id="exchanges" class="exchanges">
+      <p id="empty" class="empty">输入一条请求开始。每条消息单独发给模型,模型不看之前的对话;它追问时,下一条消息会作为回答接在原请求后面(最多两次)。</p>
+    </div>
+    <div class="composer">
+      <p id="banner" class="banner" hidden></p>
+      <div id="pending" class="pending" hidden>
+        <span id="pending-text"></span>
+        <button id="new" type="button" class="quiet">新问题</button>
+      </div>
+      <p id="busy" class="busy" hidden>这一轮正在运行,不能中途取消;关掉页面也不会停止它。</p>
+      <div class="input-row">
+        <textarea id="input" rows="2" maxlength="4000" placeholder="输入请求,按 Enter 发送(消息只有一行)" aria-label="请求"></textarea>
+        <button id="send" type="button">发送</button>
+      </div>
+      <p id="error" class="error" hidden></p>
+    </div>
+  </section>
+  <aside class="notes" aria-label="笔记库">
+    <div class="notes-head">
+      <h2>笔记库</h2>
+      <button id="notes-refresh" type="button" class="quiet">刷新</button>
+    </div>
+    <p id="notes-state" class="muted">读取中</p>
+    <ul id="notes-list" class="notes-list"></ul>
+    <section id="viewer-box" class="viewer-box" hidden>
+      <div class="notes-head">
+        <h2 id="viewer-title">笔记</h2>
+        <button id="viewer-close" type="button" class="quiet">关闭</button>
+      </div>
+      <article id="viewer" class="viewer"></article>
+    </section>
+  </aside>
+</main>
+</body>
+</html>

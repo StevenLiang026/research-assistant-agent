@@ -7,6 +7,7 @@
     .venv/Scripts/python.exe scripts/ask.py --check
     .venv/Scripts/python.exe scripts/ask.py --probe ID [ID ...]
     .venv/Scripts/python.exe scripts/ask.py --import-notes FILE
+    .venv/Scripts/python.exe scripts/ask.py --web [--web-port N] [--no-browser]
         [--llama-server PATH | --server URL] [--port N] [--notes DIR] [--runs DIR]
 
 Run it from the repository root: the frozen record's paths are relative to it, the notes library and the run
@@ -41,7 +42,8 @@ Modes, one per run:
   ended otherwise, is said to be unused (in --batch too).
 - --interactive: "ask> " takes a request; after a clarification "answer> " takes the answer, where an empty
   answer leaves the request, "/new TEXT" asks TEXT instead and "/quit" ends the run (as it does at "ask> ").
-  After two follow-ups the request has to be restated whole. The server starts once. The first line printed
+  After two follow-ups the request has to be restated whole (live.session.Conversation carries the
+  follow-ups from one message to the next). The server starts once. The first line printed
   says so (CONSOLE_HELP); any other text starting with "/", and a bare "exit" or "quit", is answered with it
   and never sent to the model.
 - --batch FILE: one JSON object per line, {"id", "request", "clarify_answer"?: a text or up to two}, run in
@@ -54,6 +56,18 @@ Modes, one per run:
   requests), so a 429 or 503 is what the probe records; the outcomes go to the run folder's probe.json.
 - --import-notes FILE: the owner's notes file into the library (notes.import_entries, then
   NoteStore.load_entries tagged "imported", the entries it already holds skipped); prints counts only.
+- --web: a chat page in the browser (research_agent.live.web) on 127.0.0.1 at --web-port (default
+  WEB_PORT; 0 picks a free port; never the llama-server's port, nor 80, which a browser leaves out of the
+  address the page checks), bound before the system is assembled, so a port in use stops the run (exit 2)
+  before a model loads. The link printed, which browse opens unless --no-browser, holds the page's key: open
+  it on this machine. A message runs as --interactive runs a line, its white space collapsed to single
+  spaces, on the main thread, one at a time, with the same run files, follow-ups (live.session.Conversation),
+  progress lines and index lines; what the console takes for a command or a slip (a first word starting
+  with "/", a bare exit or quit) the page refuses and never sends to the model, and its buttons start a new
+  question and end the run instead. The page shows each step's vote, thinking and calls as it goes
+  (live.session: Progress events), the answer with its arXiv ids as links, and the notes library. A turn
+  cannot be cancelled, and closing the page leaves the run going; the page's end button ends the run (after
+  the turn that runs), and so does Ctrl+C.
 
 Every mode but --import-notes writes a run folder under --runs (default runs/live/) with session.json (the
 identity, its check, the git commit; a probe's says it was one) and what research_agent.live.session lists:
@@ -67,11 +81,11 @@ text); a pipe or a file gets UTF-8, the encoding of every file a run writes, and
 model garbled). What a stream cannot encode is escaped.
 
 Exit 0 when the turns ran, whatever they answered; 1 when a turn raised (recorded; the run goes on); 2 on a
-usage error, a run started outside the repository root, a batch or notes file that cannot be read, and
-whenever the system cannot be assembled or checked (the frozen record, the family, no llama-server, a busy
-port, a server that never became ready, a GPU in use or an nvidia-smi that cannot tell, an identity that
-disagrees); 3 when another run holds the lock; 130 after Ctrl+C, once the server is stopped and the lock
-released.
+usage error, a run started outside the repository root, a batch or notes file that cannot be read, a page
+port in use (--web), and whenever the system cannot be assembled or checked (the frozen record, the family,
+no llama-server, a busy port, a server that never became ready, a GPU in use or an nvidia-smi that cannot
+tell, an identity that disagrees); 3 when another run holds the lock; 130 after Ctrl+C, once the page and the
+server are stopped and the lock released.
 """
 
 from __future__ import annotations
@@ -82,6 +96,7 @@ import json
 import shutil
 import sys
 import time
+import webbrowser
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -90,7 +105,9 @@ from research_agent import arxiv
 from research_agent.agent.context import family_token_counter
 from research_agent.eval.resources import SMI, GpuError, GpuSample, gpu_sample
 from research_agent.eval.systems import Built, SystemUnavailable, build_system
+from research_agent.live import web
 from research_agent.live.frozen import (
+    EVALUATED_SERVER,
     SLOTS,
     FrozenMismatch,
     FrozenSystem,
@@ -101,7 +118,10 @@ from research_agent.live.frozen import (
 from research_agent.live.session import (
     LOCK_FILE,
     MAX_FOLLOW_UPS,
+    RESTATE,
     SERVER_LOG,
+    Conversation,
+    Events,
     InstanceLock,
     LiveTurn,
     LockBusy,
@@ -130,10 +150,12 @@ CONSOLE_HELP = (f"type a request at {ASK_PROMPT.strip()} and the answer to a que
                 f"{ANSWER_PROMPT.strip()}; {NEW} TEXT asks TEXT instead, {QUIT} ends the run")
 QUIT_WORDS = ("exit", "quit")  # typed bare, they are taken for a slip, never for a request
 INTERRUPTED = 130
+WEB_PORT = 8765  # the page's port unless --web-port names another
 EPILOG = (f"Run it from the repository root. Answers are printed; each run's files go to a new folder under "
-          f"--runs (default {RUNS.as_posix()}), notes to --notes (default {NOTES.as_posix()}). Exit 0 when "
-          "the turns ran, 1 when a turn raised, 2 on a usage error or when the system cannot be assembled or "
-          f"checked, 3 when another run holds the lock, {INTERRUPTED} after Ctrl+C.")
+          f"--runs (default {RUNS.as_posix()}), notes to --notes (default {NOTES.as_posix()}). --web "
+          f"serves a chat page on {web.HOST} instead: open the link it prints. Exit 0 when the turns ran, 1 "
+          "when a turn raised, 2 on a usage error or when the system cannot be assembled or checked (a busy "
+          f"--web-port included), 3 when another run holds the lock, {INTERRUPTED} after Ctrl+C.")
 
 Out = Callable[[str], None]
 
@@ -163,8 +185,15 @@ def build_parser() -> argparse.ArgumentParser:
                        help="get_paper for each id and one search on the live arXiv, without the GPU")
     modes.add_argument("--import-notes", type=Path, default=None, metavar="FILE",
                        help="import the owner's notes file into the library (counts only)")
+    modes.add_argument("--web", action="store_true",
+                       help=f"a chat page in the browser, served on {web.HOST}; the link is printed and "
+                            "opened")
     ap.add_argument("--batch-name", default=None, metavar="NAME",
                     help='--batch: only the lines whose "batch" is NAME')
+    ap.add_argument("--web-port", type=int, default=None, metavar="N",
+                    help=f"--web: the page's port (default {WEB_PORT}; 0 picks a free one; not 80)")
+    ap.add_argument("--no-browser", action="store_true",
+                    help="--web: print the link without opening a browser")
     servers = ap.add_mutually_exclusive_group()
     servers.add_argument("--llama-server", default=None, metavar="PATH",
                          help="the llama-server binary (default: $LLAMA_SERVER)")
@@ -184,7 +213,7 @@ def mode_of(args: argparse.Namespace, parser: argparse.ArgumentParser) -> str:
     """The run's mode; a usage error (exit 2) for options that do not go together."""
     flagged = [name for name, on in (("interactive", args.interactive), ("batch", args.batch is not None),
                                      ("check", args.check), ("probe", args.probe is not None),
-                                     ("import", args.import_notes is not None)) if on]
+                                     ("import", args.import_notes is not None), ("web", args.web)) if on]
     if args.request is not None and flagged:
         parser.error("a request runs on its own: drop it, or drop --" + flagged[0].replace("import",
                                                                                          "import-notes"))
@@ -201,6 +230,18 @@ def mode_of(args: argparse.Namespace, parser: argparse.ArgumentParser) -> str:
         parser.error("--batch-name chooses lines of --batch")
     if args.port is not None and args.server is not None:
         parser.error("--port is the port of a server started here; --server names a running one")
+    if not args.web and (args.web_port is not None or args.no_browser):
+        parser.error("--web-port and --no-browser go with --web")
+    if args.web:
+        args.web_port = WEB_PORT if args.web_port is None else args.web_port
+        if not 0 <= args.web_port <= 65535:
+            parser.error("--web-port is a port number, 0 to 65535 (0 picks a free one)")
+        llama = EVALUATED_SERVER["port"] if args.port is None else args.port
+        if args.web_port == llama:
+            parser.error(f"--web-port {args.web_port} is the llama-server's port: give the page another one")
+        if args.web_port == web.HTTP_PORT:
+            parser.error(f"--web-port {web.HTTP_PORT} is http's own port, which a browser leaves out of the "
+                         "address the page checks: give the page another one")
     return "request" if args.request is not None else flagged[0]
 
 
@@ -383,15 +424,21 @@ class Runner:
         self.assembly, self.world, self.store, self.files = assembly, world, store, files
         self.today, self.out = today, out
         self.failed = False
+        self.last_row: dict | None = None  # the index line of the latest turn (SessionFiles.write_turn)
 
-    def turn(self, text: str, *, item_id: str | None = None, follow_up: int = 0) -> LiveTurn:
+    def turn(self, text: str, *, follow_up: int = 0, item_id: str | None = None,
+             events: Events | None = None) -> LiveTurn:
+        """One turn of text (follow_up: its follow-up number, 0 for a request of its own), run with progress
+        lines and, when events is given, progress events (live.session: Progress events), written to the
+        run's files, its index line kept in last_row, and shown."""
         day = self.today()
         label = "" if item_id is None else f"[{item_id}] "
         self.out(f"{label}turn {self.files.turns + 1} on {day}"
                  + (f", follow-up {follow_up}" if follow_up else ""))
         result = run_live_turn(text, built=self.assembly.built, tools=self.world.tools(self.store, day),
-                               today=day, out=self.out, waited=lambda: self.world.limits.slept)
-        self.files.write_turn(result, item_id=item_id, follow_up=follow_up, papers=self.world.memo.get)
+                               today=day, out=self.out, waited=lambda: self.world.limits.slept, events=events)
+        self.last_row = self.files.write_turn(result, item_id=item_id, follow_up=follow_up,
+                                              papers=self.world.memo.get)
         self.failed = self.failed or result.error is not None
         self.show(result, label)
         return result
@@ -428,13 +475,13 @@ class Runner:
 
 
 def interactive(runner: Runner, ask: Callable[[str], str], out: Out) -> None:
-    """ask> and answer> until /quit or the end of input (module docstring: --interactive)."""
-    pending: LiveTurn | None = None  # the turn whose clarification is being answered
-    follow_ups = 0
+    """ask> and answer> until /quit or the end of input (module docstring: --interactive), the follow-ups
+    carried by live.session.Conversation."""
+    conversation = Conversation()
     out(CONSOLE_HELP)
     while True:
         try:
-            line = ask(ANSWER_PROMPT if pending is not None else ASK_PROMPT)
+            line = ask(ANSWER_PROMPT if conversation.pending is not None else ASK_PROMPT)
         except EOFError:
             return
         except UnicodeDecodeError:
@@ -448,24 +495,17 @@ def interactive(runner: Runner, ask: Callable[[str], str], out: Out) -> None:
             out(f"not a command here: {CONSOLE_HELP}")
             continue
         if text == NEW or text.startswith(NEW + " "):
-            pending, follow_ups, text = None, 0, text[len(NEW):].strip()
-        elif pending is not None:
-            if not text:
-                out("no answer: the request is left")
-                pending, follow_ups = None, 0
-                continue
-            follow_ups += 1
-            result = runner.turn(pack_follow_up(pending.request, text), follow_up=follow_ups)
-            pending = result if result.clarified and follow_ups < MAX_FOLLOW_UPS else None
-            if result.clarified and pending is None:
-                out(f"{MAX_FOLLOW_UPS} follow-ups already: please restate the whole request")
-            if pending is None:
-                follow_ups = 0
+            conversation.drop()
+            text = text[len(NEW):].strip()
+        if not text and conversation.pending is None:
             continue
-        if not text:
+        message = conversation.next(text)
+        if message is None:  # an empty answer
+            out("no answer: the request is left")
             continue
-        result = runner.turn(text)
-        pending, follow_ups = (result if result.clarified else None), 0
+        sent, follow_up = message
+        if conversation.after(runner.turn(sent, follow_up=follow_up)) == RESTATE:
+            out(f"{MAX_FOLLOW_UPS} follow-ups already: please restate the whole request")
 
 
 # ---- the modes without the model --------------------------------------------------------------------------
@@ -583,8 +623,8 @@ def at_repository_root() -> bool:
 def run(mode: str, args: argparse.Namespace, items: list[dict] | None, *, today: Callable[[], str],
         build: Callable[..., Assembly], transport: object, clock: Callable[[], float],
         wall: Callable[[], float], sleep: Callable[[float], None], ask: Callable[[str], str],
-        out: Out) -> int:
-    """The run of a mode, the lock held (module docstring)."""
+        out: Out, browse: Callable[[str], object] | None = None) -> int:
+    """The run of a mode, the lock held (module docstring); browse opens the page's link (--web)."""
     if mode == "import":
         return import_notes(args.import_notes, args.notes, out)
     files = SessionFiles(new_run_folder(args.runs))
@@ -594,56 +634,83 @@ def run(mode: str, args: argparse.Namespace, items: list[dict] | None, *, today:
                      sleep=sleep, out=out)
     session = {"kind": mode, "started": utc_now(), "notes": args.notes.as_posix(), "code": code_hashes(),
                "git_commit": git_commit(REPO), "git_dirty": git_dirty(REPO)}
-    try:
-        assembly = build(args, files.folder, out)
-    except SetupFailed as exc:
-        files.write_session({**session, "setup_error": str(exc), "ended": utc_now()})
-        print(f"FAIL: {exc}", file=sys.stderr)
-        return 2
-    try:
-        session.update(assembly.record())
-        files.write_session(session)
-        if mode == "check" or assembly.problems:
-            show_identity(assembly, out)
-            return 2 if assembly.problems else 0
+    site = None
+    if mode == "web":  # bound before the system is assembled: a busy port stops the run before a model loads
+        session["web"] = {"port": args.web_port}
         try:
-            store = NoteStore(args.notes)
-        except (OSError, RuntimeError) as exc:  # RuntimeError: a sqlite3 without FTS5
-            print(f"FAIL: the notes library {args.notes.as_posix()} cannot be opened: {exc}", file=sys.stderr)
+            site = web.Site(args.web_port)
+        except OSError as exc:
+            reason = (f"the page cannot listen on {web.HOST}:{args.web_port} ({exc}); choose another "
+                      "--web-port, or 0 for any free port")
+            files.write_session({**session, "setup_error": reason, "ended": utc_now()})
+            print(f"FAIL: {reason}", file=sys.stderr)
             return 2
-        world = live_world(files.folder, args.state, transport=transport, clock=clock, wall=wall, sleep=sleep)
+        session["web"] = {"port": site.port}
+    try:
         try:
-            runner = Runner(assembly, world, store, files, today=today, out=out)
-            if mode == "request":
-                answers = args.clarify_answer or []
-                result = runner.request(args.request, answers)
-                if result.clarified and len(answers) >= MAX_FOLLOW_UPS:
-                    out(f"{MAX_FOLLOW_UPS} follow-ups already: please restate the whole request")
-                elif result.clarified:
-                    out("the request ends in a clarification: answer it with --clarify-answer, or use "
-                        "--interactive")
-            elif mode == "batch":
-                for item in items:
-                    runner.request(item["request"], item["answers"], item_id=item["id"])
-            else:
-                interactive(runner, ask, out)
+            assembly = build(args, files.folder, out)
+        except SetupFailed as exc:
+            files.write_session({**session, "setup_error": str(exc), "ended": utc_now()})
+            print(f"FAIL: {exc}", file=sys.stderr)
+            return 2
+        try:
+            session.update(assembly.record())
+            files.write_session(session)
+            if mode == "check" or assembly.problems:
+                show_identity(assembly, out)
+                return 2 if assembly.problems else 0
+            try:
+                store = NoteStore(args.notes)
+            except (OSError, RuntimeError) as exc:  # RuntimeError: a sqlite3 without FTS5
+                print(f"FAIL: the notes library {args.notes.as_posix()} cannot be opened: {exc}",
+                      file=sys.stderr)
+                return 2
+            world = live_world(files.folder, args.state, transport=transport, clock=clock, wall=wall,
+                               sleep=sleep)
+            try:
+                runner = Runner(assembly, world, store, files, today=today, out=out)
+                if mode == "request":
+                    answers = args.clarify_answer or []
+                    result = runner.request(args.request, answers)
+                    if result.clarified and len(answers) >= MAX_FOLLOW_UPS:
+                        out(f"{MAX_FOLLOW_UPS} follow-ups already: please restate the whole request")
+                    elif result.clarified:
+                        out("the request ends in a clarification: answer it with --clarify-answer, or use "
+                            "--interactive")
+                elif mode == "batch":
+                    for item in items:
+                        runner.request(item["request"], item["answers"], item_id=item["id"])
+                elif mode == "web":
+                    def page_turn(sent: str, follow_up: int, events: Events) -> tuple[LiveTurn, dict | None]:
+                        return runner.turn(sent, follow_up=follow_up, events=events), runner.last_row
+
+                    system = web.system_info(assembly.record(), files.folder.name)
+                    web.serve(site, page_turn, store, system=system,
+                              browse=None if args.no_browser else browse, out=out)
+                else:
+                    interactive(runner, ask, out)
+            finally:
+                world.close(warn(out))
+            return 1 if runner.failed else 0
         finally:
-            world.close(warn(out))
-        return 1 if runner.failed else 0
+            try:
+                assembly.close()
+            finally:
+                files.write_session({**session, "turns": files.turns, "ended": utc_now()})
+                out(f"{files.turns} turn(s); run folder {files.folder.as_posix()}")
     finally:
-        try:
-            assembly.close()
-        finally:
-            files.write_session({**session, "turns": files.turns, "ended": utc_now()})
-            out(f"{files.turns} turn(s); run folder {files.folder.as_posix()}")
+        if site is not None:
+            site.close()
 
 
 def main(argv: list[str] | None = None, *, today: Callable[[], str] | None = None,
          build: Callable[..., Assembly] | None = None, transport: object | None = None,
          clock: Callable[[], float] | None = None, wall: Callable[[], float] | None = None,
-         sleep: Callable[[float], None] | None = None, ask: Callable[[str], str] = input) -> int:
-    """today, build, transport, clock, wall, sleep and ask stand in for the date, the assembly, the network,
-    the clocks, sleeping and the console in tests; wall defaults to clock when only clock is given."""
+         sleep: Callable[[float], None] | None = None, ask: Callable[[str], str] = input,
+         browse: Callable[[str], object] = webbrowser.open) -> int:
+    """today, build, transport, clock, wall, sleep, ask and browse stand in for the date, the assembly, the
+    network, the clocks, sleeping, the console and the browser in tests; wall defaults to clock when only
+    clock is given."""
     parser = build_parser()
     args = parser.parse_args(argv)
     mode = mode_of(args, parser)
@@ -669,7 +736,7 @@ def main(argv: list[str] | None = None, *, today: Callable[[], str] | None = Non
     try:
         return run(mode, args, items, today=today or local_date, build=build or assemble, transport=transport,
                    clock=clock or time.monotonic, wall=wall or clock or time.time, sleep=sleep or time.sleep,
-                   ask=ask, out=_print)
+                   ask=ask, out=_print, browse=browse)
     except KeyboardInterrupt:
         print("interrupted: the server is stopped and the lock released", file=sys.stderr)
         return INTERRUPTED

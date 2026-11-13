@@ -2,25 +2,34 @@
 for real over the fake final system (tests/support/live_fakes.py) on a FakeLlama server, arXiv behind
 httpx.MockTransport, a fake clock and a temporary runs folder. No GPU, no server, no network: every run goes
 through main, whose arXiv, unless a test gives its own, is a MockTransport that answers no request and records
-it, and a test with a recorded request fails. Every run starts at the repository root, as ask.py requires."""
+it, and a test with a recorded request fails. Every run starts at the repository root, as ask.py requires.
+--web runs main in the test's main thread while the page's user, a browser over http.client to 127.0.0.1
+(tests/support/web_fakes.py), works in a helper thread that always ends the run (Browser)."""
 
 from __future__ import annotations
 
 import importlib.util
 import io
 import json
+import signal
+import socket
 import sys
+import threading
 from pathlib import Path
+from typing import Self
 
 import httpx
 import pytest
 from support.fakes import ScriptedModel, call, turn
 from support.live_fakes import FakeClock, final_server, server_props, text_turns, write_final
+from support.web_fakes import TIMEOUT, Page
 
 from research_agent.agent.prompts import system_prompt
+from research_agent.agent.rules import RULES_VERSION
 from research_agent.eval.resources import GpuError, GpuSample
 from research_agent.eval.systems import Built
-from research_agent.live.frozen import FrozenMismatch, code_hashes, load_frozen
+from research_agent.live import web
+from research_agent.live.frozen import EVALUATED_SERVER, FrozenMismatch, code_hashes, load_frozen
 from research_agent.live.session import InstanceLock, ProgressClient
 from research_agent.llm.server import PortBusy
 from research_agent.tools.adapters import paper_url
@@ -622,3 +631,319 @@ def test_no_llama_server_and_a_frozen_record_that_does_not_hold_exit_2(tmp_path,
     assert main(["--check", *folders(tmp_path)], build=lambda args, folder, out: ask.assemble(
         args, folder, out, load=lambda: frozen)) == 2
     assert "no llama-server given" in capsys.readouterr().err
+
+
+# ---- --web ------------------------------------------------------------------------------------------------
+
+
+class Browser(threading.Thread):
+    """The page's user, in a helper thread while main runs in the test's main thread: it waits for the launch
+    link (main's browse), opens it, runs script(page) and, whatever happens, posts /api/quit, so main
+    returns. As a context manager around main, it ends with the block and raises what script raised;
+    result is what script returned."""
+
+    def __init__(self, script) -> None:
+        super().__init__(daemon=True)
+        self.script, self.url, self.result, self.error = script, None, None, None
+        self.given = threading.Event()
+        self.start()
+
+    def browse(self, url: str) -> None:
+        self.url = url
+        self.given.set()
+
+    def run(self) -> None:
+        if not self.given.wait(120) or self.url is None:
+            return
+        page = Page.of(self.url)
+        try:
+            assert page.launch(self.url).status == 303
+            self.result = self.script(page)
+        except BaseException as exc:  # noqa: BLE001  raised again on leaving the block, in the test's thread
+            self.error = exc
+        finally:
+            try:
+                page.post("/api/quit")
+            except OSError:  # the run has ended already
+                pass
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, kind, value, traceback) -> None:
+        self.given.set()  # a run that never served the page: nothing to do
+        self.join(TIMEOUT * 3)
+        if kind is None:
+            assert not self.is_alive()
+            if self.error is not None:
+                raise self.error
+
+
+def web_run(tmp_path, *options: str) -> list[str]:
+    return ["--web", "--web-port", "0", *options, *folders(tmp_path)]
+
+
+def session_of(tmp_path) -> dict:
+    return json.loads((run_folder(tmp_path) / "session.json").read_text(encoding="utf-8"))
+
+
+def without_timing(path: Path) -> str:
+    """A turn file with its seconds line left out (they differ from one run to the next)."""
+    return "".join(line for line in path.read_text(encoding="utf-8").splitlines(keepends=True)
+                   if not line.startswith("- seconds: "))
+
+
+def test_web_runs_the_pages_turns_and_writes_what_interactive_writes(tmp_path, capsys):
+    question = call("ask_clarification", "q1", question="哪个主题?", missing=["topic"])
+
+    def model():
+        return scripted(turn(question), turn(call("list_notes", "l1")), turn(content=f"推荐 **{A}**。"))
+
+    typed = iter(["帮我找几篇论文。", "speculative decoding", "/quit"])
+    console = tmp_path / "console"
+    assert main(["--interactive", *folders(console)], today=lambda: TODAY, build=model(),
+                ask=lambda prompt: next(typed)) == 0
+    console_out = capsys.readouterr().out
+
+    def chat(page: Page):
+        assert page.ask("帮我找几篇论文。").status == 202
+        first = page.done(1)
+        assert page.state()["status"]["pending"] == {"exchange": 1, "follow_ups": 0}
+        assert page.ask("speculative decoding").status == 202
+        return first, page.done(2)
+
+    served = tmp_path / "web"
+    with Browser(chat) as browser:
+        code = main(web_run(served), today=lambda: TODAY, build=model(), browse=browser.browse)
+    first, second = browser.result
+    out, err = capsys.readouterr()
+    assert code == 0 and first["result"]["after"] == "answer"
+    assert first["result"]["html"] == "<p>哪个主题?</p>"
+    assert (second["sent"], second["follow_up"]) == ("帮我找几篇论文。补充:speculative decoding", 1)
+    assert f'<strong><a href="https://arxiv.org/abs/{A}" target="_blank" rel="noopener noreferrer">' in (
+        second["result"]["html"])
+    assert second["result"]["cited_unseen"] == [A]
+    assert second["steps"][0]["tools"][0]["summary"] == "0 note(s)"
+
+    def rows(folder):
+        return [{key: value for key, value in row.items() if key not in ("run", "seconds")}
+                for row in index(folder)]
+
+    assert rows(served) == rows(console) and len(rows(served)) == 2
+    for name in ("turn-001.json", "turn-002.json", "turn-001.md", "turn-002.md"):
+        assert without_timing(run_folder(served) / name) == without_timing(run_folder(console) / name), name
+    session = session_of(served)
+    assert session["kind"] == "web" and session["turns"] == 2 and "ended" in session
+    port = session["web"]["port"]
+    assert browser.url.startswith(f"http://127.0.0.1:{port}/?t=") and port != 0
+    for line in ("turn 1 on 2026-11-10", "question: 哪个主题?", "turn 2 on 2026-11-10, follow-up 1",
+                 f"answer:\n推荐 **{A}**。", "  tool list_notes: 0 note(s)", "2 turn(s); run folder"):
+        assert line in out and line in console_out, line
+    token = browser.url.partition("?t=")[2]
+    assert out.count(token) == 1 and f"page: {browser.url}\n" in out and token not in err  # no request logged
+    web.Site(port).close()  # the page's port is free
+    InstanceLock(served / "state" / "ask.lock").acquire()  # and so is the lock
+
+
+def test_web_over_the_fake_final_system_shows_the_votes_and_the_reasoning(tmp_path, monkeypatch, capsys):
+    paths = write_final(tmp_path / "final", monkeypatch)
+    frozen = load_frozen(paths["final"], paths["config"])
+    fake = final_server(paths, text_turns(3))
+
+    def build(args, folder, out):
+        return ask.assemble(args, folder, out, load=lambda: frozen, client=client_over(fake))
+
+    def chat(page: Page):
+        assert page.ask("请总结一下。").status == 202
+        return page.done(1), page.state()["system"]
+
+    with Browser(chat) as browser:
+        code = main(web_run(tmp_path, "--server", "http://127.0.0.1:8080/"), today=lambda: TODAY, build=build,
+                    browse=browser.browse)
+    exchange, system = browser.result
+    assert code == 0 and len(fake.requests) == 3  # as the same request on the command line sends
+    (step,) = exchange["steps"]
+    assert step["votes"] == {"k": 2, "won": 2, "representative": 0, "failed": 0} and step["state"] == "done"
+    assert step["thinking"] == {"tokens": 2, "forced": False} and "Thinking it over." in step["reasoning"]
+    assert exchange["result"]["html"] == "<p>Here is the answer.</p>"
+    assert exchange["result"]["status"] == "answered"
+    assert system == {"model": system["model"], "votes": 2, "vote_mode": "final", "reasoning_budget": 32,
+                      "rules_version": RULES_VERSION, "build": EVALUATED_SERVER["llama_cpp_build"],
+                      "frozen_sha256": frozen.frozen_sha256, "server": "http://127.0.0.1:8080",
+                      "run": run_folder(tmp_path).name}
+    assert "step 1 | votes 2/2 | thinking 2 tok | answer 19 chars" in capsys.readouterr().out
+
+
+class Interrupted:
+    name = "interrupted"
+
+    def next_turn(self, messages, tools):
+        raise KeyboardInterrupt
+
+
+@pytest.mark.parametrize("where", ["in a turn", "while the page waits"])
+def test_ctrl_c_closes_the_page_and_the_assembly_frees_the_port_and_the_lock_and_exits_130(tmp_path, capsys,
+                                                                                         where):
+    closed: list = []
+
+    def build(args, folder, out):
+        return ask.Assembly(Built(Interrupted(), None, {}), {}, [], {}, {}, [lambda: closed.append(True)])
+
+    def chat(page: Page):
+        with page.stream(page.state()["seq"]) as stream:
+            if where == "in a turn":  # the model raises it
+                assert page.ask("hello").status == 202
+            else:  # Ctrl+C reaches the main thread as it waits on the page's queue
+                signal.raise_signal(signal.SIGINT)
+            return [event for event in stream.rest() if "event" in event]
+
+    with Browser(chat) as browser:
+        code = main(web_run(tmp_path), today=lambda: TODAY, build=build, browse=browser.browse)
+    events = browser.result
+    assert code == ask.INTERRUPTED and closed == [True]
+    assert events[-1]["event"] == "bye" and events[-1]["data"] == {"reason": "interrupted"}
+    assert "interrupted: the server is stopped and the lock released" in capsys.readouterr().err
+    session = session_of(tmp_path)
+    assert "ended" in session and session["turns"] == 0  # a turn Ctrl+C ended is not written
+    web.Site(session["web"]["port"]).close()  # the port is free
+    InstanceLock(tmp_path / "state" / "ask.lock").acquire()  # and the lock
+
+
+def test_a_busy_web_port_exits_2_before_the_system_is_assembled(tmp_path, capsys):
+    with socket.socket() as holder:
+        holder.bind(("127.0.0.1", 0))
+        holder.listen()
+        port = holder.getsockname()[1]
+        code = main(["--web", "--web-port", str(port), *folders(tmp_path)], build=no_build,
+                    browse=lambda url: pytest.fail("a page was served"))
+    assert code == 2
+    err = capsys.readouterr().err
+    assert f"FAIL: the page cannot listen on 127.0.0.1:{port}" in err and "--web-port" in err
+    session = session_of(tmp_path)
+    assert session["kind"] == "web" and session["web"] == {"port": port}
+    assert "the page cannot listen" in session["setup_error"] and "ended" in session
+    assert not (tmp_path / "runs" / "index.jsonl").exists()
+    InstanceLock(tmp_path / "state" / "ask.lock").acquire()  # free
+
+
+def test_the_web_port_is_8765_unless_given():
+    parser = ask.build_parser()
+    for argv, port in ((["--web"], 8765), (["--web", "--web-port", "0"], 0),
+                       (["--web", "--web-port", "9000"], 9000),
+                       (["--web", "--port", "9000", "--web-port", "8080"], 8080)):
+        args = parser.parse_args(argv)
+        assert ask.mode_of(args, parser) == "web" and args.web_port == port, argv
+
+
+@pytest.mark.parametrize("argv", [["--check", "--web-port", "9000"], ["--check", "--no-browser"],
+                                  ["hello", "--web"], ["--web", "--interactive"], ["--web", "--check"],
+                                  ["--web", "--clarify-answer", "x"], ["--web", "--batch-name", "A"],
+                                  ["--web", "--web-port", "8080"],
+                                  ["--web", "--port", "9000", "--web-port", "9000"],
+                                  ["--web", "--server", "http://127.0.0.1:8080", "--web-port", "8080"],
+                                  ["--web", "--web-port", "65536"], ["--web", "--web-port", "-1"],
+                                  ["--web", "--web-port", "80"]])
+def test_web_usage_errors_exit_2(tmp_path, argv):
+    with pytest.raises(SystemExit) as stopped:
+        main([*argv, *folders(tmp_path)], build=no_build)
+    assert stopped.value.code == 2
+
+
+def test_help_names_the_web_mode_and_its_options(capsys):
+    with pytest.raises(SystemExit):
+        main(["--help"])
+    out = " ".join(capsys.readouterr().out.split())
+    assert "--web " in out and "--web-port N" in out and "--no-browser" in out and "127.0.0.1" in out
+
+
+def test_a_web_turn_that_raises_is_shown_and_the_run_goes_on_and_exits_1(tmp_path):
+    def chat(page: Page):
+        assert page.ask("hello").status == 202
+        first = page.done(1)
+        assert page.ask("again").status == 202
+        return first, page.done(2)
+
+    with Browser(chat) as browser:
+        code = main(web_run(tmp_path), today=lambda: TODAY, browse=browser.browse,
+                    build=scripted(RuntimeError("the server went away"), turn(content="ok")))
+    first, second = browser.result
+    assert code == 1 and first["result"]["error"] == "RuntimeError: the server went away"
+    assert second["result"]["status"] == "answered"
+    assert [row["error"] for row in index(tmp_path)] == ["RuntimeError: the server went away", None]
+
+
+def test_no_browser_prints_the_link_and_opens_nothing(tmp_path, monkeypatch):
+    def chat(page: Page):
+        return page.state()["status"]
+
+    printed = ask._print
+
+    def console(line: str) -> None:  # the page's user reads the link off the console
+        printed(line)
+        if line.startswith("page: "):
+            browser.browse(line.removeprefix("page: "))
+
+    monkeypatch.setattr(ask, "_print", console)
+    with Browser(chat) as browser:
+        code = main([*web_run(tmp_path), "--no-browser"], today=lambda: TODAY, build=scripted(),
+                    browse=lambda url: pytest.fail("a browser was opened"))
+    assert code == 0 and browser.result == {"phase": "idle", "pending": None}
+
+
+def test_web_with_an_identity_that_disagrees_exits_2_without_serving_the_page(tmp_path, capsys):
+    problem = "server: 4 slots (/props), not 1"
+    code = main(web_run(tmp_path), build=scripted(turn(content="never"), problems=[problem]),
+                browse=lambda url: pytest.fail("a page was served"))
+    assert code == 2 and f"identity: 1 problem(s)\n  {problem}" in capsys.readouterr().out
+    session = session_of(tmp_path)
+    assert session["kind"] == "web" and not (tmp_path / "runs" / "index.jsonl").exists()
+    web.Site(session["web"]["port"]).close()  # the page's port is free again
+
+
+def test_the_page_refuses_exactly_what_the_console_never_sends_as_typed():
+    texts = ["/new 别的主题", "/new", "/quit", "/help", "/ x", "/NEW x", "exit", "QUIT", "Exit",
+             "quit smoking", "exit now", "a /new", "帮我找几篇论文。", "Find papers on RAG.", "／new x",
+             "-exit", "exits"]
+
+    class Console:  # the runner interactive() asks for turns: what the console sends to the model
+        def __init__(self) -> None:
+            self.sent: list[str] = []
+
+        def turn(self, text: str, *, follow_up: int = 0):
+            self.sent.append(text)
+            return ask.LiveTurn(text, TODAY, None, "not run", 0.0)
+
+    sends = {}
+    for text in texts:
+        console, lines = Console(), [text]
+
+        def typed(prompt: str, lines: list = lines) -> str:
+            if not lines:
+                raise EOFError
+            return lines.pop()
+
+        ask.interactive(console, typed, lambda line: None)
+        chat = web.ChatState(web.Hub())
+        try:
+            chat.submit(text)
+        except web.Command:
+            sends[text] = False
+        else:
+            sends[text] = True
+        assert sends[text] == (console.sent == [text.strip()]), text
+    assert set(sends.values()) == {True, False}
+
+
+def test_web_refuses_a_message_utf8_cannot_encode_and_the_run_goes_on(tmp_path):
+    def chat(page: Page):
+        refused = page.post("/api/ask", raw=b'{"text": "find \\ud83d papers"}')  # half an emoji
+        assert refused.status == 400 and refused.json() == {"error": "not_text"}
+        assert page.ask("find papers").status == 202
+        return page.done(1)
+
+    with Browser(chat) as browser:
+        code = main(web_run(tmp_path), today=lambda: TODAY, build=scripted(turn(content="ok")),
+                    browse=browser.browse)
+    assert code == 0 and browser.result["request"] == "find papers"
+    assert session_of(tmp_path)["turns"] == 1
+    assert [row["request"] for row in index(tmp_path)] == ["find papers"]

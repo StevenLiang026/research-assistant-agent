@@ -1,6 +1,9 @@
 """research_agent.live.session offline: the follow-up after a clarification, the single-instance lock, the
 progress wrappers (they hand on everything and change no request byte, each against the system unwrapped,
-even when the console cannot print) and the files a run writes."""
+even when the console cannot print), their events (what the lines print, from the same clock and rate-limit
+readings, with no reading of their own, even when the sink raises or an event cannot be made), the
+conversation that carries a clarification's follow-ups from one message to the next, and the files a run
+writes."""
 
 from __future__ import annotations
 
@@ -18,14 +21,20 @@ from support.llama_fakes import FakeLlama, Scripted
 from research_agent.agent.context import family_token_counter
 from research_agent.agent.loop import run_turn
 from research_agent.agent.prompts import system_prompt
-from research_agent.agent.types import AssistantTurn, ToolOutcome
+from research_agent.agent.types import AssistantTurn, ToolOutcome, Transcript
 from research_agent.eval.systems import Built, build_system
 from research_agent.live.frozen import load_frozen
 from research_agent.live.session import (
+    AWAITS_ANSWER,
+    EVENT_KINDS,
     FOLLOW_UP_EN,
     FOLLOW_UP_ZH,
     INDEX_FILE,
+    MAX_FOLLOW_UPS,
+    RESTATE,
+    Conversation,
     InstanceLock,
+    LiveTurn,
     LockBusy,
     ProgressClient,
     ProgressModel,
@@ -35,7 +44,9 @@ from research_agent.live.session import (
     pack_follow_up,
     progress_tools,
     run_live_turn,
+    step_event,
     step_line,
+    tool_summary,
 )
 from research_agent.llm.local import LocalClient
 from research_agent.policy import decide
@@ -45,6 +56,7 @@ from research_agent.validation import check_call
 TODAY = "2026-11-10"
 ZH_REQUEST, EN_REQUEST = "帮我找几篇论文。", "Find me a few papers."
 A = "2611.00001"
+B = "2611.00002"
 
 
 # ---- the follow-up ----------------------------------------------------------------------------------------
@@ -315,3 +327,294 @@ def test_a_turn_that_raised_still_gets_its_files_and_index_line(tmp_path):
     summary = (files.folder / "turn-001.md").read_text(encoding="utf-8")
     assert "- status: error\n- follow-up: 1\n" in summary and "## Error\n\nOSError: gone" in summary
     assert not (files.folder / "turn-001.papers.json").exists()
+
+
+# ---- progress events --------------------------------------------------------------------------------------
+
+
+def test_step_events_carry_what_the_lines_print_and_the_very_turn_goes_on_after_two_clock_readings():
+    unparsed = call("search_arxiv", "local_1", raw='{"query": ')
+    answer = AssistantTurn(content="", tool_calls=[call("get_paper", "local_0", arxiv_id=A), unparsed],
+                           model="m", reasoning="先看这篇论文的摘要。",
+                           votes={"k": 5, "chosen": "K", "counts": {"K": 4, "L": 1}, "representative": 3,
+                                  "errors": [{"candidate": 4, "error_type": "HarnessError", "message": "?"}]},
+                           thinking={"reasoning_tokens": 812, "forced": True},
+                           rules=[{"rule": "id_repair", "before": {"content": "a"},
+                                   "after": {"content": "b"}}])
+    lines, events = [], []
+    ticks = iter([10.0, 12.5, 20.0, 21.0])  # two readings per request, as without events
+    model = ProgressModel(Listening(answer), lines.append, clock=lambda: next(ticks), events=events.append)
+    assert model.next_turn([], []) is answer and model.next_turn([], []) is answer
+    assert next(ticks, None) is None
+    printed = (f"votes 4/5 | 1 candidate(s) failed | thinking 812 tok closed by force | rules id_repair | "
+               f"calls get_paper({A}), search_arxiv")
+    assert lines == [f"step 1 | {printed} | 2.5 s", f"step 1 attempt 2 | {printed} | 1.0 s"]
+    step = {"kind": "step", "step": 1, "attempt": 1, "seconds": 2.5,
+            "votes": {"k": 5, "won": 4, "representative": 3, "failed": 1},
+            "thinking": {"tokens": 812, "forced": True}, "reasoning": "先看这篇论文的摘要。",
+            "rules": [{"rule": "id_repair", "before": {"content": "a"}, "after": {"content": "b"}}],
+            "calls": [{"id": "local_0", "name": "get_paper", "arguments": {"arxiv_id": A}},
+                      {"id": "local_1", "name": "search_arxiv", "arguments": '{"query": '}],
+            "answer_chars": None}
+    assert events == [{"kind": "step_start", "step": 1, "attempt": 1}, step,
+                      {"kind": "step_start", "step": 1, "attempt": 2}, {**step, "attempt": 2, "seconds": 1.0}]
+    assert events[1]["reasoning"] is answer.reasoning
+    events[1]["calls"][0]["arguments"]["arxiv_id"] = "changed"  # what the sink does to an event stays there
+    events[1]["rules"][0]["after"]["content"] = "changed"
+    assert answer.tool_calls[0].arguments == {"arxiv_id": A} and answer.rules[0]["after"] == {"content": "b"}
+
+
+def test_a_step_event_of_a_vote_nobody_won_a_text_answer_and_a_turn_without_vote_or_thinking():
+    voted = AssistantTurn(content="答案", tool_calls=[], model="m",
+                          votes={"k": 5, "chosen": None, "counts": {}, "representative": "greedy",
+                                 "errors": [{}, {}]})
+    assert step_event(2, 3, voted, 1.0) == {
+        "kind": "step", "step": 2, "attempt": 3, "seconds": 1.0,
+        "votes": {"k": 5, "won": None, "representative": "greedy", "failed": 2}, "thinking": None,
+        "reasoning": None, "rules": [], "calls": [], "answer_chars": 2}
+    plain = AssistantTurn(content="", tool_calls=[call("list_notes", "l1")], model="m")
+    assert step_event(1, 1, plain, 0.25) == {
+        "kind": "step", "step": 1, "attempt": 1, "seconds": 0.25, "votes": None, "thinking": None,
+        "reasoning": None, "rules": [], "calls": [{"id": "l1", "name": "list_notes", "arguments": {}}],
+        "answer_chars": None}
+    assert EVENT_KINDS == ("step_start", "step", "step_error", "tool_start", "tool", "tool_error")
+
+
+def test_a_model_that_raises_gives_a_step_error_event_with_the_seconds_its_line_prints():
+    lines, events = [], []
+    ticks = iter([3.0, 5.5])
+    model = ProgressModel(ScriptedModel([TimeoutError("no answer")]), lines.append, clock=lambda: next(ticks),
+                          events=events.append)
+    with pytest.raises(TimeoutError):
+        model.next_turn([], [])
+    assert next(ticks, None) is None
+    assert lines == ["step 1: the model raised TimeoutError after 2.5 s"]
+    assert events == [{"kind": "step_start", "step": 1, "attempt": 1},
+                      {"kind": "step_error", "step": 1, "attempt": 1, "error": "TimeoutError",
+                       "seconds": 2.5}]
+
+
+def test_tool_events_give_the_summary_the_ids_and_the_wait_from_the_readings_the_lines_use():
+    hits = [{"arxiv_id": A, "title": "标题"}, {"arxiv_id": B}, {"arxiv_id": A}]
+    outcomes = {"search_arxiv": ToolOutcome(hits), "get_paper": ToolOutcome({}, "NOT_FOUND"),
+                "write_note": ToolOutcome({"note_id": f"{A}-1", "arxiv_id": A, "path": f"{A}-1.md"})}
+    waits = iter([1.0, 4.0, 4.0, 4.0, 4.0, 4.0])  # two readings per call, as without events
+    ticks = iter([0.0, 3.5, 4.0, 4.5, 5.0, 6.0])
+    lines, events = [], []
+    wrapped = progress_tools({name: (lambda args, name=name: outcomes[name]) for name in outcomes},
+                             lines.append, waited=lambda: next(waits), clock=lambda: next(ticks),
+                             events=events.append)
+    for name, outcome in outcomes.items():
+        assert wrapped[name]({}) is outcome
+    assert next(waits, None) is None and next(ticks, None) is None
+    assert lines == ["  tool search_arxiv: 3 hit(s), 3.5 s, 3.0 s of it waiting for the rate limit",
+                     "  tool get_paper: error NOT_FOUND, 0.5 s",
+                     f"  tool write_note: note {A}-1 ({A}-1.md), 1.0 s"]
+    assert events == [
+        {"kind": "tool_start", "name": "search_arxiv"},
+        {"kind": "tool", "name": "search_arxiv", "summary": "3 hit(s)", "error": None, "ids": [A, B],
+         "seconds": 3.5, "waited": 3.0},
+        {"kind": "tool_start", "name": "get_paper"},
+        {"kind": "tool", "name": "get_paper", "summary": "error NOT_FOUND", "error": "NOT_FOUND", "ids": [],
+         "seconds": 0.5, "waited": 0.0},
+        {"kind": "tool_start", "name": "write_note"},
+        {"kind": "tool", "name": "write_note", "summary": f"note {A}-1 ({A}-1.md)", "error": None, "ids": [A],
+         "seconds": 1.0, "waited": 0.0}]
+    assert all(event["summary"] == tool_summary(event["name"], outcomes[event["name"]])
+               for event in events if event["kind"] == "tool")
+
+    def broken(args: dict) -> ToolOutcome:
+        raise RuntimeError("the adapter broke")
+
+    later_waits, later_ticks = iter([4.0]), iter([7.0, 9.0])  # no wait reading after a call that raised
+    raising = progress_tools({"get_paper": broken}, lines.append, waited=lambda: next(later_waits),
+                             clock=lambda: next(later_ticks), events=events.append)
+    with pytest.raises(RuntimeError):
+        raising["get_paper"]({})
+    assert next(later_waits, None) is None and next(later_ticks, None) is None
+    assert lines[-1] == "  tool get_paper: raised RuntimeError, 2.0 s"
+    assert events[-2:] == [{"kind": "tool_start", "name": "get_paper"},
+                           {"kind": "tool_error", "name": "get_paper", "error": "RuntimeError",
+                            "seconds": 2.0}]
+
+
+def _counted_turn(events) -> tuple[LiveTurn, list[str], dict[str, int]]:
+    """A live turn of a call and an answer, with clocks that count their readings."""
+    readings = {"clock": 0, "waited": 0}
+
+    def clock() -> float:
+        readings["clock"] += 1
+        return float(readings["clock"])
+
+    def waited() -> float:
+        readings["waited"] += 1
+        return 0.0
+
+    model = ScriptedModel([turn(call("get_paper", "g1", arxiv_id=A)), turn(content=f"见 {A}。")])
+    lines: list[str] = []
+    result = run_live_turn(EN_REQUEST, built=Built(model, None, {}), tools={"get_paper": _found}, today=TODAY,
+                           out=lines.append, waited=waited, clock=clock, events=events)
+    return result, lines, readings
+
+
+def test_a_live_turn_sends_the_events_of_both_wrappers_in_order_and_reads_its_clocks_as_often():
+    events: list[dict] = []
+    assert _counted_turn(events.append) == _counted_turn(None)  # the turn, its lines and the readings
+    assert [event["kind"] for event in events] == ["step_start", "step", "tool_start", "tool", "step_start",
+                                                   "step"]
+    assert events[1]["calls"] == [{"id": "g1", "name": "get_paper", "arguments": {"arxiv_id": A}}]
+    assert events[3]["ids"] == [A] and events[5]["answer_chars"] == len(f"见 {A}。")
+
+
+def test_the_final_system_with_events_sends_the_bytes_it_sends_unwatched_and_shows_the_reasoning(tmp_path,
+                                                                                               monkeypatch):
+    paths = write_final(tmp_path / "final", monkeypatch)
+    frozen = load_frozen(paths["final"], paths["config"])
+    messages = [{"role": "system", "content": system_prompt(TODAY)}, {"role": "user", "content": ZH_REQUEST}]
+    events: list[dict] = []
+    arms = {  # the client over the fake server, and the model's events (None: the model unwrapped)
+        "neither": (lambda fake: LocalClient(transport=fake.transport()), None),
+        "events": (lambda fake: ProgressClient(transport=fake.transport(), out=quiet), events.append),
+    }
+    turns, sent = {}, {}
+    for arm, (client_of, sink) in arms.items():
+        fake = final_server(paths, text_turns(3))
+        built = build_system("ft", tokenizer=frozen.tokenizer, family=frozen.family,
+                             generation=frozen.settings,
+                             count_tokens=family_token_counter(frozen.family, frozen.settings.mode),
+                             rules=True, vote_mode=frozen.vote_mode, local_client=client_of(fake))
+        model = built.model if sink is None else ProgressModel(built.model, quiet, events=sink)
+        turns[arm] = model.next_turn(messages, MODEL_TOOLS)
+        sent[arm] = fake.request_bytes
+    assert len(sent["neither"]) == 3 and sent["events"] == sent["neither"]
+    assert turns["events"] == turns["neither"] and turns["events"].votes == turns["neither"].votes
+    start, step = events
+    assert start == {"kind": "step_start", "step": 1, "attempt": 1}
+    assert step["reasoning"] is turns["events"].reasoning and "Thinking it over." in step["reasoning"]
+    assert step["votes"] == {"k": 2, "won": 2, "representative": 0, "failed": 0}
+    assert step["thinking"] == {"tokens": 2, "forced": False} and step["rules"] == [] and step["calls"] == []
+    assert step["answer_chars"] == len("Here is the answer.")
+
+
+def test_a_sink_that_raises_ends_the_events_and_nothing_else():
+    tried: list[str] = []
+
+    def broken(event: dict) -> None:
+        tried.append(event["kind"])
+        raise RuntimeError("the page broke")
+
+    def run(events) -> tuple[LiveTurn, list[str], list]:
+        model = ScriptedModel([turn(call("get_paper", "g1", arxiv_id=A)),
+                               turn(call("get_paper", "g2", arxiv_id=B)), turn(content=f"见 {A}、{B}。")])
+        lines: list[str] = []
+        result = run_live_turn(EN_REQUEST, built=Built(model, None, {}), tools={"get_paper": _found},
+                               today=TODAY, out=lines.append, clock=lambda: 0.0, events=events)
+        return result, lines, model.contexts
+
+    result, lines, contexts = run(broken)
+    assert tried == ["step_start", "tool_start"]  # one event tried by each wrapper, then none
+    assert result.status == "answered" and len(lines) == 5 and (result, lines, contexts) == run(None)
+    for failure in (BrokenPipeError(32, "the reader went away"), ValueError("I/O operation on closed file.")):
+        def failing(event: dict, failure=failure) -> None:
+            raise failure
+
+        assert run(failing) == run(None)
+
+    def interrupted(event: dict) -> None:
+        raise KeyboardInterrupt
+
+    model = ProgressModel(Listening(AssistantTurn(content="ok", tool_calls=[], model="m")), quiet,
+                          clock=lambda: 0.0, events=interrupted)
+    with pytest.raises(KeyboardInterrupt):  # Ctrl+C is no fault of the sink: it goes on up
+        model.next_turn([], [])
+
+
+def test_a_fault_in_making_an_event_ends_that_wrappers_events_and_nothing_else(monkeypatch):
+    def run(events) -> tuple[LiveTurn, list[str], list]:
+        model = ScriptedModel([turn(call("get_paper", "g1", arxiv_id=A)), turn(content=f"见 {A}。")])
+        lines: list[str] = []
+        result = run_live_turn(EN_REQUEST, built=Built(model, None, {}), tools={"get_paper": _found},
+                               today=TODAY, out=lines.append, clock=lambda: 0.0, events=events)
+        return result, lines, model.contexts
+
+    unwatched = run(None)
+
+    def unmakeable(*args: object) -> dict:
+        raise RecursionError("maximum recursion depth exceeded")  # as copying a deep argument raises
+
+    for maker, sent in (("step_event", ["step_start", "tool_start", "tool"]),  # the other wrapper's go on
+                        ("tool_event", ["step_start", "step", "tool_start", "step_start", "step"])):
+        events: list[dict] = []
+        with monkeypatch.context() as patched:
+            patched.setattr(f"research_agent.live.session.{maker}", unmakeable)
+            assert run(events.append) == unwatched, maker  # the turn, its lines and every request
+        assert [event["kind"] for event in events] == sent, maker
+
+
+def test_call_arguments_nested_too_deep_to_copy_end_the_events_and_the_turn_ends_as_it_does_unwatched():
+    depth = sys.getrecursionlimit() * 7 // 10  # json.loads reads it, copy.deepcopy (two frames a level) not
+    nested = '{"a": ' * depth + "1" + "}" * depth
+    deep = call("get_paper", "g1", raw=f'{{"arxiv_id": "{A}", "x": {nested}}}')
+    assert deep.arguments is not None
+
+    def run(events) -> tuple:
+        model = ScriptedModel([turn(deep), turn(content=f"见 {A}。"), turn(content="spare")])
+        lines: list[str] = []
+        result = run_live_turn(EN_REQUEST, built=Built(model, None, {}), tools={"get_paper": _found},
+                               today=TODAY, out=lines.append, clock=lambda: 0.0, events=events)
+        return result.status, result.error, lines, len(model.contexts)  # no deep value compared
+
+    events: list[dict] = []
+    assert run(events.append) == run(None)
+    assert [event["kind"] for event in events] == ["step_start"]
+
+
+# ---- a conversation ---------------------------------------------------------------------------------------
+
+
+def ended(request: str, status: str | None) -> LiveTurn:
+    """A live turn of request that ended as status, or raised (None)."""
+    transcript = None if status is None else Transcript(request, TODAY, status, None, [], [], "", "", "")
+    return LiveTurn(request, TODAY, transcript, None if transcript else "RuntimeError: gone", 0.0)
+
+
+def test_a_conversation_packs_answers_chains_follow_ups_and_asks_for_a_restatement_after_two():
+    asked = [turn(call("ask_clarification", f"q{n}", question="哪个方面?", missing=["topic"]))
+             for n in range(3)]
+    model = ScriptedModel([*asked, turn(content="好的。")])
+    conversation, sent = Conversation(), []
+
+    def say(text: str) -> str | None:
+        message, follow_up = conversation.next(text)
+        sent.append((message, follow_up))
+        return conversation.after(run_live_turn(message, built=Built(model, None, {}), tools={}, today=TODAY,
+                                                out=quiet))
+
+    assert say(ZH_REQUEST) == AWAITS_ANSWER and conversation == Conversation(ZH_REQUEST, 0)
+    assert say("speculative decoding") == AWAITS_ANSWER
+    first = "帮我找几篇论文。补充:speculative decoding"
+    assert conversation == Conversation(first, 1)  # the packed request, which the next answer continues
+    assert say(" 2026 年\n以后 ") == RESTATE and conversation == Conversation()  # the limit: nothing pending
+    assert sent == [(ZH_REQUEST, 0), (first, 1), (first + "补充:2026 年 以后", MAX_FOLLOW_UPS)]
+    assert model.contexts[2] == [{"role": "system", "content": system_prompt(TODAY)},
+                                 {"role": "user", "content": first + "补充:2026 年 以后"}]
+    assert say(EN_REQUEST) is None and sent[-1] == (EN_REQUEST, 0) and conversation == Conversation()
+    assert conversation.next("Find papers on RAG.") == ("Find papers on RAG.", 0)  # a request of its own
+    assert conversation.after(ended("Find papers on RAG.", "clarification")) == AWAITS_ANSWER
+    packed = pack_follow_up("Find papers on RAG.", "since 2025")
+    assert conversation.next("since 2025") == (packed, 1) == ("Find papers on RAG. To clarify: since 2025", 1)
+    assert conversation.after(ended(packed, "answered")) is None and conversation == Conversation()
+
+
+def test_dropping_a_request_or_an_empty_answer_leaves_it_and_the_next_text_is_a_request_of_its_own():
+    conversation = Conversation()
+    assert conversation.next("") is None and conversation.next(" \n") is None  # nothing to send
+    assert conversation.next(EN_REQUEST) == (EN_REQUEST, 0)
+    assert conversation.after(ended(EN_REQUEST, "clarification")) == AWAITS_ANSWER
+    assert conversation.next(" \t\n") is None and conversation == Conversation()  # the request is left
+    assert conversation.next("since 2025") == ("since 2025", 0)  # no longer an answer: a request of its own
+    assert conversation.after(ended("since 2025", "clarification")) == AWAITS_ANSWER
+    conversation.drop()  # as /new does
+    assert conversation == Conversation() and conversation.next("Find papers.") == ("Find papers.", 0)
+    assert conversation.after(ended("Find papers.", None)) is None  # a turn that raised: nothing pending
+    assert conversation == Conversation()
