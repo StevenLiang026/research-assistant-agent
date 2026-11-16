@@ -28,6 +28,10 @@ and nothing is written. A file no pattern names is not read: the test runner's c
     acebench-<name>.json              scripts/run_acebench.py           acebench.<name>.<system>.*
     decision-m8.json                  scripts/decide_m8.py              decision.m8.*
     lengths-<m>.json                  scripts/thinking_lengths.py       lengths.<m>.<system>.*
+    lengths-acebench-<m>.json         scripts/acebench_lengths.py       lengths.acebench-<m>.*
+    bakeoff-<m>.json                  scripts/bakeoff.py aggregate      bakeoff.<m>.*
+    bakeoff-descriptive-<m>.json      scripts/bakeoff.py descriptive    bakeoff.<m>.ablation.*,
+                                                                        bakeoff.<m>.fidelity.*
 
 <m> is a milestone in lower case (m3) and <system> a system name of letters and digits; a development run's
 end-to-end report is run_e2e's report.json kept under its name. In a key, a part taken from a file name or a
@@ -51,13 +55,17 @@ one and a block that would give the file's own keys are refused there. To the ot
 name's ending mean nothing.
 
 Formats. A VALUE is the string README.md quotes verbatim: a rate is a percentage with one decimal ("87.3%"),
-a benchmark's accuracies (BFCL's, ACEBench's) with two ("71.23%", as scripts/run_bfcl.py and
+and the interval of a rate (a Wilson interval) has both its ends so ("[83.5%, 90.9%]"); a benchmark's
+accuracies (BFCL's, ACEBench's) have two decimals ("71.23%", as scripts/run_bfcl.py and
 scripts/run_acebench.py print them); a difference of two rates is in percentage points with its sign ("+12.3")
-and its interval "[+5.1, +19.4]", a non-inferiority margin in percentage points without a sign ("2.0"); a
+and its interval "[+5.1, +19.4]", a difference of benchmark accuracies with two decimals ("-3.96"), a
+non-inferiority margin in percentage points without a sign ("2.0"); a
 p-value has three decimals ("0.012"), "<0.001" below 0.001; an F1, a
 threshold and an AUROC three decimals ("0.689", "0.674"); milliseconds, MiB and tokens (their percentiles
 included) are whole numbers; watts,
-watt-hours and a mean step count have one decimal; RMB three decimals, fen per task two; counts are as they
+watt-hours, a mean step count and hours have one decimal; RMB three decimals, fen per task two; a bake-off's
+score (successes, or their mean over a family's three seeds) is a whole number as it is or has two decimals
+("115.33"), as has its decision's margin ("4.00"); counts are as they
 are; whether a rule was met is "yes" or "no", and a name is as it is. A number that does not apply (a rate
 over no item, a percentile over no value) is left out.
 
@@ -92,6 +100,18 @@ Keys per kind:
                     no_sample_voted, candidate_errors}, counts, and votes.agreement (the mean share of the
                     samples in the chosen class) as a rate, left out when no sample voted; rules.steps and,
                     per rule of the block (agent.rules.RULES), rules.fired.<rule>, the answers it changed
+    Wilson          every test runner's file, single step or end to end, also gives success_wilson (M11), the
+                    Wilson 95% interval of its success rate (rate_interval of eval.metrics.wilson_interval;
+                    docs/m7-预登记.md, 成功判据: 区间), over the successes its summary's success_rate and n
+                    give back, k = round(success_rate * n), whose rate k / n must be within 1e-9 of
+                    success_rate (a tolerance on the rate, n * 1e-9 on the count; a rate no whole number of
+                    successes gives is refused); a single-step file for its own summary and for each block
+                    under another scorer (eval.<name>[-<scorer>].success_wilson, beside success); left out
+                    over no item
+    modes           a test runner's file, single step or end to end, that holds "modes" (scripts/run_test.py;
+                    B2's: the turns its cloud model took per thinking mode, llm.cloud's thinking and
+                    non-thinking) also gives them as counts under eval.<name>.modes.<mode> and
+                    e2e.<name>.modes.<mode>, once per file whatever its scorer blocks
     comparisons     per comparison tested by McNemar (no "test" key, or "mcnemar"): n, success_a, success_b,
                     diff, ci (the paired bootstrap's), cluster_ci, clusters, a_only, b_only, p (McNemar's)
                     and p_holm, and with a non-inferiority bound noninferiority.{margin, paired_low,
@@ -146,7 +166,14 @@ Keys per kind:
                     wrote its summary row, its normal_summary and special_summary as
                     <system>.<lang>.acebench_summary.{normal, special} (its other columns are not taken:
                     its overall summary counts the agent categories, not run, as 0, and its object_short
-                    and object_deep columns hold each other's accuracy)
+                    and object_deep columns hold each other's accuracy); a file that holds both ft and b0
+                    (M11) also gives FT's accuracy minus B0's per stratum, correct / n of each exactly, in
+                    points: ft-vs-b0.<lang>.<category>, ft-vs-b0.<lang>.<group> and ft-vs-b0.<lang>.aggregate
+                    (the mean of those over a group's categories run and over the language's),
+                    ft-vs-b0.aggregate (over every (language, category) stratum: H3's difference, the mean
+                    over the strata that scripts/run_test.py's ACEBench comparison takes) and the counts
+                    ft-vs-b0.{strata, ft_higher, b0_higher, equal}; two systems that did not run the same
+                    strata with the same n, or a stratum whose accuracy is not its correct / n, are refused
     decision        M8's checkpoint decision (docs/m8-预登记.md, 选点; decision-m7.json, the file of
                     scripts/decide_m7.py, is of another shape and not read): decision (GO or NO-GO),
                     pg1_fallback (yes or no), candidates (how many), and when a checkpoint was chosen, chosen
@@ -172,14 +199,67 @@ Keys per kind:
                     (those longer than the training length), max (the longest, in tokens; null without a
                     call, then left out)}, all counts; a system with none of the three blocks is refused, and
                     so is a count larger than the turns or calls it is out of
+    ACE lengths     the tokens llama-server generated for each request of an ACEBench run (M11;
+                    scripts/acebench_lengths.py, from its servers' logs; aggregates only): the reasoning, the
+                    tag that closes it and the answer together, which the logs do not split. Under
+                    lengths.acebench-<m>.*: budget.{reasoning, max_tokens} (the run's reasoning budget and the
+                    limit at which a server stops a generation, in tokens); per system <system>.probes (the
+                    probe requests left out) and <system>.requests (every request of its log, the probes
+                    included), and for each language of the file and for all of them together (all)
+                    <system>.<part>.{n (the requests), tokens_p50, tokens_p95, tokens_max (tokens; null over
+                    no request, then left out), over_budget (those that generated more tokens than the
+                    reasoning budget), at_max_tokens (those that reached the limit)}, counts, and
+                    <system>.<part>.over_budget_rate and at_max_tokens_rate (over n, computed here; left out
+                    for n 0). Another kind, languages that are not a list of names, no language or system, a
+                    negative count, one larger than the requests it is out of, an all block that is not its
+                    languages together (n and the two counts summed, tokens_max the longest) and requests
+                    that are not the probes and the answers are refused
+    bake-off       M7's base-model bake-off (eval.bakeoff.aggregate; docs/m7-底座对比预登记.md): complete
+                    (yes or no), candidates (how many besides the reference C0, the skipped included) and
+                    skipped; per candidate <c>.status (reference, scored, incomplete, ineligible, pending or
+                    skipped), and for one that is neither pending nor skipped the fields of its entry that
+                    are not null: <c>.P (the primary score), <c>.handwritten, <c>.eligible (yes or no),
+                    <c>.mode, <c>.thinking, <c>.no_think_greedy, <c>.ft3_hours (the FT3 estimate as its gate
+                    shows it), <c>.rank (1: the decision's ranking's first) and, extended to the extension
+                    step, <c>.extension.{stop_step, P, handwritten, no_think_greedy} and per variant
+                    <c>.extension.<variant>.{successes, n, handwritten}; decision.{status, winner, basis,
+                    mode, runner_up, margin}, those not null, and rule.<field> for each number of the rule
+                    (the names of its smoke steps are not taken); the paths, hashes, smoke records and
+                    reasons are not read. A status, mode or thinking kind the aggregate does not write, a
+                    candidate filed under another key, a ranking that names one twice, one the file does not
+                    have or one pending or skipped, and a winner or runner-up it does not rank are refused
+    description     what M7 ran beside its bake-off, report only (M11; scripts/bakeoff.py descriptive,
+                    eval.bakeoff.descriptive), under bakeoff.<m>.* beside the aggregate's keys. Per ablation
+                    <a> (its folder's name, c0-think): ablation.<a>.{candidate (the key of the candidate whose
+                    model it trained), model, revision (names), mode (think or no_think), stop_step}, and its
+                    scores as a bake-off's, ablation.<a>.{P (the mean successes over its primary variants),
+                    handwritten, drafted (their means on the handwritten and on the drafted items)}; per run,
+                    each variant of its gate and the untrained base's b0 when it has one,
+                    ablation.<a>.<run>.{successes, n, handwritten, drafted} and, when the gate counted them
+                    per item type, ablation.<a>.<run>.<type>.{successes, n}, all counts. The winner <c>'s
+                    trained adapter's fidelity at the step trained (eval.bakeoff.trained_step):
+                    fidelity.<c>.{trained_step, items, positions, agreeing (the positions where llama.cpp's
+                    top-1 token with the adapter is the training stack's), base_agreeing (the same without
+                    the adapter), changed_positions (those where the adapter changed the training stack's
+                    top-1 token)}, counts, and agreement, base_agreement and changed, those three over the
+                    positions as rates (left out over no position). The paths, hashes and settings are not
+                    read. Another kind, another milestone than the file name's, no ablation, a mode the
+                    bake-off does not write, primary variants that are none, named twice or not the
+                    ablation's, a P or mean that is not the mean over them, a negative count, a run with more
+                    successes than items or whose handwritten and drafted successes do not make its
+                    successes, per-type counts that do not add up to the run's, runs of an ablation (its
+                    base's included) over different numbers of items, a base run in another mode than the
+                    ablation's, and a count larger than the positions it is out of are refused
 """
 
 from __future__ import annotations
 
 import json
+import math
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
+from fractions import Fraction
 from pathlib import Path
 
 from .metrics import (
@@ -196,6 +276,7 @@ from .metrics import (
     UNWANTED_CALL,
     WRONG_TOOL,
     WRONG_VALUE,
+    wilson_interval,
 )
 from .numbers import KEY, NUMBERS, write_numbers
 
@@ -236,6 +317,15 @@ def points(diff: float) -> str:
 
 def interval(low: float, high: float) -> str:
     return f"[{points(low)}, {points(high)}]"
+
+
+def rate_interval(low: float, high: float) -> str:
+    """An interval of a rate, such as a Wilson interval (eval.metrics.wilson_interval): its two ends as
+    percentages with one decimal, "[83.5%, 90.9%]", as docs/m7-预登记.md writes them; ValueError unless
+    0 <= low <= high <= 1."""
+    if not 0 <= low <= high <= 1:
+        raise ValueError(f"[{low!r}, {high!r}] is not an interval of a rate")
+    return f"[{percent(low)}, {percent(high)}]"
 
 
 def p_value(p: float) -> str:
@@ -356,15 +446,61 @@ def wrapper_numbers(data: dict, prefix: str) -> dict[str, str]:
     return numbers
 
 
+def wilson_numbers(summary: dict, prefix: str) -> dict[str, str]:
+    """<prefix>.success_wilson: the Wilson 95% interval of a test run's success rate (rate_interval of
+    eval.metrics.wilson_interval; docs/m7-预登记.md, 成功判据: 区间) over the successes that the summary's
+    success_rate and n give back, round(success_rate * n); nothing over no item (n 0) or without a rate.
+    ReportError when those successes over n are more than 1e-9 off the rate (no whole number of successes
+    gives it), TypeError for an n that is not a whole number and a rate that is not a number, ValueError for
+    a rate that is not finite or outside [0, 1] (eval.metrics.wilson_interval: successes outside 0..n)."""
+    n, rate = summary["n"], summary["success_rate"]
+    count_text(n)
+    if n == 0 or rate is None:
+        return {}
+    if isinstance(rate, bool) or not isinstance(rate, int | float):
+        raise TypeError(f"success_rate {rate!r} is not a rate")
+    if not math.isfinite(rate):
+        raise ValueError(f"success_rate {rate!r} is not a rate")
+    successes = round(rate * n)
+    if abs(successes / n - rate) > 1e-9:
+        raise ReportError(f"the success rate {rate!r} over {n} items is no whole number of successes")
+    return {f"{prefix}.success_wilson": rate_interval(*wilson_interval(successes, n))}
+
+
+def mode_numbers(data: dict, prefix: str) -> dict[str, str]:
+    """A test runner's turns per thinking mode (scripts/run_test.py, "modes": the turns its cloud model took
+    in each mode, llm.cloud's thinking and non-thinking; B2's, which docs/m7-预登记.md reports) under
+    <prefix>.modes.<mode>, from the file's top level, once per file; nothing for a file without them.
+    TypeError for "modes" that is not an object and a count that is not a whole number, ValueError for a
+    negative one."""
+    modes = data.get("modes")
+    if modes is None:
+        return {}
+    if not isinstance(modes, dict):
+        raise TypeError(f"modes {modes!r} is not an object of counts per mode")
+    numbers: dict[str, str] = {}
+    for mode, count in modes.items():
+        text = count_text(count)
+        if count < 0:
+            raise ValueError(f"modes.{mode}: {count} is not a count")
+        _put(numbers, f"{prefix}.modes.{label(mode)}", text)
+    return numbers
+
+
 def run_test_single_step_numbers(data: dict, name: str) -> dict[str, str]:
-    """A test runner's single-step file: single_step_numbers and its failures per error class (error_numbers),
-    those of its blocks under other scorers (scorer_blocks) too, a voted or ruled system's votes and rules
-    (wrapper_numbers) under eval.<name>.*, and for a routed system its "routing" block (scripts/run_test.py,
-    Session.routing) under eval.<name>.routing.*."""
-    numbers = {**single_step_numbers(data, name), **error_numbers(data["summary"], name)}
+    """A test runner's single-step file: single_step_numbers, its failures per error class (error_numbers) and
+    the Wilson interval of its success rate (wilson_numbers), those of its blocks under other scorers
+    (scorer_blocks) too, a voted or ruled system's votes and rules (wrapper_numbers) and its turns per
+    thinking mode (mode_numbers) under eval.<name>.*, and for a routed system its "routing" block
+    (scripts/run_test.py, Session.routing) under eval.<name>.routing.*."""
+    at = f"eval.{label(name)}"
+    numbers = {**single_step_numbers(data, name), **error_numbers(data["summary"], name),
+               **wilson_numbers(data["summary"], at)}
     for scored, block in scorer_blocks(data, name):
         numbers.update(error_numbers(block["summary"], scored))
-    numbers.update(wrapper_numbers(data, f"eval.{label(name)}"))
+        numbers.update(wilson_numbers(block["summary"], f"eval.{label(scored)}"))
+    numbers.update(wrapper_numbers(data, at))
+    numbers.update(mode_numbers(data, at))
     routing = data.get("routing")
     if routing is None:
         return numbers
@@ -392,12 +528,16 @@ E2E_ROUTING = ("tasks", "tasks_routed", "local_calls", "cloud_calls", "local_ste
 
 
 def run_test_e2e_numbers(data: dict, name: str) -> dict[str, str]:
-    """A test runner's end-to-end file: e2e_numbers, a voted or ruled system's votes and rules
-    (wrapper_numbers, counted over its transcripts' attempts) under e2e.<name>.*, and for a routed system its
-    "routing" block (scripts/run_test.py, Session.e2e_routing) under e2e.<name>.routing.*, with the file's
-    e2e_routing as routing.mode when it names one."""
+    """A test runner's end-to-end file: e2e_numbers, the Wilson interval of its success rate (wilson_numbers),
+    a voted or ruled system's votes and rules (wrapper_numbers, counted over its transcripts' attempts) and
+    its turns per thinking mode (mode_numbers) under e2e.<name>.*, and for a routed system its "routing"
+    block (scripts/run_test.py, Session.e2e_routing) under e2e.<name>.routing.*, with the file's e2e_routing
+    as routing.mode when it names one."""
+    at = f"e2e.{label(name)}"
     numbers = e2e_numbers(data, name)
-    numbers.update(wrapper_numbers(data, f"e2e.{label(name)}"))
+    numbers.update(wilson_numbers(data["summary"], at))
+    numbers.update(wrapper_numbers(data, at))
+    numbers.update(mode_numbers(data, at))
     routing = data.get("routing")
     if routing is not None:
         numbers.update({f"e2e.{label(name)}.routing.{key}": str(routing[key]) for key in E2E_ROUTING})
@@ -492,8 +632,9 @@ def margin_points(margin: object) -> str:
     return f"{100 * margin:.1f}"
 
 
-def benchmark_points(diff: float) -> str:
-    """A difference of benchmark accuracies in percentage points, with its sign and two decimals."""
+def benchmark_points(diff: float | Fraction) -> str:
+    """A difference of benchmark accuracies in percentage points, with its sign and two decimals (an exact
+    Fraction rounded as exactly)."""
     return f"{100 * diff:+.2f}"
 
 
@@ -786,6 +927,79 @@ def acebench_numbers(data: dict, name: str) -> dict[str, str]:
                 for group in ("normal", "special"):
                     _put(numbers, f"{at}.acebench_summary.{group}",
                          benchmark_accuracy(summary[f"{group}_summary"]))
+    for key, value in acebench_differences(data, name).items():
+        _put(numbers, key, value)
+    return numbers
+
+
+ACE_PAIR = ("ft", "b0")  # the fine-tuned system and its untrained base, compared stratum by stratum
+
+
+def _stratum_accuracy(cell: dict, where: str) -> Fraction:
+    """A stratum's accuracy exactly, correct / n; TypeError for counts that are not whole numbers, ValueError
+    for n 0, correct outside 0..n and an accuracy that is not correct / n (the one the system's keys
+    quote)."""
+    correct, n = cell["correct"], cell["n"]
+    count_text(correct)
+    count_text(n)
+    if n < 1 or not 0 <= correct <= n:
+        raise ValueError(f"{where}: {correct} correct out of {n} answers")
+    if abs(cell["accuracy"] - correct / n) > 1e-12:
+        raise ValueError(f"{where}: accuracy {cell['accuracy']!r} is not {correct}/{n}")
+    return Fraction(correct, n)
+
+
+def _mean(values: list[Fraction]) -> Fraction:
+    return sum(values, Fraction(0)) / len(values)
+
+
+def acebench_differences(data: dict, name: str) -> dict[str, str]:
+    """FT's accuracy minus B0's on each (language, category) stratum of an ACEBench file that holds both
+    (ACE_PAIR; module docstring: ACEBench), under acebench.<name>.ft-vs-b0.*: exact differences of correct / n
+    in points, and their means over each group's categories run in a language, over the language and over
+    every stratum, the last H3's difference (scripts/run_test.py, Session.acebench_comparison: the mean over
+    the strata of the strata's differences of success rates, eval.metrics.stratified_noninferiority_p's
+    diff), with how many strata each system is the higher on; nothing for a file without both. ValueError
+    for two systems that did not run the same languages, the same categories or the same n in a stratum, and
+    for no stratum at all."""
+    systems = data["systems"]
+    if not all(system in systems for system in ACE_PAIR):
+        return {}
+    ft, b0 = (systems[system]["languages"] for system in ACE_PAIR)
+    if set(ft) != set(b0):
+        raise ValueError(f"ft and b0 ran different languages: {sorted(ft)} and {sorted(b0)}")
+    prefix = f"acebench.{label(name)}.ft-vs-b0"
+    numbers: dict[str, str] = {}
+    every: list[Fraction] = []
+    for language, block in ft.items():
+        mine, theirs = block["categories"], b0[language]["categories"]
+        if set(mine) != set(theirs):
+            raise ValueError(f"{language}: ft and b0 ran different categories, ft alone "
+                             f"{sorted(set(mine) - set(theirs))}, b0 alone {sorted(set(theirs) - set(mine))}")
+        at = f"{prefix}.{label(language)}"
+        diffs: dict[str, Fraction] = {}
+        for category, cell in mine.items():
+            where = f"{language}.{category}"
+            if cell["n"] != theirs[category]["n"]:
+                raise ValueError(f"{where}: ft has {cell['n']} answers and b0 {theirs[category]['n']}")
+            diffs[category] = (_stratum_accuracy(cell, f"ft {where}")
+                               - _stratum_accuracy(theirs[category], f"b0 {where}"))
+            _put(numbers, f"{at}.{label(category)}", benchmark_points(diffs[category]))
+        if not diffs:
+            raise ValueError(f"{language}: no category run")
+        for group, categories in data["groups"].items():
+            run = [diffs[category] for category in categories if category in diffs]
+            if run:
+                _put(numbers, f"{at}.{label(group)}", benchmark_points(_mean(run)))
+        _put(numbers, f"{at}.aggregate", benchmark_points(_mean(list(diffs.values()))))
+        every.extend(diffs.values())
+    if not every:
+        raise ValueError("ft and b0 ran no language")
+    _put(numbers, f"{prefix}.aggregate", benchmark_points(_mean(every)))
+    counts = {"strata": len(every), "ft_higher": sum(diff > 0 for diff in every),
+              "b0_higher": sum(diff < 0 for diff in every), "equal": sum(diff == 0 for diff in every)}
+    for key, count in counts.items():
+        _put(numbers, f"{prefix}.{key}", str(count))
     return numbers
 
 
@@ -925,6 +1139,366 @@ def lengths_numbers(data: dict, name: str) -> dict[str, str]:
     return numbers
 
 
+def _count(value: object, what: str) -> str:
+    """A count as README quotes it (count_text); TypeError for anything but a whole number, ValueError for one
+    below 0."""
+    text = count_text(value)
+    if value < 0:
+        raise ValueError(f"{what}: {value} is not a count")
+    return text
+
+
+# An ACEBench run's generated lengths (scripts/acebench_lengths.py, M11; module docstring: ACE lengths): the
+# kind the script writes (its KIND), its block over every language (its ALL), a block's figures in tokens and
+# its counts out of the block's requests.
+ACE_LENGTHS_KIND = "acebench-lengths"
+ACE_ALL = "all"
+ACE_TOKENS = ("tokens_p50", "tokens_p95", "tokens_max")
+ACE_COUNTS = ("over_budget", "at_max_tokens")
+
+
+def _ace_lengths_block(prefix: str, block: dict) -> dict[str, str]:
+    """A block of requests under prefix: how many, the percentiles and the maximum of their tokens that apply,
+    those above the reasoning budget and those at the limit, and those two over the requests (none over no
+    request); ValueError for a count larger than the requests or below 0."""
+    n = block["n"]
+    numbers = {f"{prefix}.n": _count(n, f"{prefix}.n")}
+    for key in ACE_TOKENS:
+        if block[key] is not None:
+            numbers[f"{prefix}.{key}"] = token_text(block[key])
+    for key in ACE_COUNTS:
+        numbers[f"{prefix}.{key}"] = _count(block[key], f"{prefix}.{key}")
+        _out_of(block[key], n, f"{prefix}.{key}")
+        if n:
+            numbers[f"{prefix}.{key}_rate"] = percent(block[key] / n)
+    return numbers
+
+
+def acebench_lengths_numbers(data: dict, name: str) -> dict[str, str]:
+    """The tokens an ACEBench run's servers generated per request (scripts/acebench_lengths.py) under
+    lengths.<name>.* (<name> acebench-<m>; module docstring: ACE lengths). ValueError for another kind, no
+    language or no system, a count below 0 or larger than the requests it is out of, an all block that is not
+    the languages' blocks together (n and the two counts summed, tokens_max the longest) and requests of a
+    log that are not its probes and its answers; TypeError for languages that are not a list of names and for
+    a count or a number of tokens that is none."""
+    if data["kind"] != ACE_LENGTHS_KIND:
+        raise ValueError(f"kind {data['kind']!r} is not {ACE_LENGTHS_KIND!r}")
+    languages, systems = data["languages"], data["systems"]
+    if not isinstance(languages, list) or not all(isinstance(language, str) for language in languages):
+        raise TypeError(f"languages {languages!r} is not a list of names")
+    if not languages:
+        raise ValueError("no language: nothing was measured")
+    if not systems:
+        raise ValueError("no system: nothing was measured")
+    prefix = f"lengths.{label(name)}"
+    numbers = {f"{prefix}.budget.{key}": _count(data["budget"][key], f"budget.{key}")
+               for key in ("reasoning", "max_tokens")}
+    for system, row in systems.items():
+        at = f"{prefix}.{label(system)}"
+        for key in ("probes", "requests"):
+            _put(numbers, f"{at}.{key}", _count(row[key], f"{at}.{key}"))
+        for part in (*languages, ACE_ALL):  # a language named all gives that block's keys twice: refused
+            for key, value in _ace_lengths_block(f"{at}.{label(part)}", row[part]).items():
+                _put(numbers, key, value)
+        together, alone = row[ACE_ALL], [row[language] for language in languages]
+        for key in ("n", *ACE_COUNTS):
+            summed = sum(block[key] for block in alone)
+            if together[key] != summed:
+                raise ValueError(f"{at}.{ACE_ALL}.{key} is {together[key]}, not its languages' {summed}")
+        maxima = [block["tokens_max"] for block in alone if block["tokens_max"] is not None]
+        longest = max(maxima, default=None)
+        if together["tokens_max"] != longest:
+            raise ValueError(f"{at}.{ACE_ALL}.tokens_max is {together['tokens_max']!r}, not its languages' "
+                             f"longest, {longest!r}")
+        if row["requests"] != row["probes"] + together["n"]:
+            raise ValueError(f"{at}.requests: {row['requests']} is not its {row['probes']} probes and "
+                             f"{together['n']} answers")
+    return numbers
+
+
+# M7's base-model bake-off (scripts/bakeoff.py aggregate, eval.bakeoff.aggregate; module docstring: bake-off):
+# the statuses of its entries (the reference C0; a candidate's gate, scored, incomplete or ineligible; one
+# with no gate yet; one a cut line skipped), the two that give their status alone, the decision's statuses,
+# the modes a winner answers in (family.core.Mode) and the thinking kinds of a family (eval.bakeoff.THINKING).
+REFERENCE, SKIPPED = "reference", "skipped"
+BAKEOFF_STATUSES = (REFERENCE, "scored", "incomplete", "ineligible", "pending", SKIPPED)
+BAKEOFF_STATUS_ONLY = ("pending", SKIPPED)
+BAKEOFF_DECISIONS = ("decided", "extend", "undecided", "none-eligible", "provisional")
+BAKEOFF_MODES = ("think", "no_think")
+BAKEOFF_THINKING = ("none", "only", "hybrid")
+VARIANT_COUNTS = ("successes", "n", "handwritten")  # a variant's scores the report takes
+
+
+def _number(value: object, what: str) -> float:
+    """value, a finite number; TypeError for anything else (true and false included), ValueError for NaN and
+    the infinities."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise TypeError(f"{what} {value!r} is not a number")
+    if not math.isfinite(value):
+        raise ValueError(f"{what} {value!r} is not a finite number")
+    return value
+
+
+def score_text(value: object) -> str:
+    """A bake-off score, a number of successes or their mean over a family's three seeds (P, handwritten), as
+    README quotes it: a whole number as it is ("107"), any other with two decimals ("115.33"); TypeError for
+    anything but a number, ValueError for one that is not finite."""
+    value = _number(value, "a score")
+    if isinstance(value, int):
+        return str(value)
+    return f"{value:.0f}" if value.is_integer() else f"{value:.2f}"
+
+
+def hours_text(value: object) -> str:
+    """Hours, an FT3 estimate or the rule's limit on it: one decimal ("28.1")."""
+    return f"{_number(value, 'hours'):.1f}"
+
+
+def _one_of(value: object, known: tuple[str, ...], what: str) -> str:
+    """value, one of the names known; ValueError for any other."""
+    if not isinstance(value, str) or value not in known:
+        raise ValueError(f"{what} {value!r} is not one of {list(known)}")
+    return value
+
+
+def _bakeoff_extension(prefix: str, extension: dict) -> dict[str, str]:
+    """A candidate's extension to the extension step (eval.bakeoff.candidate_gate): the step, P and the
+    handwritten mean there, a hybrid family's nothink greedy successes when not null, and each variant's
+    successes, items and handwritten successes; ValueError for a variant with more successes than items or
+    more handwritten successes than successes, and for no variant."""
+    numbers = {f"{prefix}.stop_step": count_text(extension["stop_step"]),
+               f"{prefix}.P": score_text(extension["P"]),
+               f"{prefix}.handwritten": score_text(extension["handwritten"])}
+    if extension["no_think_greedy"] is not None:
+        numbers[f"{prefix}.no_think_greedy"] = count_text(extension["no_think_greedy"])
+    variants = extension["variants"]
+    if not isinstance(variants, dict):
+        raise TypeError(f"variants {variants!r} is not an object of scores per variant")
+    if not variants:
+        raise ValueError("an extension without a variant's scores")
+    for variant, scores in variants.items():
+        at = f"{prefix}.{label(variant)}"
+        _out_of(scores["successes"], scores["n"], f"{at}.successes")
+        _out_of(scores["handwritten"], scores["successes"], f"{at}.handwritten")
+        for key in VARIANT_COUNTS:
+            _put(numbers, f"{at}.{key}", count_text(scores[key]))
+    return numbers
+
+
+def _bakeoff_candidate(prefix: str, entry: dict, rank: int | None) -> dict[str, str]:
+    """A candidate's numbers: its status, and unless it has no gate or was skipped, the fields of its entry
+    that are not null (P, handwritten, eligible, mode, thinking, no_think_greedy, the FT3 estimate as
+    ft3_hours), its rank and its extension; ValueError for a status, mode or thinking kind the aggregate does
+    not write, and for a candidate with no gate or skipped that holds a P or is ranked."""
+    status = _one_of(entry["status"], BAKEOFF_STATUSES, "status")
+    numbers = {f"{prefix}.status": status}
+    if status in BAKEOFF_STATUS_ONLY:
+        if entry.get("P") is not None or rank is not None:
+            raise ValueError(f"a {status} candidate holds a P or is ranked")
+        return numbers
+    for key in ("P", "handwritten"):
+        if entry[key] is not None:
+            numbers[f"{prefix}.{key}"] = score_text(entry[key])
+    if entry["eligible"] is not None:
+        numbers[f"{prefix}.eligible"] = yes_no(entry["eligible"])
+    if entry["mode"] is not None:
+        numbers[f"{prefix}.mode"] = _one_of(entry["mode"], BAKEOFF_MODES, "mode")
+    if entry["thinking"] is not None:
+        numbers[f"{prefix}.thinking"] = _one_of(entry["thinking"], BAKEOFF_THINKING, "thinking")
+    if entry["no_think_greedy"] is not None:
+        numbers[f"{prefix}.no_think_greedy"] = count_text(entry["no_think_greedy"])
+    if entry["ft3_hours_estimate"] is not None:
+        numbers[f"{prefix}.ft3_hours"] = hours_text(entry["ft3_hours_estimate"])
+    if rank is not None:
+        numbers[f"{prefix}.rank"] = str(rank)
+    if entry["extension"] is not None:
+        numbers.update(_bakeoff_extension(f"{prefix}.extension", entry["extension"]))
+    return numbers
+
+
+def bakeoff_numbers(data: dict, name: str) -> dict[str, str]:
+    """M7's base-model bake-off (scripts/bakeoff.py aggregate) under bakeoff.<name>.* (module docstring:
+    bake-off). ValueError for a status, mode or thinking kind the aggregate does not write, a candidate filed
+    under another key than its own, a ranking that names a candidate twice, one the file does not have or one
+    with no gate or skipped, and a winner or runner-up the ranking does not hold; TypeError for a number,
+    a name or a list that is none."""
+    prefix = f"bakeoff.{label(name)}"
+    candidates, decision = data["candidates"], data["decision"]
+    if not isinstance(candidates, dict) or not isinstance(decision, dict):
+        raise TypeError("candidates and decision must be objects")
+    ranking = decision["ranking"]
+    if not isinstance(ranking, list):
+        raise TypeError(f"the ranking {ranking!r} is not a list")
+    if any(key not in candidates for key in ranking) or len(set(ranking)) != len(ranking):
+        raise ValueError(f"the ranking {ranking} does not name distinct candidates of the file")
+    numbers = {f"{prefix}.complete": yes_no(data["complete"])}
+    for key, entry in candidates.items():
+        if entry["candidate"] != key:
+            raise ValueError(f"candidates.{key} is the entry of {entry['candidate']!r}")
+        rank = ranking.index(key) + 1 if key in ranking else None
+        for found, value in _bakeoff_candidate(f"{prefix}.{label(key)}", entry, rank).items():
+            _put(numbers, found, value)
+    statuses = [entry["status"] for entry in candidates.values()]
+    _put(numbers, f"{prefix}.candidates", str(sum(status != REFERENCE for status in statuses)))
+    _put(numbers, f"{prefix}.skipped", str(statuses.count(SKIPPED)))
+    at = f"{prefix}.decision"
+    _put(numbers, f"{at}.status", _one_of(decision["status"], BAKEOFF_DECISIONS, "decision.status"))
+    for key in ("winner", "runner_up"):
+        if decision[key] is not None:
+            if decision[key] not in ranking:
+                raise ValueError(f"decision.{key} {decision[key]!r} is not a ranked candidate")
+            _put(numbers, f"{at}.{key}", decision[key])
+    if decision["basis"] is not None:
+        if not isinstance(decision["basis"], str):
+            raise TypeError(f"decision.basis {decision['basis']!r} is not a name")
+        _put(numbers, f"{at}.basis", decision["basis"])
+    if decision["mode"] is not None:
+        _put(numbers, f"{at}.mode", _one_of(decision["mode"], BAKEOFF_MODES, "decision.mode"))
+    if decision["margin"] is not None:
+        _put(numbers, f"{at}.margin", f"{_number(decision['margin'], 'decision.margin'):.2f}")
+    for field, value in data["rule"].items():
+        if field == "smoke_steps":  # the names of the smoke steps, not a number
+            if not isinstance(value, list) or not all(isinstance(step, str) for step in value):
+                raise TypeError(f"rule.smoke_steps {value!r} is not a list of step names")
+            continue
+        text = hours_text(value) if field == "ft3_hours" else score_text(value)
+        _put(numbers, f"{prefix}.rule.{label(field)}", text)
+    return numbers
+
+
+# What M7 ran beside its bake-off (scripts/bakeoff.py descriptive, eval.bakeoff.descriptive, M11; module
+# docstring: description): the kind it writes (eval.bakeoff.DESCRIPTIVE_KIND), the counts of a run, the name
+# of the untrained base's run beside a gate's variants, the counts of the fidelity record it keeps
+# (eval.bakeoff.FIDELITY_COUNTS) and the rates of the positions the report gives, (rate, count).
+BAKEOFF_DESCRIPTIVE_KIND = "bakeoff-descriptive"
+RUN_COUNTS = ("successes", "n", "handwritten", "drafted")
+BASE_RUN = "b0"
+FIDELITY_COUNTS = ("items", "positions", "agreeing", "base_agreeing", "changed_positions")
+FIDELITY_RATES = (("agreement", "agreeing"), ("base_agreement", "base_agreeing"),
+                  ("changed", "changed_positions"))
+
+
+def _name(value: object, what: str) -> str:
+    """value, a name; TypeError for anything else, the empty string included."""
+    if not isinstance(value, str) or not value:
+        raise TypeError(f"{what} {value!r} is not a name")
+    return value
+
+
+def _ablation_run(prefix: str, run: dict) -> dict[str, str]:
+    """A run of an ablation (eval.bakeoff.descriptive: RUN) under prefix: its successes over its items, its
+    successes on the handwritten and on the drafted items and, when its gate counted them per item type, each
+    type's successes and items; ValueError for a count below 0, more successes than items, handwritten and
+    drafted successes that do not make its successes, a type with more successes than items and types that
+    do not add up to the run; TypeError for per-type counts that are not an object."""
+    numbers = {f"{prefix}.{key}": _count(run[key], f"{prefix}.{key}") for key in RUN_COUNTS}
+    successes, n = run["successes"], run["n"]
+    _out_of(successes, n, f"{prefix}.successes")
+    if run["handwritten"] + run["drafted"] != successes:
+        raise ValueError(f"{prefix}: {run['handwritten']} handwritten and {run['drafted']} drafted successes "
+                         f"do not make its {successes}")
+    by_type = run["by_type"]
+    if by_type is None:
+        return numbers
+    if not isinstance(by_type, dict):
+        raise TypeError(f"{prefix}.by_type {by_type!r} is not an object of counts per item type")
+    for kind, cell in by_type.items():
+        at = f"{prefix}.{label(kind)}"
+        for key in ("successes", "n"):
+            _put(numbers, f"{at}.{key}", _count(cell[key], f"{at}.{key}"))
+        _out_of(cell["successes"], cell["n"], f"{at}.successes")
+    total = (sum(cell["successes"] for cell in by_type.values()), sum(cell["n"] for cell in by_type.values()))
+    if total != (successes, n):
+        raise ValueError(f"{prefix}: its item types add up to {total[0]}/{total[1]}, not {successes}/{n}")
+    return numbers
+
+
+def _ablation(prefix: str, ablation: dict) -> dict[str, str]:
+    """An ablation (eval.bakeoff.descriptive: ABLATION) under prefix: the key of the candidate whose model it
+    trained, that model's id and revision, the mode it was trained and scored in, the step it was trained to,
+    its scores as a bake-off's (score_text: P and its handwritten and drafted means) and each run's counts
+    (_ablation_run): its gate's variants and the untrained base's run when it has one, under BASE_RUN.
+    ValueError for a mode the bake-off does not write, a base run in another mode than the ablation's or with
+    a variant's name, no variant, runs (the base's included) over different numbers of items (P is a mean of
+    runs over the same development items, and the base's run is set beside them), primary variants that are
+    none, named twice or not the ablation's, and a P or mean that is not the mean over them; TypeError for a
+    name that is none and variants that are not an object."""
+    numbers = {f"{prefix}.{key}": _name(ablation[key], f"{prefix}.{key}")
+               for key in ("candidate", "model", "revision")}
+    mode = _one_of(ablation["mode"], BAKEOFF_MODES, f"{prefix}.mode")
+    numbers[f"{prefix}.mode"] = mode
+    numbers[f"{prefix}.stop_step"] = _count(ablation["stop_step"], f"{prefix}.stop_step")
+    variants, base = ablation["variants"], ablation[BASE_RUN]
+    if not isinstance(variants, dict):
+        raise TypeError(f"{prefix}.variants {variants!r} is not an object of runs per variant")
+    if not variants:
+        raise ValueError(f"{prefix}: no variant")
+    runs = list(variants.items())
+    if base is not None:
+        if base["mode"] != mode:
+            raise ValueError(f"{prefix}.{BASE_RUN} ran in the mode {base['mode']!r}, not the ablation's, "
+                             f"{mode}")
+        runs.append((BASE_RUN, base))  # a variant of that name gives the same keys: refused by _put
+    for run, scores in runs:
+        for key, value in _ablation_run(f"{prefix}.{label(run)}", scores).items():
+            _put(numbers, key, value)
+    sizes = {run: scores["n"] for run, scores in runs}
+    if len(set(sizes.values())) != 1:
+        raise ValueError(f"{prefix}: its runs are not over one number of items: {sizes}")
+    primary = ablation["primary"]
+    if (not isinstance(primary, list) or not primary
+            or not all(isinstance(variant, str) and variant in variants for variant in primary)
+            or len(set(primary)) != len(primary)):
+        raise ValueError(f"{prefix}: the primary variants {primary!r} are not distinct variants it holds")
+    for key, field in (("P", "successes"), ("handwritten", "handwritten"), ("drafted", "drafted")):
+        mean = sum(variants[variant][field] for variant in primary) / len(primary)
+        if abs(_number(ablation[key], f"{prefix}.{key}") - mean) > 1e-9:
+            raise ValueError(f"{prefix}.{key} {ablation[key]!r} is not the mean {field} of "
+                             f"{', '.join(primary)}, {mean!r}")
+        numbers[f"{prefix}.{key}"] = score_text(ablation[key])
+    return numbers
+
+
+def _fidelity(prefix: str, fidelity: dict) -> dict[str, str]:
+    """The winner's trained adapter's fidelity (eval.bakeoff.descriptive: FIDELITY) under <prefix>.<winner>:
+    the step trained and the record's counts (FIDELITY_COUNTS), and the agreeing, base-agreeing and changed
+    positions as rates of the positions (FIDELITY_RATES; none over no position); ValueError for a count below
+    0 or larger than the positions, TypeError for a winner that is not a name."""
+    at = f"{prefix}.{label(_name(fidelity['candidate'], 'fidelity.candidate'))}"
+    numbers = {f"{at}.trained_step": _count(fidelity["trained_step"], f"{at}.trained_step")}
+    numbers.update({f"{at}.{key}": _count(fidelity[key], f"{at}.{key}") for key in FIDELITY_COUNTS})
+    positions = fidelity["positions"]
+    for rate, count in FIDELITY_RATES:
+        _out_of(fidelity[count], positions, f"{at}.{count}")
+        if positions:
+            numbers[f"{at}.{rate}"] = percent(fidelity[count] / positions)
+    return numbers
+
+
+def bakeoff_descriptive_numbers(data: dict, name: str) -> dict[str, str]:
+    """What M7 ran beside its bake-off (scripts/bakeoff.py descriptive) under bakeoff.<name>.ablation.* and
+    bakeoff.<name>.fidelity.* (module docstring: description). ValueError for another kind, another milestone
+    than the file name's, no ablation, and what _ablation and _fidelity refuse; TypeError for ablations that
+    are not an object."""
+    if data["kind"] != BAKEOFF_DESCRIPTIVE_KIND:
+        raise ValueError(f"kind {data['kind']!r} is not {BAKEOFF_DESCRIPTIVE_KIND!r}")
+    if data["milestone"] != name:
+        raise ValueError(f"the milestone {data['milestone']!r} is not the file name's, {name}")
+    ablations = data["ablations"]
+    if not isinstance(ablations, dict):
+        raise TypeError(f"ablations {ablations!r} is not an object of ablations by name")
+    if not ablations:
+        raise ValueError("no ablation")
+    prefix = f"bakeoff.{label(name)}"
+    numbers: dict[str, str] = {}
+    for ablation, entry in ablations.items():
+        for key, value in _ablation(f"{prefix}.ablation.{label(ablation)}", entry).items():
+            _put(numbers, key, value)
+    for key, value in _fidelity(f"{prefix}.fidelity", data["fidelity"]).items():
+        _put(numbers, key, value)
+    return numbers
+
+
 @dataclass(frozen=True)
 class Kind:
     """A kind of registered result: what it is (for messages), the pattern of its file name, its numbers
@@ -972,6 +1546,15 @@ REGISTRY = (
          lambda m: m.group(1)),
     Kind("lengths", "a lengths summary", re.compile(r"lengths-(m\d+)\.json"), lengths_numbers,
          lambda m: m.group(1)),
+    # M11's three, last. No pattern above names a lengths-acebench- or a bakeoff- file (lengths-<m>.json's <m>
+    # is m and digits, and acebench-<name>.json's name begins with acebench-), and the three name each other's
+    # files neither (bakeoff-<m>.json's <m> is m and digits too), so no file's kind changes
+    Kind("acebench-lengths", "an ACEBench lengths summary", re.compile(r"lengths-acebench-(m\d+)\.json"),
+         acebench_lengths_numbers, lambda m: f"acebench-{m.group(1)}"),
+    Kind("bakeoff", "a bake-off aggregate", re.compile(r"bakeoff-(m\d+)\.json"), bakeoff_numbers,
+         lambda m: m.group(1)),
+    Kind("bakeoff-descriptive", "a bake-off description", re.compile(r"bakeoff-descriptive-(m\d+)\.json"),
+         bakeoff_descriptive_numbers, lambda m: m.group(1)),
 )
 
 

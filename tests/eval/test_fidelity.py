@@ -424,6 +424,22 @@ needs_qwen35 = pytest.mark.skipif(
     reason="local model files are not present")
 
 
+def weights_present(folder: Path) -> bool:
+    """Whether the folder holds every safetensors file its index names: model_layout reads the tensor names
+    of the shards, so a folder with only its configuration, tokenizer and vendor code (a losing candidate's
+    after M11's cleanup, docs/m11-进度.md) cannot give a layout."""
+    index = folder / fidelity.INDEX
+    if not index.is_file():
+        return False
+    shards = set(json.loads(index.read_text(encoding="utf-8"))["weight_map"].values())
+    return all((folder / shard).is_file() for shard in shards)
+
+
+needs_weights = {name: pytest.mark.skipif(not weights_present(folder),
+                                          reason="local model files are not present")
+                 for name, folder in (("qwen35", QWEN35), ("spark", SPARK))}
+
+
 def placed(model, adapter: Path):
     """PEFT wrapping the model with the adapter folder's own configuration and setting the folder's tensors
     into it, as PeftModel.from_pretrained does: (the wrapped model, the file's keys PEFT found no parameter
@@ -440,6 +456,7 @@ def placed(model, adapter: Path):
 
 
 @needs_qwen35
+@needs_weights["qwen35"]
 def test_qwen35s_modules_are_the_text_models_and_peft_places_every_synthetic_tensor(tmp_path):
     # docs/m7-进度.md (底座对比队列的两处工具问题): the synthetic adapters of C3's first S6 were named after
     # the checkpoint's tensors (model.language_model.layers.N.*), while AutoModelForCausalLM builds the text
@@ -582,6 +599,7 @@ def test_the_layout_requires_the_model_to_be_of_the_patched_class(tiny_qwen35, m
 
 
 @pytest.mark.skipif(not (SPARK / "modeling_spark.py").is_file(), reason="local model files are not present")
+@needs_weights["spark"]
 def test_the_layout_of_spark_is_its_patched_vendor_model_on_the_meta_device(monkeypatch):
     # the vendor class builds only with the family's patch set (registry: spark-x2.5-4b), which the layout
     # sets as build_causal_lm does; its targets are module names, one group per name

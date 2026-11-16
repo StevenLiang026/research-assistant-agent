@@ -2,9 +2,11 @@
 docs/m7-底座对比预登记.md): the configuration, the variants per thinking kind, the commands (parsed by the
 real scripts' parsers), the default runner's log files, the preflight over fake probes, the seven smoke steps
 over a fake runner and a scripted llama-server, the pilot and the evaluation as subprocess plans, the gate
-JSON, the preregistered decision rule with its extension, tie-break and hybrid branches, the command line, and
-the winner's trained-adapter fidelity (report only) over fake backends. Nothing here trains, starts
-llama-server or reads the GPU; the runner's test runs this interpreter."""
+JSON, the preregistered decision rule with its extension, tie-break and hybrid branches, the command line,
+the winner's trained-adapter fidelity (report only) over fake backends, and the description of the ablations
+and of that fidelity (results/bakeoff-descriptive-m7.json) over records shaped as the real ones, with its
+rebuild from the repository's own records. Nothing here trains, starts llama-server or reads the GPU; the
+runner's test runs this interpreter."""
 
 from __future__ import annotations
 
@@ -1834,6 +1836,19 @@ def test_aggregate_reads_every_gate_and_the_reference_and_writes_the_results_fil
         aggregate(load_config(other))
 
 
+def test_aggregate_refuses_a_configuration_outside_the_repository(config, repo, tmp_path_factory):
+    # the results file names its configuration by its path from the repository root, the current folder: a
+    # configuration outside the root would be named by its machine path, so nothing is written
+    outside = tmp_path_factory.mktemp("elsewhere") / "bakeoff-test.json"
+    outside.write_bytes((repo / "configs" / "bakeoff-test.json").read_bytes())
+    with pytest.raises(BakeoffError, match=re.escape(
+            f"the configuration {bakeoff.rel(outside)} is outside the current folder, the repository root")):
+        aggregate(load_config(outside))
+    assert not (repo / "results" / "bakeoff-test.json").exists()
+    inside = load_config(repo / "configs" / "bakeoff-test.json")  # an absolute path inside the root
+    assert aggregate(inside)["config"] == "configs/bakeoff-test.json"
+
+
 def test_a_gate_written_by_another_tool_counts_as_incomplete(config, repo):
     # the pilot launcher's gate (m7_gate.py) has a P but no status and no eligibility: the aggregate waits for
     # this tool's gate rather than taking the candidate as ineligible
@@ -2435,3 +2450,354 @@ def test_fidelity_on_the_command_line_reports_and_exits_by_the_outcome(config, r
     monkeypatch.delenv("LLAMA_CPP_SRC", raising=False)
     assert script.main(["fidelity", "--candidate", "c2", *config_arg]) == 2
     assert "llama-server" in capsys.readouterr().err
+
+
+# ---- the description of the ablations and of the winner's fidelity (report only) ---------------------------
+
+# the ablations as the pilot launcher left them (docs/m7-进度.md; runs/bakeoff/m7/c0-think/ and c2-nothink/):
+# C0's model trained and scored thinking, with b0 in that mode beside it, and C2's trained and scored without
+# thinking; each run's per-item successes over ITEMS
+C0_THINK = {"think-s0": {"q-1": True, "q-2": True, "q-3": True}, "think-s1": {"q-1": True, "q-2": True},
+            "think-s2": {"q-1": True, "q-3": True}, "nothink": {"q-1": True}}
+C0_THINK_B0 = {"q-2": True}
+C2_NOTHINK = {"nothink": {"q-1": True, "q-3": True}}
+C0_THINK_GATE = "runs/bakeoff/test/c0-think/gate.json"
+C0_THINK_B0_MANIFEST = "runs/bakeoff/test/c0-think/dev-b0.manifest.json"
+C2_NOTHINK_GATE = "runs/bakeoff/test/c2-nothink/gate.json"
+DESCRIBED = "configs/described.json"
+AGGREGATE = "results/bakeoff-test.json"
+
+
+def run_summary(successes: dict[str, bool]) -> dict:
+    """A gate's summary of one run over ITEMS from its per-item successes (summarize_scores; the launcher's
+    gate keeps the same)."""
+    scores = {"scores": [{"id": i["id"], "success": successes.get(i["id"], False)} for i in ITEMS]}
+    return summarize_scores(scores, {i["id"]: i for i in ITEMS})
+
+
+def launcher_gate(name: str, model: str, revision: str, mode: str, runs: dict[str, dict[str, bool]], *,
+                  P: float, b0: dict[str, bool] | None = None) -> dict:
+    """An ablation's gate as the pilot launcher wrote it (its m7_gate.py): each run's summary with the
+    machine's numbers and the smoke beside them, and P; no status, no means of the splits, no files."""
+    return {"candidate": name, "model": model, "revision": revision, "mode": mode, "stop_step": 274,
+            "samples": 100, "family": None, "modes": None, "tokens_per_epoch": 5000, "peak_reserved_gb": 4.74,
+            "nvidia_smi_peak_mib": 5858, "tokens_per_s_median_100_to_stop": 397.0, "ft3_hours_estimate": 31.6,
+            "variants": {variant: run_summary(successes) for variant, successes in runs.items()},
+            "b0": None if b0 is None else run_summary(b0), "smoke": None, "P": P}
+
+
+def b0_manifest() -> dict:
+    """run_eval's manifest of c0-think's b0 run: the untrained base in think mode (the checkpoint's GGUF
+    served at scale 0), every item run."""
+    return {"system": "b0", "items": "data/eval/dev.jsonl", "items_run": 3, "items_total": 3,
+            "tokenizer": "models/Qwen3-4B", "lora_scale": 0.0,
+            "adapters": [{"id": 0, "path": "runs/bakeoff/test/c0-think/train/gguf/checkpoint-274-f16.gguf",
+                          "sha256": "1" * 64}],
+            "generation": {"mode": "think", "base_seed": 0, "reasoning_budget": 16,
+                           "decoding": {"temperature": 0.6, "top_p": 0.95, "top_k": 20, "min_p": 0.0}}}
+
+
+def described_config(repo: Path, name: str = "described.json", *, skipped: tuple[str, ...] = ("c1", "c3"),
+                     tie: int = 0, **changes) -> Config:
+    """The test configuration the description reads (configs/<name>): the reference with its revision, the
+    candidates of skipped skipped by a cut line, the tie at tie (0: P over three items, so that c2 wins on P
+    over the reference) and the top-level fields of changes."""
+    candidates = {key: {**entry, **({"skipped": "cut line 2"} if key in skipped else {})}
+                  for key, entry in CONFIG["candidates"].items()}
+    (repo / "configs" / name).write_text(json.dumps(
+        {**CONFIG, "reference": {**CONFIG["reference"], "revision": "ref-rev"},
+         "thresholds": {**CONFIG["thresholds"], "tie": tie}, "candidates": candidates, **changes}, indent=2),
+        encoding="utf-8")
+    return load_config(Path("configs") / name)
+
+
+@pytest.fixture
+def described(repo) -> Config:
+    """Everything the description reads, shaped as the real records are: the configuration (described_config),
+    the aggregate this module writes over c2's gate (c2 wins on P at step 274), c2's trained-adapter fidelity
+    record as run_trained_fidelity writes it, and the ablations' gates as the launcher wrote them, with the
+    manifest of c0-think's b0 run."""
+    config = described_config(repo)
+    every = {"q-1": True, "q-2": True, "q-3": True}
+    gate_fixture(repo, "c2", variants={"think-s0": every, "think-s1": every, "think-s2": every,
+                                       "think-greedy": {}, "b0": {}})
+    candidate_gate(config, config.candidate("c2"))
+    decision = aggregate(config)["decision"]
+    assert (decision["status"], decision["winner"], decision["basis"]) == ("decided", "c2", "P")
+    trained_checkpoint(repo)
+    record = bakeoff.run_trained_fidelity(config, config.candidate("c2"),
+                                          tools_of(fidelity_backends=TrainedBackends()))
+    assert record["error"] is None
+    bakeoff.write_json(repo / C0_THINK_GATE, launcher_gate("c0-think", "Qwen/Qwen3-4B", "ref-rev", "think",
+                                                           C0_THINK, P=7 / 3, b0=C0_THINK_B0))
+    bakeoff.write_json(repo / C0_THINK_B0_MANIFEST, b0_manifest())
+    bakeoff.write_json(repo / C2_NOTHINK_GATE, launcher_gate("c2-nothink", "Fake/only-model", "def",
+                                                             "no_think", C2_NOTHINK, P=2))
+    return config
+
+
+def described_run(successes: int, handwritten: int, drafted: int, call: int, no_call: int) -> dict:
+    """A run as the description keeps it over ITEMS (two call items, drafted, and a handwritten no_call
+    item)."""
+    return {"successes": successes, "n": 3, "handwritten": handwritten, "drafted": drafted,
+            "by_type": {"call": {"successes": call, "n": 2}, "no_call": {"successes": no_call, "n": 1}}}
+
+
+def edit_json(path: Path, change) -> None:
+    """The JSON object at path changed in place by change(value); the file removed when change is None."""
+    if change is None:
+        path.unlink()
+        return
+    value = json.loads(path.read_text(encoding="utf-8"))
+    change(value)
+    path.write_text(json.dumps(value, indent=2), encoding="utf-8")
+
+
+def test_the_description_gathers_the_ablations_and_the_winners_fidelity_from_their_records(described, repo):
+    description = bakeoff.descriptive(described)
+    assert description == {
+        "kind": "bakeoff-descriptive", "milestone": "m7", "config": DESCRIBED,
+        "config_sha256": sha256_of(repo / DESCRIBED), "aggregate": AGGREGATE,
+        "aggregate_sha256": sha256_of(repo / AGGREGATE),
+        "ablations": {
+            "c0-think": {
+                "candidate": "c0", "model": "Qwen/Qwen3-4B", "revision": "ref-rev", "mode": "think",
+                "gate": C0_THINK_GATE, "gate_sha256": sha256_of(repo / C0_THINK_GATE), "stop_step": 274,
+                "primary": ["think-s0", "think-s1", "think-s2"], "P": 7 / 3, "handwritten": 2 / 3,
+                "drafted": 5 / 3,
+                "variants": {"think-s0": described_run(3, 1, 2, 2, 1),
+                             "think-s1": described_run(2, 1, 1, 1, 1),
+                             "think-s2": described_run(2, 0, 2, 2, 0),
+                             "nothink": described_run(1, 0, 1, 1, 0)},
+                "b0": {**described_run(1, 1, 0, 0, 1), "mode": "think", "manifest": C0_THINK_B0_MANIFEST,
+                       "manifest_sha256": sha256_of(repo / C0_THINK_B0_MANIFEST)}},
+            "c2-nothink": {
+                "candidate": "c2", "model": "Fake/only-model", "revision": "def", "mode": "no_think",
+                "gate": C2_NOTHINK_GATE, "gate_sha256": sha256_of(repo / C2_NOTHINK_GATE), "stop_step": 274,
+                "primary": ["nothink"], "P": 2, "handwritten": 0, "drafted": 2,
+                "variants": {"nothink": described_run(2, 0, 2, 2, 0)}, "b0": None}},
+        "fidelity": {"candidate": "c2", "record": TRAINED_RECORD,
+                     "record_sha256": sha256_of(repo / TRAINED_RECORD), "trained_step": 274,
+                     "settings": {"items": 2, "positions": 4, "mode": "no_think"}, "items": 2, "positions": 8,
+                     "agreeing": 6, "base_agreeing": 2, "changed_positions": 4}}
+    assert type(description["ablations"]["c2-nothink"]["P"]) is int  # a whole mean stays a count (_mean)
+    # the machine's numbers, the smoke record and the rates beside the counts are left out, as is any
+    # machine path; it returns the description, and the command line writes it
+    text = json.dumps(description)
+    for left_out in ("nvidia_smi", "peak_reserved", "tokens_per_s", "ft3_hours", "smoke", "timing",
+                     "agreement"):
+        assert left_out not in text, left_out
+    assert machine_paths(description) == [] and "timestamp" not in text
+    assert not (repo / bakeoff.DESCRIPTIVE).exists()
+
+
+@pytest.mark.parametrize(("path", "change", "refusal"), [
+    # P recomputed from the primary variants by the module's _mean against the gate's
+    (C0_THINK_GATE, lambda g: g.update(P=2.5),
+     f"{C0_THINK_GATE} gives P 2.5, not the mean of think-s0, think-s1, think-s2: 2.3333333333333335"),
+    (C2_NOTHINK_GATE, lambda g: g.update(P=3), f"{C2_NOTHINK_GATE} gives P 3, not the mean of nothink: 2"),
+    (C0_THINK_GATE, lambda g: g.update(handwritten=1),
+     f"{C0_THINK_GATE} gives the handwritten mean 1, not the mean of think-s0, think-s1, think-s2: 0.666"),
+    # the model id and revision the configuration gives the candidate the ablation trained (the reference's
+    # for c0)
+    (C2_NOTHINK_GATE, lambda g: g.update(revision="0123abc"),
+     f"{C2_NOTHINK_GATE} gives the revision '0123abc', not the configuration's 'def' for c2"),
+    (C0_THINK_GATE, lambda g: g.update(revision=None),
+     f"{C0_THINK_GATE} gives the revision None, not the configuration's 'ref-rev' for c0"),
+    (C0_THINK_GATE, lambda g: g.update(model="Qwen/Qwen3-8B"),
+     f"{C0_THINK_GATE} gives the model 'Qwen/Qwen3-8B', not the configuration's 'Qwen/Qwen3-4B' for c0"),
+    # the gate is that ablation's, in the mode it ran in, trained to the schedule's stop step, with the
+    # variants P is the mean of
+    (C0_THINK_GATE, lambda g: g.update(candidate="c0"),
+     f"{C0_THINK_GATE} is the gate of 'c0', not of c0-think"),
+    (C2_NOTHINK_GATE, lambda g: g.update(mode="think"),
+     f"{C2_NOTHINK_GATE} gives the mode 'think', not 'no_think', the mode c2-nothink ran in"),
+    (C0_THINK_GATE, lambda g: g.update(stop_step=548),
+     f"{C0_THINK_GATE} gives the stop step 548, not the schedule's 274"),
+    (C0_THINK_GATE, lambda g: g["variants"].pop("think-s2"),
+     f"{C0_THINK_GATE} has no scores for think-s2, which P is the mean of"),
+    (C2_NOTHINK_GATE, None, f"no gate at {C2_NOTHINK_GATE}"),
+    # each run's counts are whole, and its splits and per-type counts add up to its successes and n
+    (C0_THINK_GATE, lambda g: g["variants"]["think-s1"].update(successes=None),
+     f"{C0_THINK_GATE}: think-s1: successes, n, handwritten and drafted must be whole counts"),
+    (C0_THINK_GATE, lambda g: g["variants"]["nothink"].update(drafted=2),
+     f"{C0_THINK_GATE}: nothink: 0 handwritten and 2 drafted successes do not make its 1 successes of 3"),
+    (C2_NOTHINK_GATE, lambda g: g["variants"]["nothink"]["by_type"].update(call="1/2"),
+     f"{C2_NOTHINK_GATE}: nothink: the per-type counts add up to 1/3, not 2/3"),
+    (C0_THINK_GATE, lambda g: g["b0"]["by_type"].update(call="none"),
+     f"{C0_THINK_GATE}: b0: the per-type count of call is 'none', not 'a/b'"),
+    # every run is over the development set, so that P is a mean of runs over the same items: a primary seed
+    # scored on part of them, its splits and per-type counts consistent and the gate's P still their mean
+    (C0_THINK_GATE,
+     lambda g: g["variants"]["think-s1"].update(n=2, by_type={"call": "1/1", "no_call": "1/1"}),
+     f"{C0_THINK_GATE}: think-s1 ran over 2 items, not the 3 development items"),
+    (C0_THINK_GATE, lambda g: g["b0"].update(n=2, by_type={"call": "0/1", "no_call": "1/1"}),
+     f"{C0_THINK_GATE}: b0 ran over 2 items, not the 3 development items"),
+    (C0_THINK_GATE, lambda g: g["variants"]["think-s1"].update(by_type={"call": "2/3"}),  # they add up
+     (f"{C0_THINK_GATE}: think-s1: its items per type are {{'call': 3}}, not the development set's "
+      "{'call': 2, 'no_call': 1}")),
+    # b0 only as the untrained base in the ablation's mode, as run_eval's manifest of that run says
+    (C0_THINK_B0_MANIFEST, lambda m: m["generation"].update(mode="no_think"),
+     f"{C0_THINK_B0_MANIFEST} is a run of the system 'b0' in the mode 'no_think', not b0's in 'think'"),
+    (C0_THINK_B0_MANIFEST, lambda m: m.update(system="ft"),
+     f"{C0_THINK_B0_MANIFEST} is a run of the system 'ft' in the mode 'think', not b0's in 'think'"),
+    (C0_THINK_B0_MANIFEST, lambda m: m.update(items_run=2),
+     f"{C0_THINK_B0_MANIFEST} ran 2 of 3 items, not the b0 run's 3"),
+    (C0_THINK_B0_MANIFEST, None,
+     f"{C0_THINK_GATE} holds a b0 run, but there is no {C0_THINK_B0_MANIFEST} to tell its mode")])
+def test_the_description_refuses_an_ablation_record_that_disagrees(described, repo, path, change, refusal):
+    edit_json(repo / path, change)
+    with pytest.raises(BakeoffError, match=re.escape(refusal)):
+        bakeoff.descriptive(described)
+
+
+@pytest.mark.parametrize(("change", "refusal"), [
+    ({"candidate": "c3"}, f"{TRAINED_RECORD} is the record of 'c3', not of the winner c2"),
+    ({"stop_step": 548}, f"{TRAINED_RECORD} is the record of step 548, not c2's trained step 274"),
+    ({"error": "the export exited with 1"},
+     f"{TRAINED_RECORD} holds no comparison: the export exited with 1"),
+    ({"settings": {"items": 2, "positions": 16, "mode": "no_think"}},
+     (f"{TRAINED_RECORD} was made with the settings {{'items': 2, 'positions': 16, 'mode': 'no_think'}}, not "
+      "the configuration's {'items': 2, 'positions': 4, 'mode': 'no_think'}")),
+    ({"agreeing": None},
+     (f"{TRAINED_RECORD}: the counts {{'items': 2, 'positions': 8, 'agreeing': None, 'base_agreeing': 2, "
+      "'changed_positions': 4} are not whole counts within its positions")),
+    ({"changed_positions": 9}, f"{TRAINED_RECORD}: the counts"),
+    ({"agreement": 0.5}, f"{TRAINED_RECORD}: agreement is 0.5, not 6/8"),
+    ({"base_agreement": None}, f"{TRAINED_RECORD}: base_agreement is None, not 2/8"),
+    ({"changed": 0.25}, f"{TRAINED_RECORD}: changed is 0.25, not 4/8")])
+def test_the_description_refuses_a_fidelity_record_that_is_not_the_winners_comparison(described, repo, change,
+                                                                                       refusal):
+    edit_json(repo / TRAINED_RECORD, lambda record: record.update(change))
+    with pytest.raises(BakeoffError, match=re.escape(refusal)):
+        bakeoff.descriptive(described)
+
+
+def test_the_description_reads_the_winners_comparison_at_its_trained_step(described, repo):
+    # the record run_trained_fidelity writes when the training stack did not load the adapter holds no
+    # comparison
+    c2 = described.candidate("c2")
+    bakeoff.run_trained_fidelity(described, c2, tools_of(fidelity_backends=TrainedBackends(unloaded=True)))
+    with pytest.raises(BakeoffError, match=re.escape(
+            f"{TRAINED_RECORD} holds no comparison: the training stack did not load the trained adapter")):
+        bakeoff.descriptive(described)
+    bakeoff.run_trained_fidelity(described, c2, tools_of(fidelity_backends=TrainedBackends()))
+    assert bakeoff.descriptive(described)["fidelity"]["trained_step"] == 274
+    # once the winner's run was extended (checkpoint-548 saved), its trained step is 548 (trained_step), for
+    # which the pilot's record does not stand
+    trained_checkpoint(repo, step=548)
+    with pytest.raises(BakeoffError, match=re.escape(
+            "no fidelity record at runs/bakeoff/test/c2/fidelity-trained-548.json: scripts/bakeoff.py "
+            "fidelity --candidate c2 writes the trained adapter's at step 548")):
+        bakeoff.descriptive(described)
+    bakeoff.run_trained_fidelity(described, c2, tools_of(fidelity_backends=TrainedBackends()))
+    fidelity = bakeoff.descriptive(described)["fidelity"]
+    assert fidelity["trained_step"] == 548
+    assert fidelity["record"] == "runs/bakeoff/test/c2/fidelity-trained-548.json"
+
+
+def test_the_description_needs_the_complete_aggregate_of_its_configuration_and_a_winner(described, repo):
+    # c3 not skipped and without a gate: the aggregate waits for it
+    waiting = described_config(repo, "waiting.json", skipped=("c1",))
+    assert aggregate(waiting)["complete"] is False
+    with pytest.raises(BakeoffError, match=re.escape(
+            f"{AGGREGATE} is not complete: its decision waits for c3")):
+        bakeoff.descriptive(waiting)
+    # the top two within the tie: complete, but the decision extends them and names no winner
+    tied = described_config(repo, "tied.json", tie=3)
+    assert aggregate(tied)["decision"]["status"] == "extend"
+    with pytest.raises(BakeoffError, match=re.escape(f"{AGGREGATE}'s decision (extend) names no winner")):
+        bakeoff.descriptive(tied)
+    aggregate(described)
+    assert bakeoff.descriptive(described)["fidelity"]["candidate"] == "c2"
+    # the configuration changed after the aggregate was built from it
+    changed = described_config(repo, smoke={**CONFIG["smoke"], "steps": 40})
+    with pytest.raises(BakeoffError, match=re.escape(
+            f"{AGGREGATE} was built from another configuration: its config_sha256 is ")):
+        bakeoff.descriptive(changed)
+    (repo / AGGREGATE).unlink()
+    with pytest.raises(BakeoffError, match=re.escape(
+            f"no aggregate at {AGGREGATE}: scripts/bakeoff.py aggregate writes it")):
+        bakeoff.descriptive(described)
+
+
+def test_the_description_refuses_a_configuration_outside_the_repository(described, repo, tmp_path_factory,
+                                                                        capsys, monkeypatch):
+    """The description names its configuration by its path from the repository root, the current folder
+    (rel): one outside the root would be named by its machine path, so it is refused even when it is byte
+    for byte the configuration the aggregate was built from, and the command line writes nothing. The same
+    file by an absolute path inside the root is described."""
+    outside = tmp_path_factory.mktemp("elsewhere") / "described.json"
+    outside.write_bytes((repo / DESCRIBED).read_bytes())  # its SHA-256 the aggregate's config_sha256
+    refusal = f"the configuration {bakeoff.rel(outside)} is outside the current folder, the repository root"
+    with pytest.raises(BakeoffError, match=re.escape(refusal)):
+        bakeoff.descriptive(load_config(outside))
+    script = load_script("bakeoff")
+    monkeypatch.delenv("LLAMA_SERVER", raising=False)
+    monkeypatch.delenv("LLAMA_CPP_SRC", raising=False)
+    capsys.readouterr()  # what the fixture's fidelity check printed
+    assert script.main(["descriptive", "--config", str(outside), "--force"]) == 2
+    assert f"FAIL: {refusal}" in capsys.readouterr().err
+    assert not (repo / bakeoff.DESCRIPTIVE).exists()
+    assert bakeoff.descriptive(load_config(repo / DESCRIBED))["config"] == DESCRIBED
+
+
+def test_descriptive_on_the_command_line_writes_the_description_and_keeps_one_without_force(described, repo,
+                                                                                           capsys,
+                                                                                           monkeypatch):
+    script = load_script("bakeoff")
+    monkeypatch.delenv("LLAMA_SERVER", raising=False)  # it reads records alone: no machine tool is needed
+    monkeypatch.delenv("LLAMA_CPP_SRC", raising=False)
+    config_arg = ["--config", DESCRIBED]
+    out = repo / "results" / "bakeoff-descriptive-m7.json"
+    capsys.readouterr()  # what the fixture's fidelity check printed
+    assert script.main(["descriptive", *config_arg]) == 0
+    written = out.read_bytes()
+    description = bakeoff.descriptive(described)
+    assert written == (json.dumps(description, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    assert b"\r\n" not in written  # two-space indented, LF, a final newline (write_json)
+    assert capsys.readouterr().out == (
+        "results/bakeoff-descriptive-m7.json: c0-think P 2.33 (think), c2-nothink P 2.00 (no_think); c2's "
+        "trained adapter at step 274: 6/8 agreeing, 2/8 without it\n")
+    # an existing description is kept without --force, and replaced with it
+    out.write_bytes(b"{}\n")
+    assert script.main(["descriptive", *config_arg]) == 2
+    refused = capsys.readouterr().err
+    assert "FAIL: results/bakeoff-descriptive-m7.json exists; --force overwrites it" in refused
+    assert out.read_bytes() == b"{}\n"
+    assert script.main(["descriptive", *config_arg, "--force"]) == 0 and out.read_bytes() == written
+    # a description refused writes nothing, --force or not
+    (repo / C2_NOTHINK_GATE).unlink()
+    assert script.main(["descriptive", *config_arg, "--force"]) == 2
+    assert f"FAIL: no gate at {C2_NOTHINK_GATE}" in capsys.readouterr().err
+    assert out.read_bytes() == written
+    with pytest.raises(SystemExit):  # the bake-off's description, not a candidate's
+        script.main(["descriptive", "--candidate", "c2", *config_arg])
+
+
+# the runs' records the description reads (runs/: left out of the public copy), the development set it counts
+# their items against with its lock (data/eval: left out too) and the description itself
+DESCRIBED_RECORDS = ("runs/bakeoff/m7/c0-think/gate.json", "runs/bakeoff/m7/c0-think/dev-b0.manifest.json",
+                     "runs/bakeoff/m7/c2-nothink/gate.json", "runs/bakeoff/m7/c5/fidelity-trained-274.json",
+                     "data/eval/dev.jsonl", "data/eval/dev.jsonl.sha256",
+                     "results/bakeoff-descriptive-m7.json")
+
+
+@pytest.mark.needs_data(*DESCRIBED_RECORDS)
+def test_the_repositorys_description_is_rebuilt_byte_for_byte_from_its_records(tmp_path, monkeypatch):
+    monkeypatch.chdir(REPO)
+    description = bakeoff.descriptive(load_config(bakeoff.CONFIG))
+    rebuilt = tmp_path / "description.json"
+    bakeoff.write_json(rebuilt, description)
+    assert rebuilt.read_bytes() == (REPO / bakeoff.DESCRIPTIVE).read_bytes()
+    # the numbers docs/m7-进度.md reports: C0's thinking ablation (three seeds 102, 96, 101; nothink 88; b0
+    # 84 in think mode), C2's ablation without thinking (70, handwritten 25, drafted 45) and the winner C5's
+    # adapter at step 274 (316 of 320 positions agreeing, 315 without it, 20 changed)
+    think, nothink = description["ablations"]["c0-think"], description["ablations"]["c2-nothink"]
+    assert [think["variants"][v]["successes"] for v in ("think-s0", "think-s1", "think-s2", "nothink")] == [
+        102, 96, 101, 88]
+    assert think["P"] == 299 / 3 and (think["b0"]["successes"], think["b0"]["mode"]) == (84, "think")
+    assert (nothink["P"], nothink["handwritten"], nothink["drafted"], nothink["b0"]) == (70, 25, 45, None)
+    fidelity = description["fidelity"]
+    assert (fidelity["candidate"], fidelity["trained_step"], fidelity["positions"], fidelity["agreeing"],
+            fidelity["base_agreeing"], fidelity["changed_positions"]) == ("c5", 274, 320, 316, 315, 20)

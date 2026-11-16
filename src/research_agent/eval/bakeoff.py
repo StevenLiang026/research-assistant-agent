@@ -13,7 +13,8 @@ family name (None until the family is registered: the folder then resolves on it
 (none, only or hybrid), reasoning budget R (None until the dry run computes it; the smoke's S2 records it),
 Hugging Face repository and revision, the smoke steps it is exempt from with the reason (C1), and, for a
 candidate a cut line of the plan skips (docs/m7-计划.md 砍线 2: wave 4), skipped: the reason. Every path in it
-is relative to the repository root and stays inside it.
+is relative to the repository root and stays inside it, and so must the configuration itself be for the
+aggregate and the description, which record its path (_config_path).
 
 Every step runs the project's own scripts as subprocesses from the repository root (scripts/train.py,
 export_adapter.py, run_eval.py, score.py, pytest over the family's golden tests) through the Tools' runner,
@@ -129,6 +130,24 @@ repository-relative paths and SHA-256s, the adapter's module and tensor counts, 
 export when one ran, and the error that kept the comparison from being made, None when it was made), and the
 logs beside it are the check's alone: no smoke record, gate, aggregate or eligibility reads them or is
 written by it.
+
+The description (descriptive; DESCRIPTIVE, which scripts/bakeoff.py descriptive writes; docs/m11-计划.md):
+what ran beside the decision, report only, gathered from the records and checked against them and the
+configuration; nothing is run or scored anew. The two ablations of ABLATIONS (docs/m7-进度.md), each from the
+gate the pilot launcher wrote in its folder under the run root: C0's model trained and scored thinking
+(c0-think), with its b0 run when the gate holds one and run_eval's manifest of that run says it was the
+untrained base in the ablation's mode, and C2's trained and scored without thinking (c2-nothink); then the
+winner's trained-adapter fidelity at its trained step (trained_step). The configuration must lie inside the
+repository root, and the aggregate must be complete, built from it (its config_sha256) and name a winner. An
+ablation's gate must be its own, with the model id and revision the configuration gives its candidate, the
+mode it ran in and the schedule's stop step, its P (and its handwritten and drafted means, when it gives
+them) the mean of the primary variants of that mode (_mean), and every run's counts whole and over the
+development set (its n the set's items, a type's n the set's items of that type: P is a mean of runs over the
+same items), its handwritten and drafted successes and its per-type counts adding up to its successes and
+n. The fidelity record must be the winner's at the trained step, made under the configuration's smoke
+settings and without an error, its rates its counts over its positions. The first check that fails is a
+BakeoffError and nothing is written. A gate's machine numbers (peak memory, throughput, the hour estimate),
+its smoke record and the runs' timings are left out.
 """
 
 from __future__ import annotations
@@ -196,6 +215,15 @@ TRAINED_FIDELITY = "fidelity-trained"  # the trained adapter's fidelity: <stem>-
 # the counts of eval.fidelity.compare the trained adapter's record keeps (its checks and verdict are S6's)
 TRAINED_COUNTS = ("items", "positions", "agreeing", "agreement", "base_agreeing", "base_agreement",
                   "changed_positions", "changed")
+DESCRIPTIVE = Path("results/bakeoff-descriptive-m7.json")  # the description (scripts/bakeoff.py descriptive)
+DESCRIPTIVE_KIND, MILESTONE = "bakeoff-descriptive", "m7"
+# the ablations run beside the bake-off, report only (docs/m7-进度.md): their folder under the run root -> the
+# key of the candidate whose model they trained (the reference's for C0) and the mode they were trained and
+# scored in
+ABLATIONS = {"c0-think": ("c0", str(Mode.THINK)), "c2-nothink": ("c2", str(Mode.NO_THINK))}
+# the counts of the trained adapter's fidelity record that the description keeps (its rates are these over its
+# positions)
+FIDELITY_COUNTS = ("items", "positions", "agreeing", "base_agreeing", "changed_positions")
 SCRIPT_ENV = {"HF_HUB_OFFLINE": "1", "TQDM_DISABLE": "1", "PYTHONUTF8": "1"}  # the launchers' environment
 GOLDEN_TESTS = "tests/family/test_golden.py"
 SUMMARY_PREFIX = "summary: "  # the dry run's last line (scripts/train.py)
@@ -211,6 +239,7 @@ GATE_STATUSES = ("scored", "incomplete", "ineligible")
 # the placeholders a record names the machine's tools by (recorded)
 SERVER_PLACEHOLDER, SRC_PLACEHOLDER, PYTHON_PLACEHOLDER = "llama-server", f"${SRC_VAR}", "python"
 _PYTEST_COUNT = re.compile(r"(\d+) (passed|failed|skipped|errors?|warnings?)\b")
+_TYPE_COUNT = re.compile(r"(\d+)/(\d+)")  # a per-type count as a gate keeps it (summarize_scores): "a/b"
 # what a smoke step records as its failure: a refusal of this module, a family's, a server's (ServerError is
 # a RuntimeError, as is a GenerationError), a file that cannot be read, a malformed record, and a request the
 # server answered with an error; anything else is a defect of the tooling and propagates
@@ -613,6 +642,18 @@ def rel(path: str | Path) -> str:
         return absolute.relative_to(Path.cwd()).as_posix()
     except ValueError:
         return absolute.as_posix()
+
+
+def _config_path(config: Config) -> str:
+    """The configuration's path as the aggregate and the description record it (rel); BakeoffError for a
+    configuration outside the current folder, the repository root, which rel would give as its machine path.
+    load_config keeps every path the configuration gives inside the root, so rel gives those relative; the
+    configuration's own path is the one it does not check."""
+    where = rel(config.path)
+    _require(_inside(where), f"the configuration {where} is outside the current folder, the repository root: "
+                             "a record would hold its machine path (run from the repository root with a "
+                             "configuration inside it)")
+    return where
 
 
 def read_json(path: Path) -> dict | None:
@@ -1812,7 +1853,10 @@ def aggregate(config: Config) -> dict:
     """The results file over every candidate's gate and the reference (module docstring: The aggregate),
     written to the configuration's results path: a candidate without a gate is pending, and the decision
     waits for the pending and the incomplete ones (complete once none is left); a skipped candidate is
-    recorded with its reason and waited for by nothing, and BakeoffError when its gate holds a P."""
+    recorded with its reason and waited for by nothing, and BakeoffError when its gate holds a P. A
+    configuration outside the repository root (_config_path) is a BakeoffError before anything is read or
+    written."""
+    config_file = _config_path(config)
     reference = _reference_entry(config)
     candidates: dict[str, dict] = {reference["candidate"]: reference}
     entries = [reference]
@@ -1838,7 +1882,7 @@ def aggregate(config: Config) -> dict:
     thresholds = config.thresholds
     decision = decide(entries, tie=thresholds["tie"], hybrid_margin=thresholds["hybrid_margin"],
                       extend_step=int(config.schedule["extend_step"]), waiting=waiting)
-    result = {"config": rel(config.path), "config_sha256": sha256_of(config.path),
+    result = {"config": config_file, "config_sha256": sha256_of(config.path),
               "preregistration": PREREGISTRATION.as_posix(),
               "preregistration_sha256": sha256_of(PREREGISTRATION) if PREREGISTRATION.is_file() else None,
               "rule": {"tie": thresholds["tie"], "hybrid_margin": thresholds["hybrid_margin"],
@@ -1945,6 +1989,228 @@ def run_trained_fidelity(config: Config, candidate: Candidate, tools: Tools, *,
         return done(f"{type(exc).__name__}: {exc}")
     result.update({key: counted[key] for key in TRAINED_COUNTS})
     return done(None)
+
+
+# ---- the description --------------------------------------------------------------------------------------
+
+
+def descriptive(config: Config) -> dict:
+    """The bake-off's description (module docstring: The description), gathered from the records of the
+    configuration's run root and results and checked against them and the development set (dev_items, which
+    checks its lock); BakeoffError for the first check that fails. It writes nothing (scripts/bakeoff.py
+    descriptive writes it to DESCRIPTIVE). Its shape, from which the report's numbers are taken (every path
+    repository-relative, every mean _mean's: an int when whole, else a float):
+
+        kind, milestone      "bakeoff-descriptive", "m7"
+        config               the configuration's path; config_sha256 its SHA-256
+        aggregate            the results file's path (results/bakeoff-m7.json); aggregate_sha256 its SHA-256
+        ablations            {name: ABLATION}, one per ABLATIONS entry, in its order
+        fidelity             FIDELITY
+
+    ABLATION (from runs/bakeoff/m7/<name>/gate.json):
+        candidate            the key of the candidate whose model it trained ("c0", the reference's, or "c2")
+        model, revision      that model's id and revision: the configuration's, which the gate gives too
+        mode                 "think" or "no_think": the mode it was trained and scored in
+        gate, gate_sha256    its gate's path and SHA-256
+        stop_step            the step it was trained to (the schedule's stop step)
+        primary              the variants P is the mean of: the configuration's primary variants of the mode
+        P                    the mean successes over primary
+        handwritten, drafted the mean successes over primary on the handwritten and on the drafted items
+        variants             {variant: RUN} for every run of the gate, in its order
+        b0                   the untrained base's RUN with three more fields: mode (the ablation's, as
+                             run_eval's manifest of the run says), manifest and manifest_sha256 (that
+                             manifest's path and SHA-256); None when the gate holds no b0 run
+    RUN:
+        successes, n         the run's successes over its n items, every item of the development set
+        handwritten, drafted its successes on the handwritten and on the drafted items
+        by_type              {type: {"successes": a, "n": b}} from the gate's "a/b", b the development set's
+                             items of that type; None when it has none
+    FIDELITY (from runs/bakeoff/m7/<winner>/fidelity-trained-<step>.json):
+        candidate            the winner (the aggregate's decision)
+        record, record_sha256  the record's path and SHA-256
+        trained_step         the checkpoint step of the adapter compared (trained_step)
+        settings             {"items", "positions" (per item), "mode"}: the configuration's smoke items and
+                             positions and the sequences' mode, as the record gives them
+        items, positions     the items compared and their positions in all
+        agreeing             the positions where llama.cpp's top-1 token with the adapter is the training
+                             stack's; base_agreeing the same without the adapter on either side
+        changed_positions    the positions where the adapter changed the training stack's top-1 token
+
+    The configuration's own path is checked first (_config_path: inside the repository root, the current
+    folder); every other path is one the configuration gives, which load_config keeps inside the root.
+    """
+    config_file = _config_path(config)
+    path = config.results
+    where = rel(path)
+    results = read_json(path)
+    _require(results is not None, f"no aggregate at {where}: scripts/bakeoff.py aggregate writes it")
+    decision = results.get("decision") or {}
+    waiting = ", ".join(decision.get("waiting") or []) or "nothing it names"
+    _require(results.get("complete") is True, f"{where} is not complete: its decision waits for {waiting}")
+    config_sha256 = sha256_of(config.path)
+    _require(results.get("config_sha256") == config_sha256,
+             f"{where} was built from another configuration: its config_sha256 is "
+             f"{results.get('config_sha256')}, {config_file}'s {config_sha256} (scripts/bakeoff.py "
+             "aggregate rebuilds it)")
+    winner = decision.get("winner")
+    _require(winner is not None, f"{where}'s decision ({decision.get('status')}) names no winner")
+    per_type = Counter(item["type"] for item in dev_items(config))
+    ablations = {name: _ablation(config, name, key, mode, per_type)
+                 for name, (key, mode) in ABLATIONS.items()}
+    return {"kind": DESCRIPTIVE_KIND, "milestone": MILESTONE, "config": config_file,
+            "config_sha256": config_sha256, "aggregate": where, "aggregate_sha256": sha256_of(path),
+            "ablations": ablations, "fidelity": _winners_fidelity(config, winner)}
+
+
+def _ablation(config: Config, name: str, key: str, mode: str, per_type: Counter[str]) -> dict:
+    """An ablation as the description keeps it (descriptive: ABLATION), from its gate and, for its b0 run,
+    run_eval's manifest of that run, checked (module docstring: The description); per_type is the development
+    set's items per type, which every run must be over (_run_of)."""
+    folder = config.run_root / name
+    path = folder / GATE_FILE
+    where = rel(path)
+    gate = read_json(path)
+    _require(gate is not None, f"no gate at {where}")
+    _require(gate.get("candidate") == name,
+             f"{where} is the gate of {gate.get('candidate')!r}, not of {name}")
+    model, revision = _model_of(config, key)
+    for field, wanted in (("model", model), ("revision", revision)):
+        _require(gate.get(field) == wanted, f"{where} gives the {field} {gate.get(field)!r}, not the "
+                                            f"configuration's {wanted!r} for {key}")
+    _require(gate.get("mode") == mode,
+             f"{where} gives the mode {gate.get('mode')!r}, not {mode!r}, the mode {name} ran in")
+    stop = int(config.schedule["stop_step"])
+    _require(gate.get("stop_step") == stop,
+             f"{where} gives the stop step {gate.get('stop_step')!r}, not the schedule's {stop}")
+    variants = gate.get("variants")
+    _require(isinstance(variants, Mapping) and bool(variants), f"{where} holds no variants")
+    runs = {variant: _run_of(summary, f"{where}: {variant}", per_type)
+            for variant, summary in variants.items()}
+    primary = _primary_of_mode(config, mode)
+    absent = [variant for variant in primary if variant not in runs]
+    _require(not absent, f"{where} has no scores for {', '.join(absent)}, which P is the mean of")
+    means = {field: _mean([runs[variant][field] for variant in primary])
+             for field in ("successes", "handwritten", "drafted")}
+    over = ", ".join(primary)
+    _require(gate.get("P") == means["successes"],
+             f"{where} gives P {gate.get('P')!r}, not the mean of {over}: {means['successes']!r}")
+    for field in ("handwritten", "drafted"):  # the launcher's gate gives no means of the splits; ours does
+        _require(gate.get(field) is None or gate[field] == means[field],
+                 f"{where} gives the {field} mean {gate.get(field)!r}, not the mean of {over}: "
+                 f"{means[field]!r}")
+    b0 = None
+    if gate.get("b0") is not None:
+        b0 = _run_of(gate["b0"], f"{where}: b0", per_type)
+        manifest_path = folder / f"{_variant_prefix(config, stop)}b0.manifest.json"
+        manifest = read_json(manifest_path)
+        _require(manifest is not None,
+                 f"{where} holds a b0 run, but there is no {rel(manifest_path)} to tell its mode")
+        system, ran = manifest.get("system"), (manifest.get("generation") or {}).get("mode")
+        _require((system, ran) == ("b0", mode),
+                 f"{rel(manifest_path)} is a run of the system {system!r} in the mode {ran!r}, not b0's in "
+                 f"{mode!r}")
+        items = (manifest.get("items_run"), manifest.get("items_total"))
+        _require(items == (b0["n"], b0["n"]),
+                 f"{rel(manifest_path)} ran {items[0]} of {items[1]} items, not the b0 run's {b0['n']}")
+        b0 |= {"mode": mode, "manifest": rel(manifest_path), "manifest_sha256": sha256_of(manifest_path)}
+    return {"candidate": key, "model": model, "revision": revision, "mode": mode, "gate": where,
+            "gate_sha256": sha256_of(path), "stop_step": stop, "primary": primary, "P": means["successes"],
+            "handwritten": means["handwritten"], "drafted": means["drafted"], "variants": runs, "b0": b0}
+
+
+def _model_of(config: Config, key: str) -> tuple[str, str]:
+    """The model id and revision the configuration gives the candidate key (the reference's for its key);
+    BakeoffError for an unknown key and for a model id or revision the configuration does not give."""
+    if key == config.reference["key"]:
+        model, revision = config.reference.get("model"), config.reference.get("revision")
+    else:
+        candidate = config.candidate(key)
+        model, revision = candidate.model, candidate.revision
+    _require(bool(model) and bool(revision),
+             f"{rel(config.path)} gives {key} no model id and revision to check its ablation's against")
+    return model, revision
+
+
+def _primary_of_mode(config: Config, mode: str) -> list[str]:
+    """The primary variants of a mode: those the configuration's primary lists for the thinking kinds that
+    answer in it (think-s0..s2 for think, nothink for no_think); BakeoffError when no kind answers in it or
+    its kinds list different variants."""
+    lists = {tuple(entry["variants"]) for entry in config.primary.values() if entry.get("mode") == mode}
+    _require(len(lists) == 1, f"the configuration's primary lists {'different' if lists else 'no'} variants "
+                              f"for the mode {mode!r}")
+    return list(lists.pop())
+
+
+def _whole(value: object) -> bool:
+    """Whether value is a count: an int (not a bool) of 0 or more."""
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def _run_of(summary: object, what: str, per_type: Counter[str]) -> dict:
+    """A gate's summary of one run (summarize_scores) as the description keeps it (descriptive: RUN), checked:
+    its counts whole, its handwritten and drafted successes adding up to its successes, at most its n, its n
+    the development set's items (per_type: the set's items per type), so that every run of an ablation, and
+    P's mean over them, is over the same items, and its per-type counts ("a/b") adding up to its successes and
+    n, each type's n the set's; BakeoffError naming what otherwise."""
+    _require(isinstance(summary, Mapping), f"{what} is not a run's summary")
+    counts = {field: summary.get(field) for field in ("successes", "n", "handwritten", "drafted")}
+    _require(all(_whole(value) for value in counts.values()),
+             f"{what}: successes, n, handwritten and drafted must be whole counts, got {counts}")
+    successes, n = counts["successes"], counts["n"]
+    _require(counts["handwritten"] + counts["drafted"] == successes and successes <= n,
+             f"{what}: {counts['handwritten']} handwritten and {counts['drafted']} drafted successes do not "
+             f"make its {successes} successes of {n}")
+    items = sum(per_type.values())
+    _require(n == items, f"{what} ran over {n} items, not the {items} development items")
+    by_type = summary.get("by_type")
+    if by_type is not None:
+        _require(isinstance(by_type, Mapping), f"{what}: by_type is {by_type!r}, not the per-type counts")
+        parsed = {}
+        for kind, text in by_type.items():
+            match = _TYPE_COUNT.fullmatch(text) if isinstance(text, str) else None
+            _require(match is not None, f"{what}: the per-type count of {kind} is {text!r}, not 'a/b'")
+            parsed[kind] = {"successes": int(match[1]), "n": int(match[2])}
+        total = (sum(c["successes"] for c in parsed.values()), sum(c["n"] for c in parsed.values()))
+        _require(total == (successes, n),
+                 f"{what}: the per-type counts add up to {total[0]}/{total[1]}, not {successes}/{n}")
+        found, wanted = {kind: cell["n"] for kind, cell in parsed.items()}, dict(sorted(per_type.items()))
+        _require(found == wanted,
+                 f"{what}: its items per type are {found}, not the development set's {wanted}")
+        by_type = parsed
+    return {**counts, "by_type": by_type}
+
+
+def _winners_fidelity(config: Config, winner: str) -> dict:
+    """The winner's trained-adapter fidelity as the description keeps it (descriptive: FIDELITY), from its
+    record at the trained step (trained_step: the extension's checkpoint once the run was extended), checked
+    (module docstring: The description)."""
+    step = trained_step(config, config.candidate(winner))
+    path = config.folder(winner) / f"{TRAINED_FIDELITY}-{step}.json"
+    where = rel(path)
+    record = read_json(path)
+    _require(record is not None, f"no fidelity record at {where}: scripts/bakeoff.py fidelity --candidate "
+                                 f"{winner} writes the trained adapter's at step {step}")
+    _require(record.get("candidate") == winner,
+             f"{where} is the record of {record.get('candidate')!r}, not of the winner {winner}")
+    _require(record.get("stop_step") == step,
+             f"{where} is the record of step {record.get('stop_step')!r}, not {winner}'s trained step {step}")
+    _require(record.get("error") is None, f"{where} holds no comparison: {record.get('error')}")
+    settings = {"items": int(config.smoke["items"]), "positions": int(config.smoke["positions"]),
+                "mode": str(SEQUENCES_MODE)}
+    found = record.get("settings")
+    _require(found == settings,
+             f"{where} was made with the settings {found}, not the configuration's {settings}")
+    counts = {field: record.get(field) for field in FIDELITY_COUNTS}
+    positions = counts["positions"]
+    _require(all(_whole(value) for value in counts.values()) and positions > 0
+             and max(counts["agreeing"], counts["base_agreeing"], counts["changed_positions"]) <= positions,
+             f"{where}: the counts {counts} are not whole counts within its positions")
+    for rate, count in (("agreement", "agreeing"), ("base_agreement", "base_agreeing"),
+                        ("changed", "changed_positions")):
+        _require(record.get(rate) == counts[count] / positions,
+                 f"{where}: {rate} is {record.get(rate)!r}, not {counts[count]}/{positions}")
+    return {"candidate": winner, "record": where, "record_sha256": sha256_of(path), "trained_step": step,
+            "settings": settings, **counts}
 
 
 # ---- the plan ---------------------------------------------------------------------------------------------

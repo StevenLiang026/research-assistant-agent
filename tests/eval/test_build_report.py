@@ -7,18 +7,29 @@ same key are refused with nothing written, and the same files give the same byte
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
+import math
 import sys
 from pathlib import Path
 
 import pytest
 from support.fakes import call, turn
 
+from research_agent.canonical import canonical_json
+from research_agent.eval import bakeoff as bakeoff_module
 from research_agent.eval import report
 from research_agent.eval.e2e import CHECKS
 from research_agent.eval.e2e import summarize as summarize_tasks
-from research_agent.eval.metrics import ERROR_CLASSES, compare_systems, holm, score_items, summarize
+from research_agent.eval.metrics import (
+    ERROR_CLASSES,
+    compare_systems,
+    holm,
+    score_items,
+    summarize,
+    wilson_interval,
+)
 from research_agent.eval.numbers import NUMBERS, check
 
 REPO = Path(__file__).resolve().parents[2]
@@ -1313,3 +1324,884 @@ def test_an_m9_result_that_is_not_of_its_shape_is_refused_naming_it(tmp_path, na
     with pytest.raises(report.ReportError) as caught:
         report.build(tmp_path)
     assert f"results/{name} is not {what}" in str(caught.value)
+
+
+# ---- M11: the Wilson intervals, B2's turns per thinking mode, ACEBench per stratum, the bake-off
+# (docs/m11-计划.md, 1) -------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("successes, n, shown", [
+    (270, 300, "[86.1%, 92.9%]"), (135, 150, "[84.2%, 93.8%]"),  # docs/m7-预登记.md's two worked examples
+    (263, 300, "[83.5%, 90.9%]"), (252, 300, "[79.4%, 87.7%]"), (122, 150, "[74.3%, 86.8%]"),
+    (0, 300, "[0.0%, 1.3%]"), (300, 300, "[98.7%, 100.0%]"),
+    (0, 1, "[0.0%, 79.3%]"), (1, 1, "[20.7%, 100.0%]")])
+def test_a_wilson_interval_is_quoted_as_two_percentages_with_one_decimal(successes, n, shown):
+    assert report.rate_interval(*wilson_interval(successes, n)) == shown
+
+
+def test_the_preregistered_z_gives_the_same_strings_and_the_ends_of_the_scale_are_exact():
+    for successes, n, shown in ((270, 300, "[86.1%, 92.9%]"), (135, 150, "[84.2%, 93.8%]")):
+        assert report.rate_interval(*wilson_interval(successes, n, z=1.959964)) == shown
+    assert wilson_interval(0, 300)[0] == 0.0 and wilson_interval(300, 300)[1] == 1.0
+
+
+@pytest.mark.parametrize("successes, n, error", [
+    (5, 0, ValueError), (-1, 300, ValueError), (301, 300, ValueError),
+    (True, 300, TypeError), (2.0, 300, TypeError), ("3", 300, TypeError)])
+def test_counts_that_give_no_interval_are_refused(successes, n, error):
+    with pytest.raises(error):
+        report.rate_interval(*wilson_interval(successes, n))
+
+
+@pytest.mark.parametrize("low, high", [(0.5, 0.4), (-0.01, 0.5), (0.5, 1.01), (math.nan, 0.5)])
+def test_an_interval_that_is_not_one_of_a_rate_is_refused(low, high):
+    with pytest.raises(ValueError):
+        report.rate_interval(low, high)
+
+
+B2_MODES = {"non-thinking": 2, "thinking": 4}  # scripts/run_test.py's "modes": a cloud model's turns per mode
+
+
+def m7_b2() -> dict:
+    """test-m7-b2.json: a cloud system's single-step file with its turns per thinking mode (a copy)."""
+    return {**single_step({"r1-s1", "r2-s1", "hw-dev-001"}, subsets=True), "modes": dict(B2_MODES)}
+
+
+def m7_e2e_b2() -> dict:
+    """test-m7-e2e-b2.json: its end-to-end file, with the turns per mode of its end-to-end model."""
+    return {**m5_e2e(routing=False), "system": "b2", "modes": {"non-thinking": 2, "thinking": 2}}
+
+
+def test_a_test_runs_success_rate_gives_its_wilson_interval_under_its_own_and_each_scorers_name(tmp_path):
+    """The single-step file's summary and the summary of each block under another scorer give success_wilson
+    beside success, as does the end-to-end file's summary, over the successes the rate and n give back; the
+    subsets, a development run's files and a file of another kind give none."""
+    every = single_step({"r1-s1", "r2-s1", "hw-dev-001"}, subsets=True)
+    results(tmp_path, {"test-m7-final.json": {**m7_final(), "scorers": {"normalized": every}},
+                       "test-m7-e2e-final.json": m7_e2e_final(), "dev-b0.json": single_step({"r1-s1"}),
+                       "dev-e2e-final.json": dev_e2e_final(), "lengths-m7.json": lengths_file()})
+    numbers, _ = report.build(tmp_path)
+    assert {key: value for key, value in numbers.items() if "wilson" in key} == {
+        "eval.test-m7-final.success_wilson": "[20.8%, 93.9%]",  # 2 of 3
+        "eval.test-m7-final-normalized.success_wilson": "[43.9%, 100.0%]",  # 3 of 3
+        "e2e.test-m7-final.success_wilson": "[9.5%, 90.5%]"}  # 1 of 2
+    assert (numbers["eval.test-m7-final.success"], numbers["eval.test-m7-final-normalized.success"],
+            numbers["e2e.test-m7-final.success"]) == ("66.7%", "100.0%", "50.0%")
+
+
+def test_a_rate_written_to_ten_decimals_still_gives_back_its_successes(tmp_path):
+    data = m7_final()
+    data["summary"]["success_rate"] = 0.6666666667  # 2 of 3, 3.3e-11 off
+    results(tmp_path, {"test-m7-final.json": data})
+    numbers, _ = report.build(tmp_path)
+    assert numbers["eval.test-m7-final.success_wilson"] == "[20.8%, 93.9%]"
+
+
+def test_no_item_or_no_rate_gives_no_wilson_interval(tmp_path):
+    unrated, e2e_unrated = m7_final(), m7_e2e_final()
+    unrated["summary"]["success_rate"] = e2e_unrated["summary"]["success_rate"] = None
+    results(tmp_path, {"test-m7-final.json": {**m7_final(), "summary": summarize([], [])},
+                       "test-m7-e2e-final.json": {**m7_e2e_final(), "summary": summarize_tasks([])},
+                       "test-m7-finalg.json": unrated, "test-m7-e2e-finalg.json": e2e_unrated})
+    numbers, _ = report.build(tmp_path)
+    assert (numbers["eval.test-m7-final.n"], numbers["e2e.test-m7-final.n"]) == ("0", "0")
+    assert (numbers["eval.test-m7-finalg.n"], numbers["e2e.test-m7-finalg.n"]) == ("3", "2")
+    assert not [key for key in numbers if "wilson" in key]
+
+
+def with_scorer_rate(data: dict) -> dict:
+    """data with a block under the normalized scorer whose rate is 1.5 successes out of 3."""
+    block = single_step({"r1-s1"}, subsets=True)
+    block["summary"]["success_rate"] = 0.5
+    return {**data, "scorers": {"normalized": block}}
+
+
+@pytest.mark.parametrize("name, data, what", [
+    ("test-m7-final.json", m9_broken(m7_final, lambda d: d["summary"].update(success_rate=0.5)),
+     "a single-step summary"),  # 1.5 successes out of 3
+    ("test-m7-final.json", with_scorer_rate(m7_final()), "a single-step summary"),
+    ("test-m7-e2e-final.json", m9_broken(m7_e2e_final, lambda d: d["summary"].update(n=3, success_rate=0.5)),
+     "an end-to-end summary"),
+    ("test-m7-e2e-final.json", m9_broken(m7_e2e_final, lambda d: d["summary"].update(n=2.0)),
+     "an end-to-end summary"),  # e2e_numbers quotes any n; the interval needs a count of items
+], ids=["half-a-success", "half-a-success-under-a-scorer", "half-a-success-end-to-end", "float-n"])
+def test_a_rate_and_n_that_give_back_no_whole_number_of_successes_are_refused(tmp_path, name, data, what):
+    results(tmp_path, {name: data})
+    with pytest.raises(report.ReportError) as caught:
+        report.build(tmp_path)
+    assert f"results/{name} is not {what}" in str(caught.value)
+    assert "whole number of successes" in str(caught.value) or "is not a count" in str(caught.value)
+
+
+@pytest.mark.parametrize("summary, error", [
+    ({"n": 3, "success_rate": 0.5}, report.ReportError), ({"n": 3, "success_rate": "0.667"}, TypeError),
+    ({"n": 3, "success_rate": True}, TypeError), ({"n": "3", "success_rate": 1.0}, TypeError),
+    ({"n": 3, "success_rate": math.nan}, ValueError), ({"n": 3, "success_rate": math.inf}, ValueError),
+    ({"n": 5, "success_rate": 1.2}, ValueError),  # 6 successes out of 5
+], ids=["half-a-success", "text-rate", "bool-rate", "text-n", "nan-rate", "infinite-rate", "rate-above-one"])
+def test_the_interval_needs_a_count_of_items_and_a_rate_that_gives_back_a_count_of_successes(summary, error):
+    with pytest.raises(error):
+        report.wilson_numbers(summary, "eval.test-m7-final")
+
+
+def test_the_tolerance_of_a_rate_that_gives_back_its_successes_is_on_the_rate_not_on_the_count():
+    """270 of 300 (docs/m7-预登记.md's example): a rate 5e-10 off is 1.5e-7 of a success off, and still gives
+    back its 270 successes; one 2e-9 off gives back none."""
+    assert report.wilson_numbers({"n": 300, "success_rate": 0.9 + 5e-10}, "eval.test-m7-final") == {
+        "eval.test-m7-final.success_wilson": "[86.1%, 92.9%]"}
+    with pytest.raises(report.ReportError, match="no whole number of successes"):
+        report.wilson_numbers({"n": 300, "success_rate": 0.9 + 2e-9}, "eval.test-m7-final")
+
+
+def test_the_turns_per_thinking_mode_of_a_test_runs_files_are_given_under_the_files_name(tmp_path):
+    """B2's turns per thinking mode (scripts/run_test.py, "modes": llm.cloud's thinking and non-thinking), in
+    its single-step and end-to-end files, once per file, not per scorer block; a file without "modes" gives
+    none."""
+    b2 = {**m7_b2(), "scorers": {"normalized": single_step({"r1-s1"}, subsets=True)}}
+    results(tmp_path, {"test-m7-b2.json": b2, "test-m7-e2e-b2.json": m7_e2e_b2(),
+                       "test-m7-final.json": m7_final(), "test-m7-e2e-final.json": m7_e2e_final()})
+    numbers, _ = report.build(tmp_path)
+    assert {key: value for key, value in numbers.items() if ".modes." in key} == {
+        "eval.test-m7-b2.modes.non-thinking": "2", "eval.test-m7-b2.modes.thinking": "4",
+        "e2e.test-m7-b2.modes.non-thinking": "2", "e2e.test-m7-b2.modes.thinking": "2"}
+
+
+@pytest.mark.parametrize("modes", [{"thinking": -1}, {"thinking": True}, {"thinking": 4.0}, {"thinking": "4"},
+                                   {"thinking": None}, [4, 2]],
+                         ids=["negative", "bool", "float", "text", "null", "list"])
+@pytest.mark.parametrize("name, make, what", [("test-m7-b2.json", m7_b2, "a single-step summary"),
+                                              ("test-m7-e2e-b2.json", m7_e2e_b2, "an end-to-end summary")],
+                         ids=["single-step", "end-to-end"])
+def test_turns_per_mode_that_are_not_counts_are_refused(tmp_path, modes, name, make, what):
+    results(tmp_path, {name: {**make(), "modes": modes}})
+    with pytest.raises(report.ReportError) as caught:
+        report.build(tmp_path)
+    assert f"results/{name} is not {what}" in str(caught.value)
+
+
+# ACEBench's strata of two systems, {language: {category: (correct, n)}}: ft and b0 alike in English, ft
+# lower on one Chinese stratum and higher on two
+ACE_PAIR_GROUPS = {"normal": ["normal_single_turn_single_function", "normal_atom_bool"],
+                   "special": ["special_incomplete"]}
+FT_STRATA = {"zh": {"normal_single_turn_single_function": (40, 100), "normal_atom_bool": (1, 3),
+                    "special_incomplete": (25, 50)},
+             "en": {"normal_single_turn_single_function": (45, 100)}}
+B0_STRATA = {"zh": {"normal_single_turn_single_function": (37, 100), "normal_atom_bool": (2, 3),
+                    "special_incomplete": (20, 50)},
+             "en": {"normal_single_turn_single_function": (45, 100)}}
+
+
+def ace_system(strata: dict[str, dict[str, tuple[int, int]]]) -> dict:
+    """A system's row of scripts/run_acebench.py's results from its strata: each language's block
+    (ace_language) and the mean over every (language, category) pair."""
+    languages = {language: ace_language(categories, 0, 0) for language, categories in strata.items()}
+    cells = [cell for block in languages.values() for cell in block["categories"].values()]
+    return {"acebench_model": "local-model", "adapter": None, "raw": "runs/acebench/pair",
+            "aggregate": ace_mean(cells), "languages": languages}
+
+
+def ace_pair(ft: dict | None = None, b0: dict | None = None) -> dict:
+    """An ACEBench result that holds ft and b0, as results/acebench-m7.json does."""
+    return {"smoke": False, "languages": ["zh", "en"], "groups": ACE_PAIR_GROUPS,
+            "systems": {"b0": ace_system(b0 or B0_STRATA), "ft": ace_system(ft or FT_STRATA)}}
+
+
+def test_ft_against_b0_gives_each_strata_difference_their_means_and_the_strata_each_is_higher_on(tmp_path):
+    results(tmp_path, {"acebench-pair.json": ace_pair()})
+    numbers, _ = report.build(tmp_path)
+    at = "acebench.pair.ft-vs-b0"
+    assert {key: value for key, value in numbers.items() if key.startswith(f"{at}.")} == {
+        f"{at}.zh.normal_atom_bool": "-33.33",  # 1/3 - 2/3
+        f"{at}.zh.normal_single_turn_single_function": "+3.00", f"{at}.zh.special_incomplete": "+10.00",
+        f"{at}.zh.normal": "-15.17",  # (-1/3 + 3/100) / 2
+        f"{at}.zh.special": "+10.00", f"{at}.zh.aggregate": "-6.78",  # (-1/3 + 3/100 + 1/10) / 3
+        f"{at}.en.normal_single_turn_single_function": "+0.00", f"{at}.en.normal": "+0.00",
+        f"{at}.en.aggregate": "+0.00",  # no special category run in English: no group mean there
+        f"{at}.aggregate": "-5.08",  # the mean over the four strata
+        f"{at}.strata": "4", f"{at}.ft_higher": "2", f"{at}.b0_higher": "1", f"{at}.equal": "1"}
+    # the mean of the strata's differences is the difference of the systems' means over the strata
+    assert (numbers["acebench.pair.ft.aggregate"], numbers["acebench.pair.b0.aggregate"]) == (
+        "42.08%", "47.17%")
+
+
+def test_a_file_without_both_ft_and_b0_gives_no_differences(tmp_path):
+    ft_alone = ace_pair()
+    del ft_alone["systems"]["b0"]
+    results(tmp_path, {"acebench-ft.json": ft_alone, "acebench-m4.json": ACEBENCH})  # ACEBENCH: b0 alone
+    numbers, _ = report.build(tmp_path)
+    assert (numbers["acebench.ft.ft.aggregate"], numbers["acebench.m4.b0.aggregate"]) == ("42.08%", "40.67%")
+    assert not [key for key in numbers if "-vs-" in key]
+
+
+def ace_pair_with(change) -> dict:
+    data = ace_pair()
+    change(data["systems"])
+    return data
+
+
+@pytest.mark.parametrize("data", [
+    ace_pair(ft={**FT_STRATA, "zh": {**FT_STRATA["zh"], "normal_atom_bool": (1, 4)}}),  # 4 answers, b0 3
+    ace_pair(ft={**FT_STRATA, "zh": {key: cell for key, cell in FT_STRATA["zh"].items()
+                                     if key != "special_incomplete"}}),
+    ace_pair(b0={"zh": B0_STRATA["zh"]}),  # English run by ft alone
+    ace_pair(ft={**FT_STRATA, "en": {"normal_single_turn_single_function": (101, 100)}}),
+    ace_pair_with(lambda systems: systems["ft"]["languages"]["zh"]["categories"]["normal_atom_bool"].update(
+        accuracy=0.34)),  # an accuracy that is not its correct over its n
+    ace_pair_with(lambda systems: systems["b0"]["languages"]["en"]["categories"][
+        "normal_single_turn_single_function"].update(n=100.0)),
+], ids=["different-n", "different-categories", "different-languages", "more-correct-than-answers",
+        "accuracy-not-the-counts", "float-n"])
+def test_ft_and_b0_that_do_not_hold_the_same_strata_with_the_same_answers_are_refused(tmp_path, data):
+    results(tmp_path, {"acebench-pair.json": data})
+    with pytest.raises(report.ReportError, match="results/acebench-pair.json is not an ACEBench result"):
+        report.build(tmp_path)
+
+
+# The keys results/acebench-m7.json gave before M11 (results/numbers.json as the commit of the M11 plan holds
+# it): how many, and the SHA-256 of them with their values as canonical JSON. M11 adds its ft-vs-b0 keys and
+# changes none of these (docs/m11-计划.md: numbers.json only grows, its old keys and values unchanged).
+M7_ACEBENCH_BEFORE_M11 = (290, "248e2a1a1aa623db24a5f57cfa4ec5afbbe1d03e38fd25d927ab1d41e5018d5b")
+
+
+def test_m7s_mean_difference_over_the_strata_is_h3s_difference(tmp_path):
+    """results/acebench-m7.json (committed) gives acebench.m7.ft-vs-b0.aggregate equal to H3's difference in
+    results/numbers.json, compare.test-m7.final-vs-b0-acebench.diff (scripts/run_test.py,
+    Session.acebench_comparison: the mean over the 30 (language, category) strata of FT3's per-answer success
+    rate minus B0's, which reproduce the counts of the score files the results file holds). Beside its 41
+    ft-vs-b0 keys it gives the keys it gave before M11, unchanged (M7_ACEBENCH_BEFORE_M11), and numbers.json
+    holds every key it gives as the build gives it, and no other under acebench.m7."""
+    text = (REPO / "results" / "acebench-m7.json").read_text(encoding="utf-8")
+    results(tmp_path, {"acebench-m7.json": text})
+    numbers, _ = report.build(tmp_path)
+    recorded = json.loads((REPO / NUMBERS).read_text(encoding="utf-8"))["numbers"]
+    h3, at = "compare.test-m7.final-vs-b0-acebench", "acebench.m7.ft-vs-b0"
+    assert numbers[f"{at}.aggregate"] == recorded[f"{h3}.diff"] == "-3.96"
+    assert numbers[f"{at}.strata"] == recorded[f"{h3}.strata"] == "30"
+    assert sum(int(numbers[f"{at}.{key}"]) for key in ("ft_higher", "b0_higher", "equal")) == 30
+    # M11's: the 30 strata, the normal and special groups and the aggregate of each of the two languages, the
+    # aggregate over every stratum and the four counts
+    new = {key for key in numbers if key.startswith(f"{at}.")}
+    assert len(new) == 30 + 2 * 3 + 1 + 4 == 41
+    before = {key: value for key, value in numbers.items() if key not in new}
+    digest = hashlib.sha256(canonical_json(before).encode("utf-8")).hexdigest()
+    assert (len(before), digest) == M7_ACEBENCH_BEFORE_M11
+    assert {key: value for key, value in recorded.items() if key.startswith("acebench.m7.")} == numbers
+
+
+def bakeoff_candidate(key: str, name: str, thinking: str, mode: str, p: float, handwritten: float,
+                      hours: float, *, greedy: int | None = None, extension: dict | None = None) -> dict:
+    """A scored candidate of results/bakeoff-m7.json as eval.bakeoff.aggregate writes it: its gate's entry
+    with the gate's name, smoke status, path and SHA-256."""
+    return {"candidate": key, "status": "scored", "P": p, "eligible": True, "reasons": [], "missing": [],
+            "thinking": thinking, "mode": mode, "handwritten": handwritten,
+            "ft3_hours_estimate": round(hours, 1), "ft3_hours_unrounded": hours, "no_think_greedy": greedy,
+            "extension": extension, "name": name, "smoke": {f"S{step}": "passed" for step in range(7)},
+            "gate": f"runs/bakeoff/m7/{key}/gate.json", "gate_sha256": "0" * 64}
+
+
+def variant_scores(successes: int, handwritten: int) -> dict:
+    """A variant's scores over the 150 development items (eval.bakeoff.summarize_scores)."""
+    return {"successes": successes, "n": 150, "handwritten": handwritten, "drafted": successes - handwritten,
+            "by_type": {"call": "40/60"}}
+
+
+def bakeoff_file() -> dict:
+    """results/bakeoff-m7.json as scripts/bakeoff.py aggregate writes it, the parts the report reads and a few
+    others, with six of its entries: the reference C0, C1 (a family that does not think), C2 (extended to
+    step 548), C3 (a hybrid family, with its nothink greedy run), C5, the winner, and C6, skipped by a cut
+    line."""
+    extension = {"stop_step": 548, "P": 115.66666666666667, "handwritten": 37.333333333333336,
+                 "no_think_greedy": None, "primary": ["think-s0", "think-s1", "think-s2"],
+                 "variants": {"think-s0": variant_scores(113, 36), "think-s1": variant_scores(120, 40),
+                              "think-s2": variant_scores(114, 36), "think-greedy": variant_scores(119, 38)}}
+    reference = {"status": "reference", "candidate": "c0", "name": "Qwen3-4B", "model": "Qwen/Qwen3-4B",
+                 "thinking": "hybrid", "mode": "no_think", "P": 107, "handwritten": 32, "eligible": True,
+                 "reasons": [], "missing": [], "tokens_per_epoch": 15548908,
+                 "tokens_per_s_median_100_to_stop": 445.5, "ft3_hours_estimate": 28.1,
+                 "ft3_hours_unrounded": 28.115621149769293, "no_think_greedy": None, "extension": None,
+                 "score": "runs/m7/g2-dev-ft3pilot.score.json", "source": "runs/m7/g2.json",
+                 "train": "runs/train/ft3-pilot", "files": {}, "drafted": 75, "by_type": {"call": "47/60"}}
+    candidates = {
+        "c0": reference,
+        "c1": bakeoff_candidate("c1", "Qwen3-4B-Instruct-2507", "none", "no_think", 102, 31,
+                                32.59873783587509),
+        "c2": bakeoff_candidate("c2", "Qwen3-4B-Thinking-2507", "only", "think", 111.33333333333333, 39,
+                                31.83878364347357, extension=extension),
+        "c3": bakeoff_candidate("c3", "Qwen3.5-4B", "hybrid", "think", 109.33333333333333, 36.666666666666664,
+                                40.41300902969084, greedy=114),
+        "c5": bakeoff_candidate("c5", "Nanbeige4.1-3B", "only", "think", 115.33333333333333, 36,
+                                27.662558654055232),
+        "c6": {"status": "skipped", "candidate": "c6", "name": "MiniCPM5-2B", "thinking": "hybrid",
+               "reason": "cut line 2 (docs/m7-计划.md 砍线): wave 4 more than a day behind on 2026-10-26",
+               "gate": "runs/bakeoff/m7/c6/gate.json"}}
+    return {"config": "configs/bakeoff-m7.json", "config_sha256": "1" * 64,
+            "preregistration": "docs/m7-底座对比预登记.md", "preregistration_sha256": "2" * 64,
+            "rule": {"tie": 3, "hybrid_margin": 5, "ft3_hours": 60.0, "extend_step": 548,
+                     "smoke_steps": [f"S{step}" for step in range(7)]},
+            "candidates": candidates,
+            "decision": {"status": "decided", "winner": "c5", "basis": "P", "mode": "think",
+                         "ranking": ["c5", "c2", "c3", "c0", "c1"], "extend": None, "runner_up": "c2",
+                         "margin": 4.0, "note": None, "waiting": []},
+            "complete": True}
+
+
+def test_a_bake_off_gives_each_candidates_scores_the_extension_the_decision_and_the_rule(tmp_path):
+    """Per candidate its status, and unless it was skipped, the numbers of its entry that are not null (a
+    whole score as it is, a mean over three seeds with two decimals, the FT3 estimate with one) and its rank;
+    a candidate extended to step 548 also the extension's numbers and its variants' scores; the decision, the
+    rule's numbers, whether the file is complete and how many candidates it has besides the reference and
+    skipped. The file's other fields (paths, hashes, smoke records, reasons) are not read."""
+    results(tmp_path, {"bakeoff-m7.json": bakeoff_file()})
+    numbers, sources = report.build(tmp_path)
+    assert [p.as_posix() for p in sources] == ["results/bakeoff-m7.json"]
+    at = "bakeoff.m7"
+    scores = (("think-s0", ("113", "150", "36")), ("think-s1", ("120", "150", "40")),
+              ("think-s2", ("114", "150", "36")), ("think-greedy", ("119", "150", "38")))
+    variants = {f"{at}.c2.extension.{name}.{key}": value for name, values in scores
+                for key, value in zip(("successes", "n", "handwritten"), values, strict=True)}
+    assert numbers == {
+        f"{at}.complete": "yes", f"{at}.candidates": "5", f"{at}.skipped": "1",
+        f"{at}.rule.tie": "3", f"{at}.rule.hybrid_margin": "5", f"{at}.rule.ft3_hours": "60.0",
+        f"{at}.rule.extend_step": "548",
+        f"{at}.decision.status": "decided", f"{at}.decision.winner": "c5", f"{at}.decision.basis": "P",
+        f"{at}.decision.mode": "think", f"{at}.decision.runner_up": "c2", f"{at}.decision.margin": "4.00",
+        f"{at}.c0.status": "reference", f"{at}.c0.P": "107", f"{at}.c0.handwritten": "32",
+        f"{at}.c0.eligible": "yes", f"{at}.c0.mode": "no_think", f"{at}.c0.thinking": "hybrid",
+        f"{at}.c0.ft3_hours": "28.1", f"{at}.c0.rank": "4",
+        f"{at}.c1.status": "scored", f"{at}.c1.P": "102", f"{at}.c1.handwritten": "31",
+        f"{at}.c1.eligible": "yes", f"{at}.c1.mode": "no_think", f"{at}.c1.thinking": "none",
+        f"{at}.c1.ft3_hours": "32.6", f"{at}.c1.rank": "5",
+        f"{at}.c2.status": "scored", f"{at}.c2.P": "111.33", f"{at}.c2.handwritten": "39",
+        f"{at}.c2.eligible": "yes", f"{at}.c2.mode": "think", f"{at}.c2.thinking": "only",
+        f"{at}.c2.ft3_hours": "31.8", f"{at}.c2.rank": "2", f"{at}.c2.extension.stop_step": "548",
+        f"{at}.c2.extension.P": "115.67", f"{at}.c2.extension.handwritten": "37.33", **variants,
+        f"{at}.c3.status": "scored", f"{at}.c3.P": "109.33", f"{at}.c3.handwritten": "36.67",
+        f"{at}.c3.eligible": "yes", f"{at}.c3.mode": "think", f"{at}.c3.thinking": "hybrid",
+        f"{at}.c3.no_think_greedy": "114", f"{at}.c3.ft3_hours": "40.4", f"{at}.c3.rank": "3",
+        f"{at}.c5.status": "scored", f"{at}.c5.P": "115.33", f"{at}.c5.handwritten": "36",
+        f"{at}.c5.eligible": "yes", f"{at}.c5.mode": "think", f"{at}.c5.thinking": "only",
+        f"{at}.c5.ft3_hours": "27.7", f"{at}.c5.rank": "1",
+        f"{at}.c6.status": "skipped"}
+
+
+def test_a_bake_off_still_waiting_names_no_winner_and_a_candidate_without_a_gate_only_its_status(tmp_path):
+    data = bakeoff_file()
+    data["candidates"]["c4"] = {"status": "pending", "candidate": "c4", "name": "Nanbeige4-3B-Thinking-2511",
+                                "thinking": "only", "gate": "runs/bakeoff/m7/c4/gate.json"}
+    incomplete = bakeoff_candidate("c8", "granite-4.2-3b", "hybrid", "think", 105.66666666666667, 35,
+                                   42.7099788510101)
+    data["candidates"]["c8"] = {**incomplete, "status": "incomplete", "eligible": None,
+                                "missing": ["no scores for nothink"], "ft3_hours_estimate": None,
+                                "ft3_hours_unrounded": None}
+    data["decision"] = {"status": "provisional", "standing": "decided", "winner": None, "leader": "c5",
+                        "basis": "P", "mode": "think", "ranking": ["c5", "c2", "c3", "c0", "c8", "c1"],
+                        "extend": None, "runner_up": "c2", "margin": 4.0, "note": None,
+                        "waiting": ["c4", "c8"]}
+    data["complete"] = False
+    results(tmp_path, {"bakeoff-m7.json": data})
+    numbers, _ = report.build(tmp_path)
+    at = "bakeoff.m7"
+    assert (numbers[f"{at}.complete"], numbers[f"{at}.decision.status"], numbers[f"{at}.candidates"]) == (
+        "no", "provisional", "7")
+    assert f"{at}.decision.winner" not in numbers and numbers[f"{at}.decision.runner_up"] == "c2"
+    assert [key for key in numbers if key.startswith(f"{at}.c4.")] == [f"{at}.c4.status"]
+    assert {key: value for key, value in numbers.items() if key.startswith(f"{at}.c8.")} == {
+        f"{at}.c8.status": "incomplete", f"{at}.c8.P": "105.67", f"{at}.c8.handwritten": "35",
+        f"{at}.c8.mode": "think", f"{at}.c8.thinking": "hybrid", f"{at}.c8.rank": "5"}
+    assert numbers[f"{at}.c1.rank"] == "6"
+
+
+def bakeoff_broken(change) -> dict:
+    data = bakeoff_file()
+    change(data)
+    return data
+
+
+def extension_of(data: dict) -> dict:
+    return data["candidates"]["c2"]["extension"]
+
+
+@pytest.mark.parametrize("data", [
+    bakeoff_broken(lambda d: d["candidates"]["c1"].update(status="withdrawn")),
+    bakeoff_broken(lambda d: d["decision"].update(status="maybe")),
+    bakeoff_broken(lambda d: d["candidates"]["c1"].update(P="102")),
+    bakeoff_broken(lambda d: d["candidates"]["c3"].update(handwritten=True)),
+    bakeoff_broken(lambda d: d["candidates"]["c1"].update(eligible="yes")),
+    bakeoff_broken(lambda d: d["candidates"]["c1"].update(mode="fast")),
+    bakeoff_broken(lambda d: d["candidates"]["c1"].update(thinking="sometimes")),
+    bakeoff_broken(lambda d: d["candidates"]["c3"].update(no_think_greedy=114.5)),
+    bakeoff_broken(lambda d: d["candidates"]["c1"].update(ft3_hours_estimate="32.6")),
+    bakeoff_broken(lambda d: d["candidates"]["c1"].pop("ft3_hours_estimate")),
+    bakeoff_broken(lambda d: d["candidates"]["c1"].update(candidate="c9")),  # filed under another key
+    bakeoff_broken(lambda d: d["candidates"]["c6"].update(P=100)),  # a cut line skips before any score
+    bakeoff_broken(lambda d: extension_of(d).update(stop_step="548")),
+    bakeoff_broken(lambda d: extension_of(d)["variants"]["think-s0"].update(successes=151)),
+    bakeoff_broken(lambda d: extension_of(d)["variants"]["think-s0"].update(handwritten=114)),
+    bakeoff_broken(lambda d: extension_of(d).update(variants=[])),
+    bakeoff_broken(lambda d: d["decision"].update(ranking=["c5", "c2", "c9"])),  # not one of the file's
+    bakeoff_broken(lambda d: d["decision"].update(ranking=["c5", "c2", "c2"])),
+    bakeoff_broken(lambda d: d["decision"].update(ranking=["c5", "c2", "c6"])),  # a skipped one ranked
+    bakeoff_broken(lambda d: d["decision"].update(winner="c6")),  # a winner the ranking does not hold
+    bakeoff_broken(lambda d: d["decision"].update(mode="fast")),
+    bakeoff_broken(lambda d: d["decision"].update(margin="4.0")),
+    bakeoff_broken(lambda d: d["rule"].update(tie="3")),
+    bakeoff_broken(lambda d: d["rule"].update(smoke_steps="S0-S6")),
+    bakeoff_broken(lambda d: d.update(complete="yes")),
+    bakeoff_broken(lambda d: d.update(candidates=list(d["candidates"].values()))),
+], ids=["candidate-status", "decision-status", "text-P", "bool-handwritten", "text-eligible",
+        "candidate-mode", "thinking-kind", "float-greedy", "text-hours", "no-hours", "filed-elsewhere",
+        "skipped-with-P", "text-stop-step", "successes-above-n", "handwritten-above-successes",
+        "variants-list", "ranked-unknown", "ranked-twice", "ranked-skipped", "winner-not-ranked",
+        "decision-mode", "text-margin", "text-tie", "text-smoke-steps", "text-complete", "candidates-list"])
+def test_a_bake_off_that_is_not_of_its_shape_is_refused(tmp_path, data):
+    results(tmp_path, {"bakeoff-m7.json": data})
+    with pytest.raises(report.ReportError, match="results/bakeoff-m7.json is not a bake-off aggregate"):
+        report.build(tmp_path)
+
+
+def test_the_m7_bake_off_gives_the_scores_and_the_decision_of_its_committed_file(tmp_path):
+    """results/bakeoff-m7.json (committed): C5 wins on P, 4.00 ahead of C2, in think mode; every candidate
+    that took part has its rank and P, C2 its extension to step 548; the three that a cut line skipped give
+    their status alone."""
+    text = (REPO / "results" / "bakeoff-m7.json").read_text(encoding="utf-8")
+    results(tmp_path, {"bakeoff-m7.json": text})
+    numbers, _ = report.build(tmp_path)
+    at = "bakeoff.m7"
+    assert (numbers[f"{at}.complete"], numbers[f"{at}.candidates"], numbers[f"{at}.skipped"]) == (
+        "yes", "9", "3")
+    decision = ("status", "winner", "basis", "mode", "runner_up", "margin")
+    assert {key: numbers[f"{at}.decision.{key}"] for key in decision} == {
+        "status": "decided", "winner": "c5", "basis": "P", "mode": "think", "runner_up": "c2",
+        "margin": "4.00"}
+    ranked = ("c5", "c2", "c3", "c0", "c4", "c8", "c1")
+    assert [numbers[f"{at}.{key}.rank"] for key in ranked] == [str(rank) for rank in range(1, 8)]
+    assert [numbers[f"{at}.{key}.P"] for key in ranked] == ["115.33", "111.33", "109.33", "107", "106.33",
+                                                            "105.67", "102"]
+    assert (numbers[f"{at}.c2.extension.P"], numbers[f"{at}.c2.extension.handwritten"],
+            numbers[f"{at}.c2.extension.think-s1.successes"]) == ("115.67", "37.33", "120")
+    assert (numbers[f"{at}.c5.ft3_hours"], numbers[f"{at}.c3.no_think_greedy"],
+            numbers[f"{at}.rule.tie"]) == ("27.7", "114", "3")
+    for skipped in ("c6", "c7", "c9"):
+        assert {key: value for key, value in numbers.items() if key.startswith(f"{at}.{skipped}.")} == {
+            f"{at}.{skipped}.status": "skipped"}
+
+
+def test_bake_off_aggregates_are_registered_by_milestone_and_no_other_file_changes_its_kind():
+    assert report.kind_of("bakeoff-m7.json").key == report.kind_of("bakeoff-m12.json").key == "bakeoff"
+    assert [kind.key for kind in report.REGISTRY].count("bakeoff") == 1
+    bakeoff = next(kind for kind in report.REGISTRY if kind.key == "bakeoff")
+    for name in ("bakeoff-descriptive-m7.json", "bakeoff-test.json", "bakeoff.json", "bakeoff-m7.jsonl",
+                 "lengths-acebench-m7.json", *every_kind()):
+        assert not bakeoff.pattern.fullmatch(name)
+    assert report.kind_of("dev-bakeoff-m7.json").key == "dev"  # a development summary's name, as before
+
+
+# ---- M11: the bake-off's description and ACEBench's generated lengths (docs/m11-计划.md, 1) ----------------
+
+
+def ablation_run(successes: int, handwritten: int, by_type: dict[str, tuple[int, int]] | None = None) -> dict:
+    """A run of an ablation as eval.bakeoff.descriptive keeps it (RUN): its counts over the 150 development
+    items and its per-type counts, {"call": (successes, n)}, or none."""
+    cells = None if by_type is None else {kind: {"successes": a, "n": b} for kind, (a, b) in by_type.items()}
+    return {"successes": successes, "n": 150, "handwritten": handwritten, "drafted": successes - handwritten,
+            "by_type": cells}
+
+
+def bakeoff_descriptive_file() -> dict:
+    """results/bakeoff-descriptive-m7.json as scripts/bakeoff.py descriptive writes it, with two item types:
+    C0's model trained to think (three seeds, a greedy nothink run whose gate kept no per-type counts, and the
+    untrained base's run in think mode), C2's model trained not to think (no base run), and the trained
+    adapter of the winner, C5, checked against the training stack."""
+    c0 = {"candidate": "c0", "model": "Qwen/Qwen3-4B", "revision": "1cfa9a720891", "mode": "think",
+          "gate": "runs/bakeoff/m7/c0-think/gate.json", "gate_sha256": "3" * 64, "stop_step": 274,
+          "primary": ["think-s0", "think-s1", "think-s2"], "P": 99.66666666666667,
+          "handwritten": 36.333333333333336, "drafted": 63.333333333333336,
+          "variants": {"think-s0": ablation_run(102, 34, {"call": (95, 130), "clarify": (7, 20)}),
+                       "think-s1": ablation_run(96, 38, {"call": (91, 130), "clarify": (5, 20)}),
+                       "think-s2": ablation_run(101, 37, {"call": (92, 130), "clarify": (9, 20)}),
+                       "nothink": ablation_run(88, 27)},
+          "b0": {**ablation_run(84, 30, {"call": (78, 130), "clarify": (6, 20)}), "mode": "think",
+                 "manifest": "runs/bakeoff/m7/c0-think/dev-b0.manifest.json", "manifest_sha256": "4" * 64}}
+    c2 = {"candidate": "c2", "model": "Qwen/Qwen3-4B-Thinking-2507",
+          "revision": "768f209d9ea81521153ed38c47d515654e938aea", "mode": "no_think",
+          "gate": "runs/bakeoff/m7/c2-nothink/gate.json", "gate_sha256": "5" * 64, "stop_step": 274,
+          "primary": ["nothink"], "P": 70, "handwritten": 25, "drafted": 45,
+          "variants": {"nothink": ablation_run(70, 25, {"call": (62, 130), "clarify": (8, 20)})}, "b0": None}
+    return {"kind": "bakeoff-descriptive", "milestone": "m7", "config": "configs/bakeoff-m7.json",
+            "config_sha256": "1" * 64, "aggregate": "results/bakeoff-m7.json", "aggregate_sha256": "2" * 64,
+            "ablations": {"c0-think": c0, "c2-nothink": c2},
+            "fidelity": {"candidate": "c5", "record": "runs/bakeoff/m7/c5/fidelity-trained-274.json",
+                         "record_sha256": "6" * 64, "trained_step": 274,
+                         "settings": {"items": 20, "positions": 16, "mode": "no_think"}, "items": 20,
+                         "positions": 320, "agreeing": 316, "base_agreeing": 315, "changed_positions": 20}}
+
+
+def run_keys(prefix: str, successes: int, handwritten: int, **types: tuple[int, int]) -> dict[str, str]:
+    """The numbers of an ablation's run over 150 items under prefix, and of its types (successes, n)."""
+    numbers = {f"{prefix}.successes": str(successes), f"{prefix}.n": "150",
+               f"{prefix}.handwritten": str(handwritten), f"{prefix}.drafted": str(successes - handwritten)}
+    for kind, (a, b) in types.items():
+        numbers.update({f"{prefix}.{kind}.successes": str(a), f"{prefix}.{kind}.n": str(b)})
+    return numbers
+
+
+def test_a_bake_off_description_gives_each_ablations_runs_and_the_winners_fidelity(tmp_path):
+    """Per ablation its candidate, model, revision, mode and stop step, its P and means as a bake-off's
+    scores (two decimals unless whole), and each run's counts: every variant of its gate, the untrained
+    base's run when it has one, and per item type when the gate kept them. The winner's trained adapter: its
+    step and counts, and three rates of its positions with one decimal. Paths, hashes and settings are not
+    read."""
+    results(tmp_path, {"bakeoff-descriptive-m7.json": bakeoff_descriptive_file()})
+    numbers, sources = report.build(tmp_path)
+    assert [p.as_posix() for p in sources] == ["results/bakeoff-descriptive-m7.json"]
+    c0, c2, c5 = "bakeoff.m7.ablation.c0-think", "bakeoff.m7.ablation.c2-nothink", "bakeoff.m7.fidelity.c5"
+    assert numbers == {
+        f"{c0}.candidate": "c0", f"{c0}.model": "Qwen/Qwen3-4B", f"{c0}.revision": "1cfa9a720891",
+        f"{c0}.mode": "think", f"{c0}.stop_step": "274", f"{c0}.P": "99.67", f"{c0}.handwritten": "36.33",
+        f"{c0}.drafted": "63.33",
+        **run_keys(f"{c0}.think-s0", 102, 34, call=(95, 130), clarify=(7, 20)),
+        **run_keys(f"{c0}.think-s1", 96, 38, call=(91, 130), clarify=(5, 20)),
+        **run_keys(f"{c0}.think-s2", 101, 37, call=(92, 130), clarify=(9, 20)),
+        **run_keys(f"{c0}.nothink", 88, 27), **run_keys(f"{c0}.b0", 84, 30, call=(78, 130), clarify=(6, 20)),
+        f"{c2}.candidate": "c2", f"{c2}.model": "Qwen/Qwen3-4B-Thinking-2507",
+        f"{c2}.revision": "768f209d9ea81521153ed38c47d515654e938aea", f"{c2}.mode": "no_think",
+        f"{c2}.stop_step": "274", f"{c2}.P": "70", f"{c2}.handwritten": "25", f"{c2}.drafted": "45",
+        **run_keys(f"{c2}.nothink", 70, 25, call=(62, 130), clarify=(8, 20)),
+        f"{c5}.trained_step": "274", f"{c5}.items": "20", f"{c5}.positions": "320", f"{c5}.agreeing": "316",
+        f"{c5}.base_agreeing": "315", f"{c5}.changed_positions": "20", f"{c5}.agreement": "98.8%",
+        f"{c5}.base_agreement": "98.4%", f"{c5}.changed": "6.2%"}
+
+
+def test_a_fidelity_over_no_position_gives_its_counts_and_no_rate(tmp_path):
+    data = bakeoff_descriptive_file()
+    data["fidelity"].update(items=0, positions=0, agreeing=0, base_agreeing=0, changed_positions=0)
+    results(tmp_path, {"bakeoff-descriptive-m7.json": data})
+    numbers, _ = report.build(tmp_path)
+    at = "bakeoff.m7.fidelity.c5"
+    assert {key: value for key, value in numbers.items() if key.startswith(f"{at}.")} == {
+        f"{at}.trained_step": "274", f"{at}.items": "0", f"{at}.positions": "0", f"{at}.agreeing": "0",
+        f"{at}.base_agreeing": "0", f"{at}.changed_positions": "0"}
+
+
+def descriptive_broken(change) -> dict:
+    data = bakeoff_descriptive_file()
+    change(data)
+    return data
+
+
+def c0_think(data: dict) -> dict:
+    return data["ablations"]["c0-think"]
+
+
+def c0_variant(data: dict, variant: str) -> dict:
+    return data["ablations"]["c0-think"]["variants"][variant]
+
+
+@pytest.mark.parametrize("data, why", [
+    (descriptive_broken(lambda d: d.update(kind="bakeoff")), "kind 'bakeoff' is not 'bakeoff-descriptive'"),
+    (descriptive_broken(lambda d: d.update(milestone="m8")), "the milestone 'm8' is not the file name's, m7"),
+    (descriptive_broken(lambda d: d.update(ablations=list(d["ablations"].values()))),
+     "is not an object of ablations by name"),
+    (descriptive_broken(lambda d: d.update(ablations={})), "no ablation"),
+    (descriptive_broken(lambda d: c0_think(d).update(mode="fast")), "c0-think.mode 'fast' is not one of"),
+    (descriptive_broken(lambda d: c0_think(d).update(model=None)), "c0-think.model None is not a name"),
+    (descriptive_broken(lambda d: c0_think(d).update(revision="")), "c0-think.revision '' is not a name"),
+    (descriptive_broken(lambda d: c0_think(d).update(stop_step="274")), "'274' is not a count"),
+    (descriptive_broken(lambda d: c0_think(d).update(P=99.0)), "c0-think.P 99.0 is not the mean successes"),
+    (descriptive_broken(lambda d: c0_think(d).update(handwritten=36)),
+     "c0-think.handwritten 36 is not the mean handwritten of think-s0, think-s1, think-s2"),
+    (descriptive_broken(lambda d: c0_think(d).update(drafted="63.33")), "drafted '63.33' is not a number"),
+    (descriptive_broken(lambda d: c0_think(d).update(primary=["think-s0", "think-s3"])),
+     "the primary variants ['think-s0', 'think-s3'] are not distinct variants it holds"),
+    (descriptive_broken(lambda d: c0_think(d).update(primary=[])), "the primary variants [] are not"),
+    (descriptive_broken(lambda d: c0_think(d).update(primary=["think-s0", "think-s0"])),
+     "the primary variants ['think-s0', 'think-s0'] are not"),
+    (descriptive_broken(lambda d: c0_think(d).update(primary="think-s0")),
+     "the primary variants 'think-s0' are not"),
+    (descriptive_broken(lambda d: c0_think(d).update(variants={})), "c0-think: no variant"),
+    (descriptive_broken(lambda d: c0_think(d).update(variants=list(c0_think(d)["variants"].values()))),
+     "is not an object of runs per variant"),
+    (descriptive_broken(lambda d: c0_variant(d, "nothink").update(successes=151, drafted=124)),
+     "nothink.successes: 151 is more than the 150 it is out of"),
+    (descriptive_broken(lambda d: c0_variant(d, "nothink").update(drafted=60)),
+     "27 handwritten and 60 drafted successes do not make its 88"),
+    (descriptive_broken(lambda d: c0_variant(d, "nothink").update(handwritten=-1, drafted=89)),
+     "nothink.handwritten: -1 is not a count"),
+    (descriptive_broken(lambda d: c0_variant(d, "nothink").update(successes=88.0)), "88.0 is not a count"),
+    (descriptive_broken(lambda d: c0_variant(d, "think-s0")["by_type"]["call"].update(successes=94)),
+     "think-s0: its item types add up to 101/150, not 102/150"),
+    (descriptive_broken(lambda d: c0_variant(d, "think-s0").update(by_type={
+        "call": {"successes": 82, "n": 80}, "clarify": {"successes": 20, "n": 70}})),  # they add up
+     "think-s0.call.successes: 82 is more than the 80 it is out of"),
+    (descriptive_broken(lambda d: c0_variant(d, "think-s0").update(by_type=["95/130", "7/20"])),
+     "is not an object of counts per item type"),
+    (descriptive_broken(lambda d: c0_variant(d, "think-s0").pop("by_type")), "KeyError: 'by_type'"),
+    # a primary seed scored on 130 of the 150 items, its counts consistent and P still the mean of the seeds
+    (descriptive_broken(lambda d: c0_variant(d, "think-s1").update(n=130, by_type={
+        "call": {"successes": 91, "n": 110}, "clarify": {"successes": 5, "n": 20}})),
+     ("c0-think: its runs are not over one number of items: {'think-s0': 150, 'think-s1': 130, "
+      "'think-s2': 150, 'nothink': 150, 'b0': 150}")),
+    (descriptive_broken(lambda d: c0_think(d)["b0"].update(n=130, by_type={
+        "call": {"successes": 78, "n": 110}, "clarify": {"successes": 6, "n": 20}})),
+     "c0-think: its runs are not over one number of items"),
+    (descriptive_broken(lambda d: c0_think(d)["b0"].update(mode="no_think")),
+     "c0-think.b0 ran in the mode 'no_think', not the ablation's, think"),
+    (descriptive_broken(lambda d: c0_think(d)["variants"].update(b0=ablation_run(84, 30))),
+     "c0-think.b0.successes is given twice"),  # a variant named as the base's run
+    (descriptive_broken(lambda d: d["fidelity"].update(agreeing=321)),
+     "c5.agreeing: 321 is more than the 320 it is out of"),
+    (descriptive_broken(lambda d: d["fidelity"].update(changed_positions="20")), "'20' is not a count"),
+    (descriptive_broken(lambda d: d["fidelity"].update(trained_step=274.0)), "274.0 is not a count"),
+    (descriptive_broken(lambda d: d["fidelity"].update(candidate=None)),
+     "fidelity.candidate None is not a name"),
+    (descriptive_broken(lambda d: d.pop("fidelity")), "KeyError: 'fidelity'"),
+], ids=["other-kind", "other-milestone", "ablations-list", "no-ablation", "ablation-mode", "no-model",
+        "empty-revision", "text-stop-step", "P-not-the-mean", "handwritten-not-the-mean", "text-drafted",
+        "primary-unknown", "no-primary", "primary-twice", "primary-text", "no-variant", "variants-list",
+        "successes-above-n", "split-not-successes", "negative-handwritten", "float-successes",
+        "types-not-the-run", "type-above-its-n", "by-type-list", "no-by-type", "seed-over-fewer-items",
+        "base-over-fewer-items", "base-in-another-mode",
+        "variant-named-b0", "agreeing-above-positions", "text-changed", "float-trained-step",
+        "no-fidelity-candidate", "no-fidelity"])
+def test_a_bake_off_description_that_is_not_of_its_shape_is_refused_for_its_fault(tmp_path, data, why):
+    results(tmp_path, {"bakeoff-descriptive-m7.json": data})
+    with pytest.raises(report.ReportError) as caught:
+        report.build(tmp_path)
+    assert "results/bakeoff-descriptive-m7.json is not a bake-off description" in str(caught.value)
+    assert why in str(caught.value)
+
+
+def test_m7s_bake_off_description_gives_the_ablations_and_the_fidelity_of_its_committed_file(tmp_path):
+    """results/bakeoff-descriptive-m7.json beside the aggregate it describes, results/bakeoff-m7.json (both
+    committed; docs/m7-进度.md): C0's model trained to think scores P 99.67 over its seeds and loses
+    clarify when it does not think (0/20); C2's model trained not to think scores 70 and fails every no_call
+    item (0/25); the winner's adapter at its trained step agrees with the training stack on 316 of 320
+    positions. The two files' keys do not meet: together they give what each gives alone."""
+    texts = {name: (REPO / "results" / name).read_text(encoding="utf-8")
+             for name in ("bakeoff-m7.json", "bakeoff-descriptive-m7.json")}
+    alone = {}
+    for name, text in texts.items():
+        results(tmp_path / name, {name: text})
+        alone[name] = report.build(tmp_path / name)[0]
+    results(tmp_path / "both", texts)
+    numbers, _ = report.build(tmp_path / "both")
+    assert numbers == {**alone["bakeoff-m7.json"], **alone["bakeoff-descriptive-m7.json"]}
+    assert len(numbers) == len(alone["bakeoff-m7.json"]) + len(alone["bakeoff-descriptive-m7.json"])
+    assert all(key.startswith(("bakeoff.m7.ablation.", "bakeoff.m7.fidelity."))
+               for key in alone["bakeoff-descriptive-m7.json"])
+    c0, c2 = "bakeoff.m7.ablation.c0-think", "bakeoff.m7.ablation.c2-nothink"
+    ablation = ("candidate", "model", "mode", "stop_step", "P", "handwritten", "drafted")
+    assert {key: numbers[f"{c0}.{key}"] for key in ablation} == {
+        "candidate": "c0", "model": "Qwen/Qwen3-4B", "mode": "think", "stop_step": "274", "P": "99.67",
+        "handwritten": "36.33", "drafted": "63.33"}
+    runs = ("think-s0", "think-s1", "think-s2", "nothink", "b0")
+    assert [numbers[f"{c0}.{run}.successes"] for run in runs] == ["102", "96", "101", "88", "84"]
+    assert (numbers[f"{c0}.nothink.clarify.successes"], numbers[f"{c0}.nothink.clarify.n"]) == ("0", "20")
+    assert {key: numbers[f"{c2}.{key}"] for key in ablation} == {
+        "candidate": "c2", "model": "Qwen/Qwen3-4B-Thinking-2507", "mode": "no_think", "stop_step": "274",
+        "P": "70", "handwritten": "25", "drafted": "45"}
+    assert (numbers[f"{c2}.nothink.no_call.successes"], numbers[f"{c2}.nothink.no_call.n"]) == ("0", "25")
+    assert not any(key.startswith(f"{c2}.b0.") for key in numbers)  # no base run beside C2's ablation
+    winner = numbers["bakeoff.m7.decision.winner"]
+    fidelity = ("trained_step", "items", "positions", "agreeing", "base_agreeing", "changed_positions",
+                "agreement", "base_agreement", "changed")
+    assert {key: numbers[f"bakeoff.m7.fidelity.{winner}.{key}"] for key in fidelity} == {
+        "trained_step": "274", "items": "20", "positions": "320", "agreeing": "316", "base_agreeing": "315",
+        "changed_positions": "20", "agreement": "98.8%", "base_agreement": "98.4%", "changed": "6.2%"}
+
+
+def test_the_report_reads_the_description_by_the_names_eval_bakeoff_writes():
+    assert report.BAKEOFF_DESCRIPTIVE_KIND == bakeoff_module.DESCRIPTIVE_KIND
+    assert report.FIDELITY_COUNTS == bakeoff_module.FIDELITY_COUNTS
+    assert {mode for _, mode in bakeoff_module.ABLATIONS.values()} <= set(report.BAKEOFF_MODES)
+    assert report.kind_of(bakeoff_module.DESCRIPTIVE.name).key == "bakeoff-descriptive"
+
+
+def ace_lengths_block(n: int, p50: float | None, p95: float | None, top: int | None, over: int,
+                      at_max: int) -> dict:
+    """A block of an ACEBench lengths summary: n requests, the percentiles and the maximum of their tokens,
+    those above the reasoning budget and those at max_tokens."""
+    return {"n": n, "tokens_p50": p50, "tokens_p95": p95, "tokens_max": top, "over_budget": over,
+            "at_max_tokens": at_max}
+
+
+def ace_lengths_file() -> dict:
+    """results/lengths-acebench-m7.json as scripts/acebench_lengths.py writes it, smaller: 60 Chinese and 40
+    English answers per system, B0's server probed three times (cache and thinking probes), FT's six (the
+    adapter probe's three besides)."""
+    return {"kind": "acebench-lengths", "definition": "G is the number of tokens llama-server generated.",
+            "source": "results/acebench-m7.json", "source_sha256": "7" * 64,
+            "budget": {"reasoning": 1280, "max_tokens": 2480, "from": "results/acebench-m7.json budget"},
+            "languages": ["zh", "en"],
+            "systems": {"b0": {"log": "runs/acebench/m7/b0/server.log", "log_sha256": "8" * 64, "probes": 3,
+                               "requests": 103, "zh": ace_lengths_block(60, 1333.0, 1606.0, 2480, 44, 1),
+                               "en": ace_lengths_block(40, 1321.0, 1524.4, 2310, 24, 0),
+                               "all": ace_lengths_block(100, 1327.0, 1568.05, 2480, 68, 1)},
+                        "ft": {"log": "runs/acebench/m7/ft/server.log", "log_sha256": "9" * 64, "probes": 6,
+                               "requests": 106, "zh": ace_lengths_block(60, 318.0, 1378.0, 2480, 15, 2),
+                               "en": ace_lengths_block(40, 364.0, 1388.8, 1999, 9, 0),
+                               "all": ace_lengths_block(100, 343.0, 1386.0, 2480, 24, 2)}}}
+
+
+ACE_LENGTH_KEYS = ("n", "tokens_p50", "tokens_p95", "tokens_max", "over_budget", "over_budget_rate",
+                   "at_max_tokens", "at_max_tokens_rate")  # a part's keys
+
+
+def part_keys(prefix: str, *values: str | None) -> dict[str, str]:
+    """A part's numbers under prefix, in ACE_LENGTH_KEYS' order; None for one left out."""
+    return {f"{prefix}.{key}": value for key, value in zip(ACE_LENGTH_KEYS, values, strict=True)
+            if value is not None}
+
+
+def test_acebench_lengths_give_each_systems_tokens_per_language_and_over_both(tmp_path):
+    """The budget; per system its probes and requests, and per language and over both (all) the requests,
+    the percentiles and maximum of their tokens as whole numbers, and those above the budget and those at
+    the limit as counts and as rates of the requests. A part with no request gives no percentile, maximum or
+    rate. The definition, paths and hashes are not read."""
+    data = ace_lengths_file()
+    data["systems"]["b4"] = {"log": "runs/acebench/m7/b4/server.log", "log_sha256": "a" * 64, "probes": 2,
+                             "requests": 12, "zh": ace_lengths_block(10, 500.0, 900.0, 1000, 1, 0),
+                             "en": ace_lengths_block(0, None, None, None, 0, 0),
+                             "all": ace_lengths_block(10, 500.0, 900.0, 1000, 1, 0)}
+    results(tmp_path, {"lengths-acebench-m7.json": data})
+    numbers, sources = report.build(tmp_path)
+    assert [p.as_posix() for p in sources] == ["results/lengths-acebench-m7.json"]
+    at = "lengths.acebench-m7"
+    assert numbers == {
+        f"{at}.budget.reasoning": "1280", f"{at}.budget.max_tokens": "2480",
+        f"{at}.b0.probes": "3", f"{at}.b0.requests": "103",
+        **part_keys(f"{at}.b0.zh", "60", "1333", "1606", "2480", "44", "73.3%", "1", "1.7%"),
+        **part_keys(f"{at}.b0.en", "40", "1321", "1524", "2310", "24", "60.0%", "0", "0.0%"),
+        **part_keys(f"{at}.b0.all", "100", "1327", "1568", "2480", "68", "68.0%", "1", "1.0%"),
+        f"{at}.ft.probes": "6", f"{at}.ft.requests": "106",
+        **part_keys(f"{at}.ft.zh", "60", "318", "1378", "2480", "15", "25.0%", "2", "3.3%"),
+        **part_keys(f"{at}.ft.en", "40", "364", "1389", "1999", "9", "22.5%", "0", "0.0%"),
+        **part_keys(f"{at}.ft.all", "100", "343", "1386", "2480", "24", "24.0%", "2", "2.0%"),
+        f"{at}.b4.probes": "2", f"{at}.b4.requests": "12",
+        **part_keys(f"{at}.b4.zh", "10", "500", "900", "1000", "1", "10.0%", "0", "0.0%"),
+        **part_keys(f"{at}.b4.en", "0", None, None, None, "0", None, "0", None),
+        **part_keys(f"{at}.b4.all", "10", "500", "900", "1000", "1", "10.0%", "0", "0.0%")}
+
+
+def lengths_broken(change) -> dict:
+    data = ace_lengths_file()
+    change(data)
+    return data
+
+
+def b0_lengths(data: dict) -> dict:
+    return data["systems"]["b0"]
+
+
+@pytest.mark.parametrize("data, why", [
+    (lengths_broken(lambda d: d.update(kind="lengths")), "kind 'lengths' is not 'acebench-lengths'"),
+    (lengths_broken(lambda d: d.update(languages="zh,en")), "languages 'zh,en' is not a list of names"),
+    (lengths_broken(lambda d: d.update(languages=[])), "no language"),
+    (lengths_broken(lambda d: d.update(systems={})), "no system"),
+    (lengths_broken(lambda d: d.update(systems=list(d["systems"].values()))), "AttributeError"),
+    (lengths_broken(lambda d: d.update(languages=["zh", "en", "all"])), "b0.all.n is given twice"),
+    (lengths_broken(lambda d: d.update(languages=["zh", "en", "fr"])), "KeyError: 'fr'"),
+    (lengths_broken(lambda d: b0_lengths(d)["zh"].update(over_budget=61)),
+     "b0.zh.over_budget: 61 is more than the 60 it is out of"),
+    (lengths_broken(lambda d: d["systems"]["ft"]["en"].update(at_max_tokens=41)),
+     "ft.en.at_max_tokens: 41 is more than the 40 it is out of"),
+    (lengths_broken(lambda d: (b0_lengths(d)["zh"].update(over_budget=-1),
+                               b0_lengths(d)["all"].update(over_budget=23))),  # the sum holds
+     "b0.zh.over_budget: -1 is not a count"),
+    (lengths_broken(lambda d: b0_lengths(d)["all"].update(n=101)), "b0.all.n is 101, not its languages' 100"),
+    (lengths_broken(lambda d: b0_lengths(d)["all"].update(over_budget=67)),
+     "b0.all.over_budget is 67, not its languages' 68"),
+    (lengths_broken(lambda d: b0_lengths(d)["all"].update(at_max_tokens=0)),
+     "b0.all.at_max_tokens is 0, not its languages' 1"),
+    (lengths_broken(lambda d: b0_lengths(d)["all"].update(tokens_max=2310)),
+     "b0.all.tokens_max is 2310, not its languages' longest, 2480"),
+    (lengths_broken(lambda d: d["systems"]["ft"].update(requests=105)),
+     "ft.requests: 105 is not its 6 probes and 100 answers"),
+    (lengths_broken(lambda d: b0_lengths(d)["zh"].update(tokens_p50="1333")),
+     "'1333' is not a number of tokens"),
+    (lengths_broken(lambda d: b0_lengths(d)["en"].update(tokens_max=True)), "True is not a number of tokens"),
+    (lengths_broken(lambda d: b0_lengths(d)["zh"].update(n=60.0)), "60.0 is not a count"),
+    (lengths_broken(lambda d: b0_lengths(d)["zh"].pop("tokens_p95")), "KeyError: 'tokens_p95'"),
+    (lengths_broken(lambda d: b0_lengths(d).pop("probes")), "KeyError: 'probes'"),
+    (lengths_broken(lambda d: d["budget"].update(reasoning="1280")), "'1280' is not a count"),
+], ids=["other-kind", "languages-text", "no-language", "no-system", "systems-list", "language-named-all",
+        "language-without-block", "over-budget-above-n", "at-max-above-n", "negative-over-budget",
+        "all-n-not-the-sum", "all-over-budget-not-the-sum", "all-at-max-not-the-sum",
+        "all-max-not-the-longest", "requests-not-probes-and-answers", "text-percentile", "bool-max",
+        "float-n", "no-p95", "no-probes", "text-budget"])
+def test_acebench_lengths_that_are_not_of_their_shape_are_refused_for_their_fault(tmp_path, data, why):
+    results(tmp_path, {"lengths-acebench-m7.json": data})
+    with pytest.raises(report.ReportError) as caught:
+        report.build(tmp_path)
+    assert "results/lengths-acebench-m7.json is not an ACEBench lengths summary" in str(caught.value)
+    assert why in str(caught.value)
+
+
+def test_m7s_acebench_lengths_give_the_generated_tokens_of_its_committed_file(tmp_path):
+    """results/lengths-acebench-m7.json beside the ACEBench result it measures, results/acebench-m7.json (both
+    committed): under a reasoning budget of 1,280 tokens B0 generated a median of 1,327 tokens per request and
+    more than the budget on 66.9% of its 1,940 requests, FT 343 and 24.2%; each reached the limit of 2,480 on
+    fewer than 1% of them. Each system's requests over both languages are its answers in the ACEBench
+    result."""
+    texts = {name: (REPO / "results" / name).read_text(encoding="utf-8")
+             for name in ("acebench-m7.json", "lengths-acebench-m7.json")}
+    results(tmp_path, texts)
+    numbers, _ = report.build(tmp_path)
+    at = "lengths.acebench-m7"
+    assert (numbers[f"{at}.budget.reasoning"], numbers[f"{at}.budget.max_tokens"]) == ("1280", "2480")
+    assert {system: (numbers[f"{at}.{system}.probes"], numbers[f"{at}.{system}.requests"])
+            for system in ("b0", "ft")} == {"b0": ("3", "1943"), "ft": ("6", "1946")}
+    parts = {system: {part: [numbers[f"{at}.{system}.{part}.{key}"] for key in ACE_LENGTH_KEYS]
+                      for part in ("zh", "en", "all")} for system in ("b0", "ft")}
+    assert parts == {"b0": {"zh": ["967", "1333", "1606", "2480", "717", "74.1%", "4", "0.4%"],
+                            "en": ["973", "1321", "1524", "2480", "581", "59.7%", "6", "0.6%"],
+                            "all": ["1940", "1327", "1568", "2480", "1298", "66.9%", "10", "0.5%"]},
+                     "ft": {"zh": ["967", "318", "1378", "2480", "234", "24.2%", "8", "0.8%"],
+                            "en": ["973", "364", "1389", "2480", "236", "24.3%", "5", "0.5%"],
+                            "all": ["1940", "343", "1386", "2480", "470", "24.2%", "13", "0.7%"]}}
+    assert len([key for key in numbers if key.startswith(f"{at}.")]) == 2 + 2 * (2 + 3 * len(ACE_LENGTH_KEYS))
+    assert [numbers[f"acebench.m7.{system}.n"] for system in ("b0", "ft")] == [
+        numbers[f"{at}.{system}.all.n"] for system in ("b0", "ft")]
+
+
+M11_KINDS = ("bakeoff", "bakeoff-descriptive", "acebench-lengths")  # the kinds M11 registered
+
+
+def test_m11s_result_files_each_have_their_kind_and_the_earlier_ones_keep_theirs():
+    assert {name: report.kind_of(name).key for name in (
+        "bakeoff-m7.json", "bakeoff-descriptive-m7.json", "lengths-acebench-m7.json", "lengths-m7.json",
+        "acebench-m7.json")} == {
+        "bakeoff-m7.json": "bakeoff", "bakeoff-descriptive-m7.json": "bakeoff-descriptive",
+        "lengths-acebench-m7.json": "acebench-lengths", "lengths-m7.json": "lengths",
+        "acebench-m7.json": "acebench"}
+    keys = [kind.key for kind in report.REGISTRY]
+    assert all(keys.count(key) == 1 for key in M11_KINDS)
+    assert report.kind_of("bakeoff-descriptive-m12.json").key == "bakeoff-descriptive"
+    assert report.kind_of("lengths-acebench-m12.json").key == "acebench-lengths"
+    for name in ("bakeoff-descriptive.json", "bakeoff-descriptive-final.json", "bakeoff-descriptive-m7.jsonl",
+                 "lengths-acebench.json", "lengths-acebench-m7-b0.json", "lengths-acebench-final.json"):
+        assert report.kind_of(name) is None, name
+    assert report.kind_of("acebench-lengths-m7.json").key == "acebench"  # an ACEBench result's, as before
+    assert report.kind_of("dev-lengths-acebench-m7.json").key == "dev"  # a development summary's, as before
+
+
+def test_every_current_result_is_named_by_one_pattern_at_most_and_keeps_its_kind():
+    """Every JSON file in results/ but the test runner's (test-*) is named by at most one pattern, but for a
+    development run's end-to-end report, dev-e2e-<name>.json, which dev-<name>.json's pattern names too and
+    REGISTRY's order gives its own kind (as since M3); and none has another kind than the patterns before
+    M11's gave it: a file they named keeps its kind, and one they did not is named by one of M11's or by
+    none."""
+    names = sorted(path.name for path in (REPO / "results").glob("*.json")
+                   if not path.name.startswith("test-"))
+    assert "numbers.json" in names  # the folder was listed
+    earlier = [kind for kind in report.REGISTRY if kind.key not in M11_KINDS]
+    for name in names:
+        matching = [kind.key for kind in report.REGISTRY if kind.pattern.fullmatch(name)]
+        assert len(matching) <= 1 or (name.startswith("dev-e2e-") and matching == ["dev-e2e", "dev"]), (
+            name, matching)
+        before = next((kind.key for kind in earlier if kind.pattern.fullmatch(name)), None)
+        now = report.kind_of(name)
+        if before is not None:
+            assert now is not None and now.key == before, name
+        else:
+            assert now is None or now.key in M11_KINDS, name

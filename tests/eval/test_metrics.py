@@ -5,6 +5,7 @@ import math
 import subprocess
 import sys
 from pathlib import Path
+from statistics import NormalDist
 
 import pytest
 from support.fakes import call, turn
@@ -32,6 +33,7 @@ from research_agent.eval.metrics import (
     UNWANTED_CALL,
     WRONG_TOOL,
     WRONG_VALUE,
+    Z95,
     IdMismatch,
     arxiv_ids,
     bootstrap_ci,
@@ -43,6 +45,7 @@ from research_agent.eval.metrics import (
     score_items,
     summarize,
     today_of,
+    wilson_interval,
 )
 from research_agent.eval.runner import ERROR, OK, SKIPPED, run_items
 from research_agent.validation import check_call
@@ -1030,6 +1033,65 @@ def test_mcnemar_is_the_exact_binomial_test_on_the_discordant_pairs():
     assert mcnemar([True] * 3 + [False] * 3, [False] * 3 + [True] * 3)["p"] == 1.0
     with pytest.raises(ValueError):
         mcnemar([True], [True, False])
+
+
+# ---- the Wilson interval (M11; docs/m7-预登记.md, 成功判据: 区间) ----------------------------------------
+
+
+def test_z95_is_the_two_sided_95_percent_quantile_of_the_standard_normal():
+    assert Z95 == NormalDist().inv_cdf(0.975)
+    assert NormalDist().cdf(Z95) == pytest.approx(0.975, abs=1e-15)
+    assert round(Z95, 6) == 1.959964  # the value docs/m7-预登记.md writes
+
+
+@pytest.mark.parametrize("successes, n", [(270, 300), (135, 150), (1, 3), (2, 3), (7, 10), (1, 2),
+                                          (299, 300)])
+def test_the_ends_are_the_rates_whose_score_statistic_is_z_one_below_the_rate_and_one_above(successes, n):
+    # the Wilson interval inverts the score test: its ends p solve (k/n - p)^2 = z^2 p (1 - p) / n
+    low, high = wilson_interval(successes, n)
+    rate = successes / n
+    assert 0 < low < rate < high < 1
+    for end in (low, high):
+        assert (rate - end) ** 2 == pytest.approx(Z95 ** 2 * end * (1 - end) / n, rel=1e-9)
+
+
+@pytest.mark.parametrize("n", [1, 2, 5, 7, 150, 300])
+def test_no_success_and_all_successes_give_the_closed_forms_with_the_exact_end_of_the_scale(n):
+    # at k = 0 the interval is [0, z^2 / (n + z^2)], at k = n [n / (n + z^2), 1]; the formula reaches 0 and 1
+    # only up to the rounding of floats (3e-17 for 0 out of 5, 0.9999999999999999 for 7 out of 7)
+    z2 = Z95 ** 2
+    low, high = wilson_interval(0, n)
+    assert low == 0.0 and high == pytest.approx(z2 / (n + z2), rel=1e-12)
+    low, high = wilson_interval(n, n)
+    assert high == 1.0 and low == pytest.approx(n / (n + z2), rel=1e-12)
+
+
+def test_the_interval_of_the_failures_mirrors_the_interval_of_the_successes():
+    for successes, n in ((0, 7), (1, 3), (90, 300), (149, 150)):
+        low, high = wilson_interval(successes, n)
+        assert wilson_interval(n - successes, n) == pytest.approx((1 - high, 1 - low), abs=1e-12)
+
+
+def test_a_larger_z_gives_a_wider_interval_and_the_preregistered_z_almost_the_same_one():
+    narrow, wide = wilson_interval(270, 300, z=1.0), wilson_interval(270, 300, z=3.0)
+    assert wide[0] < narrow[0] < 0.9 < narrow[1] < wide[1]
+    assert wilson_interval(270, 300, z=1.959964) == pytest.approx(wilson_interval(270, 300), abs=1e-7)
+
+
+@pytest.mark.parametrize("successes, n, error", [
+    (5, 0, ValueError), (0, 0, ValueError), (1, -3, ValueError), (-1, 300, ValueError),
+    (301, 300, ValueError), (True, 300, TypeError), (2.0, 300, TypeError), ("3", 300, TypeError),
+    (None, 300, TypeError), (1, True, TypeError), (1, 300.0, TypeError), (1, "300", TypeError)])
+def test_counts_that_are_not_whole_numbers_or_no_successes_out_of_items_are_refused(successes, n, error):
+    with pytest.raises(error):
+        wilson_interval(successes, n)
+
+
+@pytest.mark.parametrize("z, error", [(0, ValueError), (-1.96, ValueError), (math.inf, ValueError),
+                                      (math.nan, ValueError), (True, TypeError), ("1.96", TypeError)])
+def test_a_z_that_is_not_a_positive_finite_number_is_refused(z, error):
+    with pytest.raises(error):
+        wilson_interval(270, 300, z=z)
 
 
 # ---- the command line ------------------------------------------------------------------------------------

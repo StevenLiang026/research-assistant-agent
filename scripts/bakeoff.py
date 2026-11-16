@@ -9,6 +9,7 @@ docs/m7-底座对比预登记.md).
     .venv/Scripts/python.exe scripts/bakeoff.py all --candidate c2 [MACHINE]
     .venv/Scripts/python.exe scripts/bakeoff.py aggregate
     .venv/Scripts/python.exe scripts/bakeoff.py fidelity --candidate c2 [--stop-step 548] [MACHINE]
+    .venv/Scripts/python.exe scripts/bakeoff.py descriptive [--config configs/bakeoff-m7.json] [--force]
     MACHINE: [--llama-server PATH] [--llama-cpp-src PATH] [--port 8080] [--no-wait]
 
 plan prints every command of the candidate's smoke, pilot, evaluation and fidelity and runs nothing. smoke
@@ -29,7 +30,12 @@ research_agent.eval.bakeoff, The trained adapter's fidelity): the pilot's checkp
 run was extended (--stop-step names the stop step or the extension step, no other), its GGUF exported first
 when missing, its top-1 agreement between the training stack and llama.cpp over S6's sequences beside the
 agreement without an adapter, into runs/bakeoff/m7/<candidate>/fidelity-trained-<step>.json; it writes no
-smoke record, gate or aggregate.
+smoke record, gate or aggregate. descriptive writes results/bakeoff-descriptive-m7.json, the description of
+what ran beside the decision, report only (research_agent.eval.bakeoff, The description; docs/m11-计划.md):
+the two ablations (c0-think, c2-nothink) and the winner's trained-adapter fidelity, gathered from their
+records and checked against them, the configuration, the aggregate and the development set; a record that
+disagrees refuses it, as does a configuration outside the repository root, and an existing description is
+kept unless --force is given. It runs nothing and needs no machine tool.
 
 The machine's llama-server binary and llama.cpp source tree (the converter and gguf-py) come from
 --llama-server and --llama-cpp-src or the LLAMA_SERVER and LLAMA_CPP_SRC variables, as for the other
@@ -41,8 +47,9 @@ Exit 0 when the command did its work (a gate or an aggregate is written whatever
 record whatever agreement it holds); 1 when a smoke step failed or is blocked, the pilot or the evaluation
 failed, the trained adapter's fidelity could not be compared (its record says why), or when all ends with a
 gate that is not scored (ineligible, or incomplete); 2 on a usage error (an unknown candidate, the reference's
-key, a malformed configuration, a missing machine path, a fidelity step the preregistration does not name,
-argparse's exit); 3 when the preflight did not hold within the wait limit.
+key, a malformed configuration, a missing machine path, a fidelity step the preregistration does not name, a
+description refused or one that exists without --force, argparse's exit); 3 when the preflight did not hold
+within the wait limit.
 """
 
 from __future__ import annotations
@@ -56,6 +63,7 @@ from pathlib import Path
 
 from research_agent.eval.bakeoff import (
     CONFIG,
+    DESCRIPTIVE,
     SMOKE_FILE,
     SRC_VAR,
     BakeoffError,
@@ -65,6 +73,7 @@ from research_agent.eval.bakeoff import (
     aggregate,
     candidate_gate,
     default_fidelity_backends,
+    descriptive,
     gguf_tensor_count,
     load_config,
     plan_lines,
@@ -79,18 +88,21 @@ from research_agent.eval.bakeoff import (
     smoke_status,
     start_script,
     tool_round_trip,
+    write_json,
 )
 from research_agent.family.core import load_family
 from research_agent.llm.local import LocalClient
 from research_agent.llm.server import SERVER_VAR, llama_server
 
 MACHINE = ("smoke", "pilot", "evaluate", "all", "fidelity")  # the commands that need the machine's tools
+WHOLE = ("aggregate", "descriptive")  # the commands of the whole bake-off, which take no candidate
 WAIT_LIMIT = 12 * 3600.0
 
 
 def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(description="The M7 base-model bake-off: smoke, pilot, evaluation, gate and "
-                                             "the aggregate decision.")
+    ap = argparse.ArgumentParser(description="The M7 base-model bake-off: smoke, pilot, evaluation, gate, "
+                                             "the aggregate decision and the description of what ran beside "
+                                             "it.")
     sub = ap.add_subparsers(dest="command", required=True)
 
     def command(name: str, *, candidate: bool, machine: bool,
@@ -127,6 +139,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--stop-step", type=int, default=None,
         help="the checkpoint whose trained adapter is compared: the schedule's stop step or its extension "
              "step (default: the extension step once the run was extended, else the stop step)")
+    command("descriptive", candidate=False, machine=False).add_argument(
+        "--force", action="store_true", help=f"overwrite an existing {DESCRIPTIVE.as_posix()}")
     return ap
 
 
@@ -162,7 +176,7 @@ def main(argv: list[str] | None = None, *, tools: Tools | None = None) -> int:
     try:
         config = load_config(args.config)
         tools = tools or build_tools(args, needs_machine=args.command in MACHINE)
-        candidate = config.candidate(args.candidate) if args.command != "aggregate" else None
+        candidate = config.candidate(args.candidate) if args.command not in WHOLE else None
     except (BakeoffError, OSError, ValueError) as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 2
@@ -174,6 +188,8 @@ def main(argv: list[str] | None = None, *, tools: Tools | None = None) -> int:
         if args.command == "aggregate":
             report_aggregate(config)
             return 0
+        if args.command == "descriptive":
+            return report_descriptive(config, force=args.force)
         if args.command == "gate":
             report_gate(config, candidate)
             return 0
@@ -217,6 +233,24 @@ def report_aggregate(config) -> None:
     else:
         outcome = f"winner {decision['winner']}"
     print(f"{config.results.as_posix()}: {decision['status']}, {outcome}")
+
+
+def report_descriptive(config, *, force: bool) -> int:
+    """Write the bake-off's description (research_agent.eval.bakeoff.descriptive) to DESCRIPTIVE and report
+    it in one line: 0. An existing file is kept unless force (2, FAIL on stderr, nothing read); a description
+    refused raises its BakeoffError before anything is written."""
+    if DESCRIPTIVE.exists() and not force:
+        print(f"FAIL: {DESCRIPTIVE.as_posix()} exists; --force overwrites it", file=sys.stderr)
+        return 2
+    description = descriptive(config)
+    write_json(DESCRIPTIVE, description)
+    ablations = ", ".join(f"{name} P {ablation['P']:.2f} ({ablation['mode']})"
+                          for name, ablation in description["ablations"].items())
+    fidelity = description["fidelity"]
+    print(f"{DESCRIPTIVE.as_posix()}: {ablations}; {fidelity['candidate']}'s trained adapter at step "
+          f"{fidelity['trained_step']}: {fidelity['agreeing']}/{fidelity['positions']} agreeing, "
+          f"{fidelity['base_agreeing']}/{fidelity['positions']} without it")
+    return 0
 
 
 def run_all(config, candidate, tools: Tools) -> int:

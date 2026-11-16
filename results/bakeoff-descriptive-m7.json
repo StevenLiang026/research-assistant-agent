@@ -1,0 +1,258 @@
+{
+  "kind": "bakeoff-descriptive",
+  "milestone": "m7",
+  "config": "configs/bakeoff-m7.json",
+  "config_sha256": "bb1e83b521ae14cb4dfa9e6e54d78d4015f471eb4322a72b190aa3c862d36f16",
+  "aggregate": "results/bakeoff-m7.json",
+  "aggregate_sha256": "636634d1d533ab920a2d76c290f53cf90cfd54379095aa46c0b90e059105df5d",
+  "ablations": {
+    "c0-think": {
+      "candidate": "c0",
+      "model": "Qwen/Qwen3-4B",
+      "revision": "1cfa9a720891",
+      "mode": "think",
+      "gate": "runs/bakeoff/m7/c0-think/gate.json",
+      "gate_sha256": "e237e224219c8eb13eff244a0eccd855dc40a2f09a771603a8bc99a48fef4dc8",
+      "stop_step": 274,
+      "primary": [
+        "think-s0",
+        "think-s1",
+        "think-s2"
+      ],
+      "P": 99.66666666666667,
+      "handwritten": 36.333333333333336,
+      "drafted": 63.333333333333336,
+      "variants": {
+        "think-s0": {
+          "successes": 102,
+          "n": 150,
+          "handwritten": 34,
+          "drafted": 68,
+          "by_type": {
+            "call": {
+              "successes": 41,
+              "n": 60
+            },
+            "clarify": {
+              "successes": 6,
+              "n": 20
+            },
+            "next_step": {
+              "successes": 13,
+              "n": 15
+            },
+            "no_call": {
+              "successes": 24,
+              "n": 25
+            },
+            "parallel": {
+              "successes": 6,
+              "n": 10
+            },
+            "recover": {
+              "successes": 12,
+              "n": 20
+            }
+          }
+        },
+        "think-s1": {
+          "successes": 96,
+          "n": 150,
+          "handwritten": 38,
+          "drafted": 58,
+          "by_type": {
+            "call": {
+              "successes": 33,
+              "n": 60
+            },
+            "clarify": {
+              "successes": 5,
+              "n": 20
+            },
+            "next_step": {
+              "successes": 14,
+              "n": 15
+            },
+            "no_call": {
+              "successes": 23,
+              "n": 25
+            },
+            "parallel": {
+              "successes": 7,
+              "n": 10
+            },
+            "recover": {
+              "successes": 14,
+              "n": 20
+            }
+          }
+        },
+        "think-s2": {
+          "successes": 101,
+          "n": 150,
+          "handwritten": 37,
+          "drafted": 64,
+          "by_type": {
+            "call": {
+              "successes": 37,
+              "n": 60
+            },
+            "clarify": {
+              "successes": 9,
+              "n": 20
+            },
+            "next_step": {
+              "successes": 13,
+              "n": 15
+            },
+            "no_call": {
+              "successes": 24,
+              "n": 25
+            },
+            "parallel": {
+              "successes": 7,
+              "n": 10
+            },
+            "recover": {
+              "successes": 11,
+              "n": 20
+            }
+          }
+        },
+        "nothink": {
+          "successes": 88,
+          "n": 150,
+          "handwritten": 27,
+          "drafted": 61,
+          "by_type": {
+            "call": {
+              "successes": 39,
+              "n": 60
+            },
+            "clarify": {
+              "successes": 0,
+              "n": 20
+            },
+            "next_step": {
+              "successes": 10,
+              "n": 15
+            },
+            "no_call": {
+              "successes": 16,
+              "n": 25
+            },
+            "parallel": {
+              "successes": 8,
+              "n": 10
+            },
+            "recover": {
+              "successes": 15,
+              "n": 20
+            }
+          }
+        }
+      },
+      "b0": {
+        "successes": 84,
+        "n": 150,
+        "handwritten": 30,
+        "drafted": 54,
+        "by_type": {
+          "call": {
+            "successes": 31,
+            "n": 60
+          },
+          "clarify": {
+            "successes": 6,
+            "n": 20
+          },
+          "next_step": {
+            "successes": 14,
+            "n": 15
+          },
+          "no_call": {
+            "successes": 25,
+            "n": 25
+          },
+          "parallel": {
+            "successes": 6,
+            "n": 10
+          },
+          "recover": {
+            "successes": 2,
+            "n": 20
+          }
+        },
+        "mode": "think",
+        "manifest": "runs/bakeoff/m7/c0-think/dev-b0.manifest.json",
+        "manifest_sha256": "f692ca784ec7c2c7f80eaa251ed3c3115a73418910844f924c43d68671443668"
+      }
+    },
+    "c2-nothink": {
+      "candidate": "c2",
+      "model": "Qwen/Qwen3-4B-Thinking-2507",
+      "revision": "768f209d9ea81521153ed38c47d515654e938aea",
+      "mode": "no_think",
+      "gate": "runs/bakeoff/m7/c2-nothink/gate.json",
+      "gate_sha256": "46b3d27da56c58e4129fd4a79f273240c64d856126aee807f6a7b99a6e6ae2e6",
+      "stop_step": 274,
+      "primary": [
+        "nothink"
+      ],
+      "P": 70,
+      "handwritten": 25,
+      "drafted": 45,
+      "variants": {
+        "nothink": {
+          "successes": 70,
+          "n": 150,
+          "handwritten": 25,
+          "drafted": 45,
+          "by_type": {
+            "call": {
+              "successes": 37,
+              "n": 60
+            },
+            "clarify": {
+              "successes": 8,
+              "n": 20
+            },
+            "next_step": {
+              "successes": 4,
+              "n": 15
+            },
+            "no_call": {
+              "successes": 0,
+              "n": 25
+            },
+            "parallel": {
+              "successes": 8,
+              "n": 10
+            },
+            "recover": {
+              "successes": 13,
+              "n": 20
+            }
+          }
+        }
+      },
+      "b0": null
+    }
+  },
+  "fidelity": {
+    "candidate": "c5",
+    "record": "runs/bakeoff/m7/c5/fidelity-trained-274.json",
+    "record_sha256": "5479e9ea1a90b1b63e9f713d264931ba03199a739effbf75b0ae3dc855e0f972",
+    "trained_step": 274,
+    "settings": {
+      "items": 20,
+      "positions": 16,
+      "mode": "no_think"
+    },
+    "items": 20,
+    "positions": 320,
+    "agreeing": 316,
+    "base_agreeing": 315,
+    "changed_positions": 20
+  }
+}

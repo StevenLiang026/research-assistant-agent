@@ -1,0 +1,77 @@
+{
+  "kind": "acebench-lengths",
+  "definition": "G is the number of tokens llama-server generated for one of ACEBench's requests, as the 'eval time' line of its task in the system's server log counts them: every token the server sampled for the request, which is the reasoning, the end tag that closes it (the server adds the tag itself when the reasoning budget closes the reasoning) and the answer, together, the token that ended the generation included. ACEBench's raw answers keep no reasoning, so G is the only length of a request left, and the log does not split it into reasoning and answer. Each request is a task of the log with a 'prompt eval time' line (P tokens), an 'eval time' line (G) and a 'stop processing: n_tokens = T, truncated = 0' line, T = P + G - 1. The probes scripts/run_acebench.py sends a server before ACEBench starts are left out: on a server with an adapter the adapter probe's three one-token completions, on every server the cache probe's two and the thinking probe's chat completion. ACEBench's requests follow, one per answer, the languages one after the other in the order of 'languages', as many in a language as the source counts answers in its categories. tokens_p50 and tokens_p95 interpolate linearly between closest ranks. over_budget counts the requests whose G is above the reasoning budget, an upper bound on the reasonings the budget closed: a reasoning closed at the budget has the end tag after its budget's tokens, so its G is above the budget, and a shorter reasoning followed by a long answer is counted too. at_max_tokens counts the requests whose G is max_tokens, the limit at which the server stops a generation.",
+  "source": "results/acebench-m7.json",
+  "source_sha256": "378705a168cfd076f3560c9d136013c026eea27e90f8ca6ae77dc59e49f25f4b",
+  "budget": {
+    "reasoning": 1280,
+    "max_tokens": 2480,
+    "from": "results/acebench-m7.json budget.reasoning and budget.max_tokens (scripts/run_acebench.py, Setup.budget_record), which every system's server command carries as --reasoning-budget and every generate command as --max-tokens"
+  },
+  "languages": [
+    "zh",
+    "en"
+  ],
+  "systems": {
+    "b0": {
+      "log": "runs/acebench/m7/b0/server.log",
+      "log_sha256": "5e533d4853aaaa97c61d1ddc45489e654bb0ee917ab3ccc59263d97add5b8351",
+      "probes": 3,
+      "requests": 1943,
+      "zh": {
+        "n": 967,
+        "tokens_p50": 1333.0,
+        "tokens_p95": 1606.0,
+        "tokens_max": 2480,
+        "over_budget": 717,
+        "at_max_tokens": 4
+      },
+      "en": {
+        "n": 973,
+        "tokens_p50": 1321.0,
+        "tokens_p95": 1524.4,
+        "tokens_max": 2480,
+        "over_budget": 581,
+        "at_max_tokens": 6
+      },
+      "all": {
+        "n": 1940,
+        "tokens_p50": 1327.0,
+        "tokens_p95": 1568.05,
+        "tokens_max": 2480,
+        "over_budget": 1298,
+        "at_max_tokens": 10
+      }
+    },
+    "ft": {
+      "log": "runs/acebench/m7/ft/server.log",
+      "log_sha256": "d4beb575192bf73b7b2614f447d5e7a72a23b2d7c2b5a760d77f80d864002fac",
+      "probes": 6,
+      "requests": 1946,
+      "zh": {
+        "n": 967,
+        "tokens_p50": 318.0,
+        "tokens_p95": 1378.0,
+        "tokens_max": 2480,
+        "over_budget": 234,
+        "at_max_tokens": 8
+      },
+      "en": {
+        "n": 973,
+        "tokens_p50": 364.0,
+        "tokens_p95": 1388.8,
+        "tokens_max": 2480,
+        "over_budget": 236,
+        "at_max_tokens": 5
+      },
+      "all": {
+        "n": 1940,
+        "tokens_p50": 343.0,
+        "tokens_p95": 1386.0,
+        "tokens_max": 2480,
+        "over_budget": 470,
+        "at_max_tokens": 13
+      }
+    }
+  }
+}

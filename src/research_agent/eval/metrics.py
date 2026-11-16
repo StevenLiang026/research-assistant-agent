@@ -152,6 +152,13 @@ the draw, and Δ* is the mean of those differences over the strata (the README's
 strata); p_NI as above.
 compare_systems adds both item-level p-values under "noninferiority" when given a margin. H1 takes
 McNemar's p, H2 and H3 p_NI, and holm adjusts the three together.
+
+The interval of a success rate (M11, docs/m11-计划.md; docs/m7-预登记.md, 成功判据: 区间). wilson_interval is
+the Wilson score interval that the M7 preregistration fixed for the final system's success rates, single step
+and end to end, at z = Z95 = Φ⁻¹(0.975), the standard normal's two-sided 95% critical value; eval.report gives
+it for every test runner's file (success_wilson). It is descriptive: it treats the items as independent
+trials of one rate, so the template families that the cluster bootstrap draws whole do not widen it, and the
+preregistration's criteria read the point estimate alone.
 """
 
 from __future__ import annotations
@@ -164,6 +171,7 @@ from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
+from statistics import NormalDist
 
 from jsonschema import Draft202012Validator
 
@@ -1233,3 +1241,42 @@ def compare_systems(scores_a: Sequence[dict], scores_b: Sequence[dict], items: S
                                  "below": one_sided["below"], "cluster_p_ni": clustered["p_ni"],
                                  "cluster_below": clustered["below"]}
     return out
+
+
+# ---- the interval of a success rate ---------------------------------------------------------------------
+
+Z95 = NormalDist().inv_cdf(0.975)  # Φ⁻¹(0.975), the two-sided 95% critical value: 1.9599639845400536
+
+
+def wilson_interval(successes: int, n: int, z: float = Z95) -> tuple[float, float]:
+    """The Wilson score interval of a success rate, (low, high) as fractions (module docstring: The interval
+    of a success rate).
+
+    With p = successes / n, the ends are (p + z²/2n ± z √(p(1 − p)/n + z²/4n²)) / (1 + z²/n): the two rates
+    p0 at which the score statistic |p − p0| / √(p0(1 − p0)/n) equals z, so that the interval holds the rates
+    the score test at that level does not reject. It treats the n items as independent trials of one rate.
+    The ends are clamped to [0, 1]; low is exactly 0.0 when successes is 0 and high exactly 1.0 when it is n,
+    where the formula reaches 0 and 1 only up to the rounding of floats (3e-17 for 0 out of 5). The M7
+    preregistration computed with z = 1.959964 (docs/m7-预登记.md:65), Z95 rounded to six decimals, which
+    gives the same intervals to one decimal of a percent (eval.report.rate_interval) for every count of up
+    to 500 items. TypeError for successes or n that is not an int (true and false included) and a z that is
+    not a number; ValueError for n below 1, successes outside 0..n and a z that is not positive and finite.
+    """
+    for what, value in (("successes", successes), ("n", n)):
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise TypeError(f"{what} must be a whole number, got {value!r}")
+    if isinstance(z, bool) or not isinstance(z, int | float):
+        raise TypeError(f"z must be a number, got {z!r}")
+    if n < 1:
+        raise ValueError(f"a rate needs at least one item, got n = {n}")
+    if not 0 <= successes <= n:
+        raise ValueError(f"{successes} successes out of {n} items")
+    if not math.isfinite(z) or z <= 0:
+        raise ValueError(f"z must be positive and finite, got {z!r}")
+    p, z2 = successes / n, z * z
+    center = p + z2 / (2 * n)
+    half = z * math.sqrt(p * (1 - p) / n + z2 / (4 * n * n))
+    scale = 1 + z2 / n
+    low = 0.0 if successes == 0 else max(0.0, (center - half) / scale)
+    high = 1.0 if successes == n else min(1.0, (center + half) / scale)
+    return low, high
