@@ -1062,6 +1062,40 @@ def test_a_yaml_list_whose_items_all_read_is_read_whole():
 
 # ---- answers the parsers cannot read ----------------------------------------------------------------------
 
+# Nesting deeper than json's reader goes on every platform of CPython 3.13. Its C reader spends one unit of
+# Py_C_RECURSION_LIMIT a level and raises RecursionError when the limit runs out: at about 3,000 levels on
+# Windows x64 and about 10,000 on Linux, where the limit is 3,000 and 10,000 (the largest of 3.13), measured
+# on 2026-11-18. Below its limit, "[" * n is only malformed JSON to the reader (a ValueError), and a
+# <tool_call> block holding it is a call with unread arguments. Between the two limits the scorer's answer
+# therefore follows the platform: a call written in JSON (a <tool_call> block, the JSON notation, an object
+# inside prose) is no call on Windows and a call on Linux, the call as written when its JSON is complete.
+# No test asserts an answer there; the first answer of the PyYAML depth test below hands json's reader DEEP
+# levels and scores the same on both. From Python 3.14 the limit follows the C stack (about 16,900 levels
+# with 3.14.8 and about 20,700 with 3.15.0, on Windows): TOO_DEEP has to grow when requires-python does.
+TOO_DEEP = 20_000
+SHALLOW = 400  # levels the reader goes on every platform: the lowest limit of 3.13 is 500, on debug builds
+
+
+def test_too_deep_is_deeper_than_the_json_reader_goes_on_this_platform():
+    try:
+        json.loads("[" * TOO_DEEP)
+    except RecursionError:
+        return
+    except ValueError:
+        pass
+    pytest.fail(f"json's reader goes {TOO_DEEP:,} levels deep here, so the cases built on TOO_DEEP no longer "
+                "meet a RecursionError: raise TOO_DEEP")
+
+
+def test_a_tool_call_block_of_malformed_json_is_a_call_with_its_text_as_the_arguments():
+    # the other side of TOO_DEEP: json's reader goes this deep everywhere and finds the block malformed, which
+    # parse_tool_calls returns as a call without a name, its arguments the block's text
+    answer = "<tool_call>" + "[" * SHALLOW
+    assert sd.find_calls(answer, "python", EN_FUNCTIONS) == ("tool_call", [("", {"": "[" * SHALLOW})])
+    assert score(answer, INCORRECT)["failure"] == "called"
+    assert score(answer, VERBATIM)["false_refusal"] is False
+
+
 # (answer, a call of book_room is found in it): the parsers raise on each (the Python parser's MemoryError,
 # a RecursionError, the ValueError of an integer too long to write), which must not reach the scorer's caller
 UNREADABLE = [
@@ -1074,7 +1108,7 @@ UNREADABLE = [
     pytest.param(f"[book_room(people={HUGE})]", True, id="python-list-integer-too-long-to-write"),
     pytest.param(f'book_room(room="A-12", people={HUGE})', True, id="python-call-integer-too-long"),
     pytest.param(f"- name: book_room\n  arguments:\n    people: {HUGE}", True, id="yaml-integer-too-long"),
-    pytest.param("<tool_call>" + "[" * 3100, False, id="tool-call-too-deep-for-json"),
+    pytest.param("<tool_call>" + "[" * TOO_DEEP, False, id="tool-call-too-deep-for-json"),
 ]
 
 
@@ -1109,7 +1143,7 @@ def test_a_value_that_holds_itself_ends_the_search_for_a_kept_value():
 
 def test_without_pyyaml_a_scalar_too_deep_for_json_is_read_as_text(monkeypatch):
     monkeypatch.setattr(sd, "_yaml_load", lambda: None)
-    answer = "name: book_room\narguments:\n  room: A-12\n  people: " + "[" * 3100
+    answer = "name: book_room\narguments:\n  room: A-12\n  people: " + "[" * TOO_DEEP
     s = score(answer, INCORRECT)
     assert (s["failure"], s["call_notation"], s["called_with_invalid"]) == ("called", "loose", False)
 
@@ -1127,7 +1161,11 @@ def test_the_yaml_depth_counts_the_indentation_the_compact_items_and_the_flow_br
     assert sd._yaml_depth("name: book_room\narguments: ]]] [x]") == 1  # a closing bracket first opens nothing
 
 
-DEEP = 5000  # levels: PyYAML's C loader overflows the stack at about 4,000 (special_dev.MAX_YAML_DEPTH)
+# The nesting of the YAML answers below, in levels. PyYAML's C loader overflows the stack at about 4,000 on
+# Windows and, on Linux (glibc, an 8 MB stack), between 23,000 and 24,000 for nested mappings and between
+# 26,000 and 27,000 for nested lists, measured on 2026-11-19. special_dev.MAX_YAML_DEPTH is the scorer's
+# guard against it.
+DEEP = 5000
 SCORE_IN_A_CHILD = """
 import importlib.util, json, sys
 spec = importlib.util.spec_from_file_location("research_agent.eval.special_dev", sys.argv[1])
@@ -1143,10 +1181,16 @@ print(json.dumps([[score["call_notation"], score["failure"]] for score in scores
 
 
 def test_a_yaml_block_nested_deeper_than_pyyaml_reads_is_no_call_and_the_scorer_lives_on():
-    # PyYAML's C loader ends the process (a stack overflow, no exception) on a nesting of about 4,000 levels,
-    # which an answer of 1,200 tokens can reach, so the loose pass never hands it such a block: no call, and
-    # the items of a list beside it are read all the same. Scored in a child process that loads the module
-    # this test imported, so that a regression fails this test and not the whole run.
+    # PyYAML's C loader ends the process (a stack overflow, no exception) on a nesting of about 4,000 levels
+    # on Windows, which an answer of 1,200 tokens can reach, so the loose pass does not hand it a block that
+    # special_dev._yaml_depth counts deeper than MAX_YAML_DEPTH: no call, and the items of a list beside it
+    # are read all the same. _yaml_depth counts flow brackets and what a line begins with; compact items after
+    # the ':' of an explicit key (a line ': - - - ...') are not counted, so such a block still reaches the
+    # loader and ends the process from about 4,000 levels on Windows and about 27,000 on Linux (2026-11-19).
+    # No test goes there: the scorer stays as it was when it scored M8 (README, 局限). Scored in a child
+    # process that loads the module this test imported, so that a regression fails this test and not the
+    # whole run. On Linux the loader reads DEEP levels: there a regression shows in the scores (the third
+    # answer read as a call).
     answers = ["name: book_room\narguments: " + "[" * DEEP + "1" + "]" * DEEP,
                "- name: book_room\n  arguments:\n    people: " + "{a: " * DEEP,
                "name: book_room\narguments:\n  people:\n    " + "- " * DEEP + "-3",

@@ -95,9 +95,10 @@ GET2 = call("get_paper", "c2", arxiv_id=ID2)
 ANSWER = f"{ID2} is about tree verification."
 
 
-def write_tasks(path: Path, tasks: list[dict] = (LOOKUP,)) -> Path:
+def write_tasks(path: Path, tasks: list[dict] = (LOOKUP,), *, newline: str | None = None) -> Path:
+    """The tasks as a JSONL file, its lines ended as newline says (None: as the platform ends them)."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("".join(json.dumps(t) + "\n" for t in tasks), encoding="utf-8")
+    path.write_text("".join(json.dumps(t) + "\n" for t in tasks), encoding="utf-8", newline=newline)
     return path
 
 
@@ -821,6 +822,8 @@ VOLATILE = ("date", "git_commit", "git_dirty")  # the manifest's keys that diffe
 # What run_e2e wrote for LOOKUP in think mode, base seed 3, before --votes, --rules and --glossary existed
 # (the code of 2026-10-30, before WP2 and WP3): the SHA-256 of the transcript, of the report with its manifest
 # without VOLATILE as canonical JSON, and of the timing sidecar. Without the new flags they stay these bytes.
+# The manifest holds the SHA-256 of the tasks file, which was written on Windows, its lines ended with \r\n:
+# wp23_run writes those bytes on every platform.
 BEFORE_WP23 = {"transcript": "d279f33d2ec5fd294349141231e2b42d330049d87a61e102867afb80c664a01a",
                "report": "87148fd7a5c6a6c4a77651c41df0a4a46d85f4c8037c651ae52dbc09568fcf01",
                "timing": "3494d86fae818e17c901df492768128ebd7fb505bb28ec85c6dce9a01b6df2d8"}
@@ -837,7 +840,8 @@ def wp23_run(tmp_path: Path, monkeypatch, script: list[Scripted], *flags: str,
     install_fake_family(monkeypatch, tmp_path / "model",
                         decoding={Mode.THINK: SAMPLING, Mode.NO_THINK: GREEDY},
                         **({} if tool_format is None else {"tool_format": tool_format}))
-    write_tasks(tmp_path / "tasks.jsonl")
+    # with \r\n on every platform: the line ends of the tasks file BEFORE_WP23 was recorded with
+    write_tasks(tmp_path / "tasks.jsonl", newline="\r\n")
     fake = FakeLlama(script)
     code = run_e2e.main(["tasks.jsonl", "--system", "b0", "--out", "runs/e2e-wp23", "--tokenizer", "model",
                          "--mode", "think", "--base-seed", "3", "--reasoning-budget", "32",

@@ -24,6 +24,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    # The job takes about eight minutes on GitHub's Windows runner and about two on its Ubuntu runner
+    # (2026-11-19). The pytest step prints its slowest tests.
     timeout-minutes: 20
     defaults:
       run:
@@ -49,4 +51,4 @@ jobs:
         run: uv run --no-sync python scripts/check_public_numbers.py
 
       - name: pytest (full suite, offline)
-        run: uv run --no-sync python -m pytest -q -p no:cacheprovider
+        run: uv run --no-sync python -m pytest -q -p no:cacheprovider --durations=25

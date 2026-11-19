@@ -60,9 +60,11 @@ ITEMS = [item("q-1", "找几篇幻觉(hallucination)的论文。", {"content": "
          item("q-3", "Find hallucination papers.", {"content": "", "tool_calls": [SEARCH]}, "call", "en")]
 
 
-def write_items(tmp_path: Path, items: list[dict] = ITEMS) -> Path:
+def write_items(tmp_path: Path, items: list[dict] = ITEMS, *, newline: str | None = None) -> Path:
+    """The items as items.jsonl, its lines ended as newline says (None: as the platform ends them)."""
     path = tmp_path / "items.jsonl"
-    path.write_text("".join(json.dumps(i, ensure_ascii=False) + "\n" for i in items), encoding="utf-8")
+    path.write_text("".join(json.dumps(i, ensure_ascii=False) + "\n" for i in items), encoding="utf-8",
+                    newline=newline)
     return path
 
 
@@ -706,6 +708,8 @@ VOLATILE = ("date", "git_commit", "git_dirty")  # the manifest's keys that diffe
 # What run_eval wrote for these two items in think mode, seed 3, before --votes, --rules and --glossary
 # existed (the code of 2026-10-30, before WP2 and WP3): the SHA-256 of the records, of the timing sidecar and
 # of the manifest without VOLATILE as canonical JSON. Without the new flags every output stays these bytes.
+# The manifest holds the SHA-256 of the items file, which was written on Windows, its lines ended with \r\n:
+# wp23_run writes those bytes on every platform.
 BEFORE_WP23 = {"records": "0f35810dad7e26001243bd047e530b616d2f4b27135e250237333488a36f3267",
                "timing": "b177b9898c7bb224e5db60fef63be083e35cfc4446e716292ba9537176a76f84",
                "manifest": "95f7402dea5211c83c5a0bd794ba63a686d0a28be5b980eeb38a2cc8e3caf73c"}
@@ -719,7 +723,8 @@ def wp23_run(tmp_path: Path, monkeypatch, script: list[Scripted], *flags: str) -
     monkeypatch.chdir(tmp_path)
     install_fake_family(monkeypatch, tmp_path / "model",
                         decoding={Mode.THINK: SAMPLING, Mode.NO_THINK: GREEDY})
-    write_items(tmp_path, [SIGNAL_ITEM, TRANSIENT_ITEM])
+    # with \r\n on every platform: the line ends of the items file BEFORE_WP23 was recorded with
+    write_items(tmp_path, [SIGNAL_ITEM, TRANSIENT_ITEM], newline="\r\n")
     fake = FakeLlama(script)
     code = run_eval.main(["items.jsonl", "--system", "b0", "--out", "runs/wp23.jsonl", "--tokenizer", "model",
                           "--mode", "think", "--seed", "3", "--reasoning-budget", "16", "--signals", *flags],
