@@ -82,7 +82,8 @@ to every stream, gives the streams STREAM_GRACE seconds to send it, stops the se
 of every connection that has sent no request yet (a browser keeps one open ahead of its next request; its
 thread waits for the request in steps of SERVE_POLL, since on Windows a thread that reads a connection cannot
 be woken by shutting or closing it) and shuts the reading side of the others, waiting JOIN_GRACE seconds at
-most for their threads; serve closes the site with "ended", or "interrupted" on a KeyboardInterrupt, which it
+most for each request thread still running, one that has already given up its connection and is ending
+among them; serve closes the site with "ended", or "interrupted" on a KeyboardInterrupt, which it
 raises again. A response's body is written as the connection takes it, each send waiting SERVE_POLL seconds
 at most (_put), for the same reason: a page that stopped reading, which a write would wait on and shutting
 would not wake, holds its thread HANDLER_TIMEOUT seconds at most without taking a byte, and none past close,
@@ -499,8 +500,8 @@ class ChatState:
 
 
 class _Server(ThreadingHTTPServer):
-    """ThreadingHTTPServer on 127.0.0.1 (module docstring: Access) that keeps its open connections, so close
-    can shut them."""
+    """ThreadingHTTPServer on 127.0.0.1 (module docstring: Access) that keeps its open connections and its
+    request threads, so close can shut the ones and wait for the others."""
 
     daemon_threads = True
     allow_reuse_address = sys.platform != "win32"
@@ -509,7 +510,10 @@ class _Server(ThreadingHTTPServer):
         self.site = site
         self.closing = False  # set by Site.close: a connection without its request is let go at once
         self.severed = False  # set by sever: a write its page has stopped taking gives up (_Handler._put)
-        self._open: dict[socket.socket, threading.Thread] = {}
+        self._open: set[socket.socket] = set()  # connections their threads have not shut yet
+        # request threads not yet seen ended: a thread drops its connection from _open (shutdown_request)
+        # before it ends, so sever waits on these (not _threads: ThreadingMixIn's server_close joins that one)
+        self._request_threads: list[threading.Thread] = []
         self._open_lock = threading.Lock()
         super().__init__((HOST, port), _Handler)
 
@@ -523,12 +527,13 @@ class _Server(ThreadingHTTPServer):
         thread = threading.Thread(target=self.process_request_thread, args=(request, client_address),
                                   name=f"page-{self.server_port}-request", daemon=True)
         with self._open_lock:
-            self._open[request] = thread
+            self._open.add(request)
+            self._request_threads = [t for t in self._request_threads if t.is_alive()] + [thread]
         thread.start()
 
     def shutdown_request(self, request: socket.socket) -> None:
         with self._open_lock:
-            self._open.pop(request, None)
+            self._open.discard(request)
         super().shutdown_request(request)
 
     def handle_error(self, request: object, client_address: object) -> None:
@@ -540,18 +545,23 @@ class _Server(ThreadingHTTPServer):
         Windows, where it waits HANDLER_TIMEOUT seconds at most instead), then mark the site severed, so a
         write its page has stopped taking gives up within SERVE_POLL seconds (_Handler._put; on Windows,
         shutting a connection does not wake a thread that writes to it), and wait timeout seconds at most for
-        their threads. The writing side is left to each thread: a reply in flight, the one to the quit that
-        ended the run among them, still reaches its page."""
+        each request thread still running: those of the open connections, and any that has given up its
+        connection and is ending (it leaves _open before it ends; waiting only for the open connections'
+        threads let such a thread outlive close, about 3% of runs on Linux, 2026-11-28). The writing side is
+        left to each thread: a reply in flight, the one to the quit that ended the run among them, still
+        reaches its page."""
         with self._open_lock:
-            open_now = list(self._open.items())
-        for request, _ in open_now:
+            open_now = list(self._open)
+            running = [t for t in self._request_threads if t.is_alive()]
+        for request in open_now:
             try:
                 request.shutdown(socket.SHUT_RD)
             except OSError:  # closed already
                 pass
         self.severed = True
-        for _, thread in open_now:
-            thread.join(timeout)
+        for thread in running:
+            if thread is not threading.current_thread():  # a thread cannot wait for itself
+                thread.join(timeout)
 
 
 class _Handler(BaseHTTPRequestHandler):

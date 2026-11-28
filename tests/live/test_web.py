@@ -575,6 +575,39 @@ def test_closing_lets_go_of_a_connection_that_never_sent_its_request(tmp_path):
         spare.close()
 
 
+def test_closing_waits_for_a_request_thread_that_gave_up_its_connection(tmp_path, monkeypatch):
+    """A request thread drops its connection from the open ones (shutdown_request) before it ends, and close
+    must wait for it all the same. Here the thread lingers after that step and sever runs only once it has
+    been taken, the order in which the test above failed in about 3% of its runs on Linux (2026-11-28: on
+    GitHub's ubuntu-latest three times, and 9 of 300 runs in WSL): sever waited only for the threads of the
+    connections still open."""
+    let_go, sever = web._Server.shutdown_request, web._Server.sever
+    gave_up = threading.Event()
+
+    def let_go_then_linger(server, request):
+        let_go(server, request)
+        gave_up.set()
+        time.sleep(0.5)
+
+    def sever_once_given_up(server, timeout):
+        gave_up.wait(TIMEOUT)
+        sever(server, timeout)
+
+    monkeypatch.setattr(web._Server, "shutdown_request", let_go_then_linger)
+    monkeypatch.setattr(web._Server, "sever", sever_once_given_up)
+    site = web.Site(0)
+    thread = started(site, idle(tmp_path))
+    spare = socket.create_connection((HOST, site.port), timeout=TIMEOUT)  # as a browser keeps one ready
+    try:
+        eventually(lambda: len(request_threads(site.port)) == 1)
+        assert site.state.quit() == "now"
+        thread.join(TIMEOUT)
+        assert not thread.is_alive() and gave_up.is_set()
+        assert request_threads(site.port) == []  # close waited for the thread that gave up its connection
+    finally:
+        spare.close()
+
+
 def test_a_ctrl_c_in_a_turn_ends_the_page_as_interrupted_and_goes_on_up(tmp_path):
     def interrupted(sent: str, follow_up: int, events) -> tuple:
         raise KeyboardInterrupt
